@@ -1,0 +1,31 @@
+schema_version = 1
+verified_at_utc = "2026-07-15T10:04:47Z"
+
+[research_runtime]
+python = "3.12.9"
+uv = "0.11.7"
+requires_python = ">=3.12,<3.15"
+compatibility_test_python = "3.14.4"
+
+[freqtrade_runtime]
+version = "2026.6"
+source_repository = "https://github.com/freqtrade/freqtrade.git"
+source_tag = "2026.6"
+source_commit = "b604e2fd70539f7f73d3c62c16ce0b155bbab319"
+python = "3.14.6"
+base_image = "python:3.14.6-slim-trixie"
+ccxt = "4.5.61"
+docker_repository = "freqtradeorg/freqtrade"
+docker_platform = "linux/amd64"
+docker_manifest_digest = "sha256:d451af021d5e08b70580c0eea5848534e9846b57391b34821c0a5814416397e6"
+docker_platform_digest = "sha256:1e9298ae0895531fd47c4f13d10e5708b3b8b6e5241292f364fc23f201b5acaa"
+docker_reference = "freqtradeorg/freqtrade@sha256:1e9298ae0895531fd47c4f13d10e5708b3b8b6e5241292f364fc23f201b5acaa"
+
+[sources]
+installation = "https://www.freqtrade.io/en/stable/installation/"
+docker_quickstart = "https://www.freqtrade.io/en/stable/docker_quickstart/"
+tag_tree = "https://github.com/freqtrade/freqtrade/tree/2026.6"
+pyproject = "https://raw.githubusercontent.com/freqtrade/freqtrade/2026.6/pyproject.toml"
+requirements = "https://raw.githubusercontent.com/freqtrade/freqtrade/2026.6/requirements.txt"
+dockerfile = "https://raw.githubusercontent.com/freqtrade/freqtrade/2026.6/Dockerfile"
+docker_tag = "https://hub.docker.com/r/freqtradeorg/freqtrade/tags?name=2026.6"

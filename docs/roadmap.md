@@ -33,15 +33,19 @@ MVP 默认复用 Freqtrade，不默认自研完整交易引擎：
 | 第一条策略 | Donchian Breakout 或 Dual Moving Average，Phase 0 二选一 |
 | 第二条策略 | Regime-filtered Mean Reversion，趋势基线通过后独立研究 |
 | 运行框架 | Freqtrade 优先 |
+| 开发目标交易所 | Bybit 国际版现货 |
+| 计划资金与停止边界 | 约 450–500 USDT；项目级最大损失取资本基线 10% 与固定 45 USDT 中的更严格者 |
 
 进入 Phase 1 前必须决定并记录：
 
-- 具体交易所及司法辖区可用性；
-- Sandbox/Testnet、订单类型、限频和历史数据能力；
-- 初始计划资金、风险预算和最大可接受损失；
+- 锁定版本下的 Bybit/Freqtrade 兼容性；
+- Bybit Testnet/Contract Harness、订单类型、限频和历史数据能力；
+- 风险会计、动态精度和 bot-managed stoploss 的离线残余风险；
 - 责任人、告警接收人和紧急人工操作权限；
 - 部署区域、密钥方案、备份和恢复责任；
 - 第一条策略最终选择 Donchian 还是 Dual Moving Average。
+
+常驻地区和账户资格不是策略或风险代码分支。它们在 Live Canary 前作为外部准入检查重新核对；届时不满足只会阻止 live，不会自动改写研究标的或切换交易所。
 
 ## 3. 建议目录
 
@@ -96,7 +100,7 @@ alphaMind/
 交付物：
 
 - 一份版本化的项目约束记录；
-- 交易所、标的、市场类型和策略选择记录；
+- Bybit 国际版、BTC/USDT、ETH/USDT、现货和策略选择记录；
 - 完成并评审 [Freqtrade MVP Runtime Contract](freqtrade-mvp-runtime-contract.md)，明确 callback、watchdog、Runtime DB 和 Audit DB 的所有权；
 - 目标交易所 capability matrix，包括 Testnet/test-order、`client_order_id`、订单查询、历史保留、精度、限频和手续费币种；
 - 总资金、单笔、单日、单周和回撤风险预算；

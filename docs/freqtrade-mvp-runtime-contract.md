@@ -6,7 +6,7 @@
 
 适用范围：
 
-- 单一目标交易所；
+- Bybit 国际版单一目标交易所；
 - BTC/USDT、ETH/USDT 现货；
 - long/flat，不使用杠杆；
 - 4h 简单趋势策略；
@@ -34,7 +34,7 @@ MVP 必须遵守以下单一所有权规则：
 | 策略参数 | 固定 strategy/config 版本 | Freqtrade strategy | commit、config hash、Strategy Card |
 | 风险定仓 | `custom_stake_amount` 加 Freqtrade wallet/config 上限 | Freqtrade strategy | NAV snapshot、预算风险、批准 stake、限制原因 |
 | 入场审批 | `confirm_trade_entry` 只读取内存中的最新风险快照 | Freqtrade strategy | allow/reject、snapshot id、reason code |
-| 硬止损 | `stoploss`；确需动态止损时使用 `custom_stoploss` | Freqtrade | stop price、order type、触发和成交事件 |
+| 硬止损 | `stoploss`；确需动态止损时使用 `custom_stoploss`。Freqtrade 当前不支持 Bybit spot 的 `stoploss_on_exchange`，MVP 使用 bot-managed stoploss | Freqtrade | stop price、触发、提交和成交事件；进程/网络中断暴露单独审计 |
 | 最大持仓时间 | exit signal 或轻量 callback | Freqtrade strategy | entry time、expiry、exit reason |
 | 冷却和已实现交易回撤保护 | Freqtrade protections | Freqtrade | protection type、lookback、trigger、unlock time |
 | 账户级日亏、周亏和现金流调整回撤 | 外部 risk watchdog | risk watchdog | RiskSnapshot、阈值、暂停事件 |
@@ -43,6 +43,8 @@ MVP 必须遵守以下单一所有权规则：
 | 对账与恢复 | Freqtrade Runtime DB、交易所查询和受控人工恢复 | Freqtrade operator | 差异、处置、人工操作和最终状态 |
 
 `confirm_trade_entry` 位于下单关键路径，禁止在其中发起网络请求、数据库重查询或复杂计算。risk watchdog 先生成缓存快照；策略在 `bot_loop_start` 或等价的非关键位置加载快照，`confirm_trade_entry` 只进行常数时间判断。快照缺失、过期或解析失败时默认拒绝新入场。
+
+Bybit V5 API 本身提供 spot TP/SL 订单，但当前 Freqtrade Bybit spot 适配不支持 `stoploss_on_exchange`。MVP 不通过第二写路径直接调用 Bybit TP/SL API。Live Canary 前必须验证 bot-managed stoploss、进程守护和告警，并由项目所有人明确接受“bot 或网络离线期间没有交易所托管止损”的残余风险；否则不得上线。
 
 风险公式先得到 base asset 的 `approved_quantity`；`custom_stake_amount` 按审批时的保守 entry price 转换为 quote stake，并再次受 Freqtrade 的 `min_stake`、`max_stake`、wallet 和配置限制。`confirm_trade_entry` 只能接受或拒绝已经计算出的 amount，不能在最后一步扩大 stake。
 
@@ -99,6 +101,10 @@ period_pnl = NAV(end)
            - net_external_cash_flow
 
 drawdown = 1 - NAV(t) / cashflow_adjusted_high_water_mark
+
+project_absolute_loss = max(-cashflow_adjusted_cumulative_pnl, 0)
+fraction_loss_limit = cashflow_adjusted_capital_baseline * maximum_absolute_loss_fraction
+effective_absolute_loss_limit = min(fraction_loss_limit, maximum_absolute_loss)
 ```
 
 要求：
@@ -153,6 +159,7 @@ approved_quantity = floor_to_exchange_step(min(
 | 单日亏损 1% | 含未实现盈亏和费用、扣除外部现金流 | 禁止新入场，保留安全退出 |
 | 单周亏损 3% | 同上，以 UTC 周为边界 | 禁止新入场并进入人工复核 |
 | 回撤 5% | 相对现金流调整后高水位 | Kill Switch，进入预定义安全处置 |
+| 项目绝对损失 10% / 45 USDT | 从现金流调整资本基线计算比例金额，再与固定金额取更严格者 | 达到任一配置边界时 Kill Switch；上调必须重新审批 |
 
 ## 6. 数据库和恢复所有权
 
@@ -225,6 +232,8 @@ fee_currency_rules: ""
 ```
 
 缺少 `client_order_id`、单笔订单查询或历史订单时，必须记录替代对账方案和无法消除的歧义。自研执行系统优先把可靠幂等与查询能力作为交易所准入要求；无法唯一判断写请求结果时进入人工停机，不允许盲目重试。
+
+Bybit 开发目标的已核查 capability matrix 见 [ADR-0002](decisions/0002-exchange-selection.md) 与 [机器可读清单](../configs/common/exchange-capabilities.yaml)。动态精度、最小金额和限频不得从文档示例硬编码，必须在运行时从 Bybit V5 instrument/rate-limit 响应读取或在锁定版本的配置中生成。
 
 对账必须识别外部人工交易、充值提币、奖励、返佣、手续费币种变化和交易所自动行为。无法分类的余额变化进入 `HALTED_MANUAL_REVIEW`，不能自动计入策略 PnL。
 

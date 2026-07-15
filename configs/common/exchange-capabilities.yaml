@@ -1,0 +1,130 @@
+schema_version: 1
+checked_at_utc: "2026-07-15"
+selection_status: approved_for_development
+
+exchange:
+  name: Bybit International
+  ccxt_id: bybit
+  api_version: v5
+  market_type: spot
+  margin_enabled: false
+  leverage: 1
+  region_policy:
+    implementation: region_agnostic
+    live_gate: recheck_account_eligibility_terms_and_endpoint
+
+symbols:
+  - unified: BTC/USDT
+    exchange_id: BTCUSDT
+    required: true
+  - unified: ETH/USDT
+    exchange_id: ETHUSDT
+    required: true
+
+freqtrade:
+  officially_supported_spot: true
+  exchange_id: bybit
+  owns_all_trade_writes: true
+  sandbox_account_mode: false
+  stoploss_on_exchange_spot: false
+  stoploss_mode: bot_managed
+
+api_permissions:
+  separate_read_write: true
+  spot_trade_without_withdrawal: true
+  ip_binding_supported: true
+  required_live_permissions:
+    - SpotTrade
+  forbidden_live_permissions:
+    - Withdrawal
+
+environments:
+  mainnet:
+    rest: https://api.bybit.com
+  testnet:
+    supported: true
+    rest: https://api-testnet.bybit.com
+    usage: independent_contract_harness_only
+  demo:
+    supported: true
+    rest: https://api-demo.bybit.com
+    limitation: incomplete_api_surface
+
+market_rules:
+  source_endpoint: /v5/market/instruments-info
+  hardcode_values: false
+  required_fields:
+    - status
+    - baseCoin
+    - quoteCoin
+    - priceFilter.tickSize
+    - lotSizeFilter.minOrderAmt
+    - lotSizeFilter.maxLimitOrderQty
+    - lotSizeFilter.maxMarketOrderQty
+
+orders:
+  market: true
+  limit: true
+  post_only: true
+  ioc: true
+  fok: true
+  client_order_id:
+    supported: true
+    field: orderLinkId
+    max_length: 36
+    must_be_unique: true
+  create_ack_is_terminal: false
+  cancel_ack_is_terminal: false
+  fetch_realtime: true
+  fetch_history: true
+  fetch_executions: true
+  private_order_websocket: true
+  partial_fill_status: PartiallyFilled
+  partial_fill_cancelled_status: PartiallyFilledCanceled
+
+history:
+  realtime_recent_closed_limit: 500
+  order_history_default_days: 7
+  cancelled_rejected_full_window_hours: 24
+  beyond_seven_days: filled_orders_only
+  local_persistence_required: true
+
+rate_limit:
+  ip_default_requests: 600
+  ip_window_seconds: 5
+  uid_rolling_window: true
+  response_headers:
+    - X-Bapi-Limit
+    - X-Bapi-Limit-Status
+    - X-Bapi-Limit-Reset-Timestamp
+  safety_margin_required: true
+
+residual_risks:
+  - id: BYBIT-SPOT-STOP-001
+    severity: high
+    description: Freqtrade does not support stoploss_on_exchange for Bybit spot.
+    control: bot_managed_stoploss_process_supervision_and_live_owner_acceptance
+  - id: BYBIT-ASYNC-ORDER-002
+    severity: high
+    description: Create and cancel acknowledgements are asynchronous and require reconciliation.
+    control: no_blind_retry_query_by_order_id_order_link_id_and_execution
+  - id: BYBIT-DYNAMIC-RULES-003
+    severity: medium
+    description: Precision, minimum amount and maximum quantities can change.
+    control: query_instruments_info_and_audit_rules_at_startup
+  - id: BYBIT-LIVE-ELIGIBILITY-004
+    severity: high
+    description: Live account eligibility and endpoints may change independently of code.
+    control: mandatory_live_canary_preflight_recheck
+
+sources:
+  - https://docs.freqtrade.io/en/stable/
+  - https://docs.freqtrade.io/en/stable/exchanges/
+  - https://bybit-exchange.github.io/docs/v5/guide
+  - https://bybit-exchange.github.io/docs/v5/market/instrument
+  - https://bybit-exchange.github.io/docs/v5/order/create-order
+  - https://bybit-exchange.github.io/docs/v5/order/open-order
+  - https://bybit-exchange.github.io/docs/v5/order/order-list
+  - https://bybit-exchange.github.io/docs/v5/order/execution
+  - https://bybit-exchange.github.io/docs/v5/rate-limit
+  - https://bybit-exchange.github.io/docs/v5/demo

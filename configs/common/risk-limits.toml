@@ -1,0 +1,17 @@
+schema_version = 1
+accounting_currency = "USDT"
+
+[trade_limits]
+# 单笔计划风险占入场时 NAV 的比例。
+risk_fraction = "0.0025"
+
+[loss_limits]
+# 两个项目级损失边界取更严格者，达到任意一个即触发 Kill Switch。
+maximum_absolute_loss_fraction = "0.10"
+# 固定金额上限；上调此值必须同步更新项目范围决策并重新审批。
+maximum_absolute_loss = "45"
+# 日、周阈值使用包含未实现损益和费用、扣除外部现金流后的 PnL。
+daily_loss_fraction = "0.01"
+weekly_loss_fraction = "0.03"
+# 回撤相对现金流调整后的高水位计算。
+drawdown_fraction = "0.05"
