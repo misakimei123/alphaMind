@@ -1,6 +1,6 @@
 # alphaMind
 
-alphaMind 是面向现货 long/flat 策略研究与受控运行的个人量化交易项目。首个工程基线是 BTC/USDT、ETH/USDT 的 4h Donchian 趋势策略。
+alphaMind 是面向现货 long/flat 策略研究与受控运行的个人量化交易项目。首个工程基线是 BTC/USDT、ETH/USDT 的 4h Donchian 20/10 趋势策略。
 
 当前实现只包含无密钥、无网络、无交易写权限的确定性核心：
 

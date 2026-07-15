@@ -5,8 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
+| 最近进度更新 | 2026-07-15 / P0-04 DONE |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-03 DONE，下一顺序任务为 P0-04；P1-01、P2-01、P2-03 的离线确定性核心并行推进；Docker 精确运行时验证迁移至 P1-02，认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
+> 当前阶段：P0-04 DONE，下一顺序任务为 P0-05；P1-01、P2-01、P2-03 的离线确定性核心并行推进；Docker 精确运行时验证迁移至 P1-02，认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
 
 ## 1. 计划目的与使用规则
 
@@ -30,6 +31,15 @@
 - 任何影响信号、仓位、退出、成本、风险阈值或运行所有权的变更，都必须先更新决策记录和本文；
 - 不允许为了赶进度跨越 Backtest、Paper 或 Live Canary 门禁；
 - 不允许用“无报错运行”替代统计证据、故障证据或资金对账证据。
+
+进度账本规则：
+
+- 本文同时是规范性计划和唯一任务进度账本；不得维护一份与本文状态不同的临时进度清单；
+- 每次完成、暂停、拆分或迁移任务时，必须在同一批改动中更新顶部“当前阶段”、第一轮执行清单、实际产物、验证结果和延期项；
+- 状态只使用 `NOT_STARTED`、`IN_PROGRESS`、`READY_TO_VERIFY`、`BLOCKED`、`DONE`，并且 `DONE` 必须能从仓库产物和验证证据复核；
+- 未完成验证若迁移到后续任务，必须同时写明新的任务 ID 和它所阻止的门禁，禁止仅删除原验收项；
+- 提交前必须核对代码、配置、ADR、测试结果与本文状态一致；发现不一致时先修正账本再提交；
+- 提交信息应能关联本轮主要任务 ID；开发交接和状态报告以本文当前内容为准。
 
 ## 2. 设计分析结论
 
@@ -62,7 +72,7 @@
 | 编号 | 缺口 | 默认建议 | 未解决时的影响 |
 |---|---|---|---|
 | G-01 | 目标交易所未定 | **已解决**：开发目标固定为 Bybit 国际版现货；常驻地区仅作为 Live Canary 外部准入检查 | P0-03 已锁定运行版本；端点实测由 P1-02/P3-06 负责 |
-| G-02 | Donchian 与 Dual EMA 尚未最终二选一 | **已解决**：第一策略固定为 4h Donchian，1d 仅做稳健性复测 | 允许实现 P2-01 纯函数，参数冻结仍由 P0-04 完成 |
+| G-02 | Donchian 与 Dual EMA 尚未最终二选一 | **已解决**：第一策略和参数已由 ADR-0004 固定为 4h Donchian 20/10、ATR(20) × 2 stop；1d 仅做稳健性复测 | P2-01/P2-02 必须与 Strategy Card 同源 |
 | G-03 | Freqtrade、CCXT、Python 和镜像未锁定 | **已解决**：版本和 digest 已写入 `configs/common/runtime-versions.toml`；固定镜像内实测迁移至 P1-02 | 不阻塞 P0-04、P0-05 和离线开发；实测前不得完成 P1-02 或进入 Paper/Live |
 | G-04 | 数据原始层定义存在张力 | MVP 默认将 Freqtrade 下载产物视为不可变 source snapshot；若要求保留交易所原始 payload，单独批准最小采集器 | 容易无意开发第二套数据平台 |
 | G-05 | Runtime DB 选型与 watchdog 只读路径未定 | 开发/dry-run 可用隔离 SQLite；生产候选优先评估 PostgreSQL 只读角色或受控只读 API | 无法证明单一写入者和恢复顺序 |
@@ -1145,7 +1155,7 @@ git diff --check
 | 1 | P0-01 项目约束与责任矩阵 | DONE | 已确认个人项目、日本、450–500 USDT、10% 与 45 USDT 双损失边界、默认风险/策略/部署 |
 | 2 | P0-02 交易所 Capability Matrix | DONE | 已固定 Bybit 国际版、BTC/USDT 与 ETH/USDT，并记录 Freqtrade/API/Testnet/stoploss 边界 |
 | 3 | P0-03 运行环境和版本锁定 | DONE | 已锁定 Python、Freqtrade 2026.6、CCXT 4.5.61 和镜像 digest；容器实测迁移至 P1-02 强制验收 |
-| 4 | P0-04 第一策略与 Strategy Card | NOT_STARTED | 默认 Donchian |
+| 4 | P0-04 第一策略与 Strategy Card | DONE | 已冻结 4h Donchian 20/10、ATR(20) × 2 stop、试验预算和证伪条件 |
 | 5 | P0-05 数据与验证合同 | NOT_STARTED | 在查看候选结果前冻结 |
 | 6 | P0-06 风险会计与 Kill Switch | NOT_STARTED | 固定会计与动作语义 |
 | 7 | P0-07 Audit、Replay 与数据库边界 | NOT_STARTED | 防止双写与过度设计 |
@@ -1154,7 +1164,7 @@ git diff --check
 | 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 11 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
-代码启动边界于 2026-07-15 经项目所有人明确调整：可以并行实现离线确定性核心，但这不代表 P0-04 至 P0-08 已通过，也不允许跨越 Backtest、Paper 或 Live Canary 门禁。Freqtrade callback、认证 API、真实账户数据与交易写入必须等待对应前置任务完成。
+代码启动边界于 2026-07-15 经项目所有人明确调整：可以并行实现离线确定性核心，但这不代表 P0-05 至 P0-08 已通过，也不允许跨越 Backtest、Paper 或 Live Canary 门禁。Freqtrade callback、认证 API、真实账户数据与交易写入必须等待对应前置任务完成。
 
 ## 18. 官方文档核对基线
 

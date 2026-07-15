@@ -1,0 +1,159 @@
+schema_version: 1
+
+strategy:
+  id: donchian_trend
+  version: 0.1.0
+  status: frozen_before_data_contract
+  decision_id: ADR-0004
+  hypothesis: >-
+    已形成的价格趋势可能在有限时间内延续；使用非对称 channel breakout
+    捕获少数较大趋势，并以确定性止损和仓位预算限制假突破损失。
+  objective: validate_research_risk_and_runtime_pipeline
+  profit_claimed: false
+
+universe:
+  exchange: bybit
+  market_type: spot
+  pairs:
+    - BTC/USDT
+    - ETH/USDT
+  direction: long_flat
+  leverage: 1
+  primary_timeframe: 4h
+  robustness_timeframes:
+    - 1d
+  timezone: UTC
+
+signal:
+  completed_candles_only: true
+  current_candle_excluded_from_channel: true
+  entry:
+    rule: close_gt_lagged_highest_high
+    window_candles: 20
+    comparison: strict
+    reason_code: entry_breakout
+  exit:
+    rule: close_lt_lagged_lowest_low
+    window_candles: 10
+    comparison: strict
+    reason_code: exit_breakout
+  warmup:
+    startup_candle_count: 120
+    insufficient_history_action: hold
+  missing_or_unclosed_candle_action: hold
+  same_candle_entry_fill_allowed: false
+  earliest_backtest_fill: next_candle_open
+
+volatility_and_stop:
+  indicator: ATR
+  atr_period_candles: 20
+  atr_smoothing: wilder_rma
+  atr_inputs_end_at: signal_candle
+  initial_stop_multiple: "2.0"
+  initial_stop_formula: average_entry_fill_minus_2_atr
+  stop_can_widen: false
+  trailing_stop_enabled: false
+  maximum_holding_time:
+    enabled: false
+    value: null
+  exit_conflict_policy:
+    live: earliest_observed_trigger
+    backtest: freqtrade_2026_6_engine_ordering
+    ambiguous_candle_requires_detail_timeframe_audit: true
+
+risk:
+  risk_config: configs/common/risk-limits.toml
+  planned_risk_fraction: "0.0025"
+  max_open_trades: 2
+  max_open_trades_per_pair: 1
+  max_symbol_notional_fraction_of_nav: "0.40"
+  max_directional_notional_fraction_of_nav: "0.70"
+  pending_entry_exposure_included: true
+  quantity_rounding: floor_to_exchange_step
+  dca_enabled: false
+  pyramiding_enabled: false
+  position_adjustment_enabled: false
+
+disabled_features:
+  minimal_roi: true
+  short: true
+  leverage: true
+  hyperopt: true
+  signal_strength_sizing: true
+  indicator_filters:
+    - RSI
+    - EMA
+    - ADX
+    - MACD
+  realtime_ai_decisions: true
+  news_signals: true
+
+parameter_trials:
+  selection_method: preregistered_one_at_a_time
+  maximum_parameterized_trials: 14
+  cartesian_product_allowed: false
+  baseline:
+    timeframe: 4h
+    entry_window: 20
+    exit_window: 10
+    atr_period: 20
+    stop_multiple: "2.0"
+  perturbations:
+    entry_window:
+      - 16
+      - 18
+      - 22
+      - 24
+    exit_window:
+      - 8
+      - 9
+      - 11
+      - 12
+    stop_multiple:
+      - "1.6"
+      - "1.8"
+      - "2.2"
+      - "2.4"
+  robustness_only:
+    timeframe: 1d
+    reuse_baseline_parameters: true
+  failed_trials_must_be_retained: true
+
+evidence_thresholds:
+  independent_event_clustering_hours: 72
+  backtest_qualified:
+    minimum_out_of_sample_completed_trades: 40
+    minimum_independent_breakout_events: 12
+    insufficient_evidence_result: INCONCLUSIVE
+  paper_qualified:
+    minimum_observation_days: 90
+    minimum_valid_entry_signals: 12
+    minimum_filled_entries: 8
+    minimum_independent_breakout_events: 4
+    insufficient_evidence_result: CONTINUE_PAPER
+
+falsification:
+  - majority_walk_forward_folds_have_non_positive_net_expectancy
+  - stressed_aggregate_oos_expectancy_is_non_positive
+  - fewer_than_70_percent_neighbor_trials_keep_non_negative_expectancy
+  - cashflow_adjusted_drawdown_reaches_5_percent_kill_switch
+  - lookahead_or_same_candle_fill_bias_detected
+  - profitability_requires_dca_leverage_or_post_hoc_filters
+
+stress_requirements:
+  fee_multiplier: "2.0"
+  slippage_multiplier: "3.0"
+  required_regimes:
+    - bull_trend
+    - bear_trend
+    - sideways_whipsaw
+    - rapid_crash
+    - liquidity_stress
+  report_pair_split: true
+  report_top_5_trade_contribution: true
+
+change_control:
+  signal_or_risk_change_requires_new_version: true
+  final_holdout_can_select_parameters: false
+  paper_clock_resets_on_material_change: true
+  next_required_task: P0-05

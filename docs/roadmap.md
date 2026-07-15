@@ -30,7 +30,7 @@ MVP 默认复用 Freqtrade，不默认自研完整交易引擎：
 | 方向 | long/flat |
 | 杠杆 | 不使用 |
 | 主周期 | 4h；1d 仅用于稳健性复测 |
-| 第一条策略 | Donchian Breakout 或 Dual Moving Average，Phase 0 二选一 |
+| 第一条策略 | 4h Donchian 20/10、ATR(20) × 2 stop |
 | 第二条策略 | Regime-filtered Mean Reversion，趋势基线通过后独立研究 |
 | 运行框架 | Freqtrade 优先 |
 | 开发目标交易所 | Bybit 国际版现货 |
@@ -43,7 +43,7 @@ MVP 默认复用 Freqtrade，不默认自研完整交易引擎：
 - 风险会计、动态精度和 bot-managed stoploss 的离线残余风险；
 - 责任人、告警接收人和紧急人工操作权限；
 - 部署区域、密钥方案、备份和恢复责任；
-- 第一条策略最终选择 Donchian 还是 Dual Moving Average。
+- ADR-0004 已冻结的 Donchian Strategy Card 与后续实现保持同源。
 
 常驻地区和账户资格不是策略或风险代码分支。它们在 Live Canary 前作为外部准入检查重新核对；届时不满足只会阻止 live，不会自动改写研究标的或切换交易所。
 
