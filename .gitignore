@@ -206,6 +206,12 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# alphaMind market data layers (schemas and manifests remain tracked)
+data/source/
+data/clean/
+data/features/
+data/final_holdout/
+
 # PyPI configuration file
 .pypirc
 

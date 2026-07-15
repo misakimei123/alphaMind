@@ -1,0 +1,274 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/data-manifest.schema.yaml
+title: alphaMind immutable market data manifest
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - dataset_id
+  - created_at_utc
+  - source
+  - immutability
+  - storage
+  - partitions
+  - quality
+  - split_contract
+  - holdout_access
+properties:
+  schema_version:
+    const: 1
+  dataset_id:
+    type: string
+    pattern: "^[a-z0-9][a-z0-9._-]{2,127}$"
+  created_at_utc:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  source:
+    type: object
+    additionalProperties: false
+    required:
+      - exchange
+      - market_type
+      - candle_type
+      - pairs
+      - timeframes
+      - timezone
+      - requested_start
+      - requested_end_exclusive
+      - downloader
+      - freqtrade_version
+      - ccxt_version
+      - storage_format
+      - command
+      - raw_exchange_payload_retained
+      - exchange_metadata_sha256
+    properties:
+      exchange:
+        const: bybit
+      market_type:
+        const: spot
+      candle_type:
+        const: spot
+      pairs:
+        type: array
+        uniqueItems: true
+        minItems: 2
+        maxItems: 2
+        items:
+          enum: [BTC/USDT, ETH/USDT]
+      timeframes:
+        type: array
+        uniqueItems: true
+        minItems: 2
+        maxItems: 2
+        items:
+          enum: [4h, 1d]
+      timezone:
+        const: UTC
+      requested_start:
+        const: "2022-01-01T00:00:00Z"
+      requested_end_exclusive:
+        const: "2026-07-01T00:00:00Z"
+      downloader:
+        const: freqtrade_download_data
+      freqtrade_version:
+        const: "2026.6"
+      ccxt_version:
+        const: "4.5.61"
+      storage_format:
+        const: feather
+      command:
+        type: string
+        minLength: 1
+      raw_exchange_payload_retained:
+        const: false
+      exchange_metadata_sha256:
+        $ref: "#/$defs/sha256"
+  immutability:
+    type: object
+    additionalProperties: false
+    required:
+      - hash_algorithm
+      - snapshot_id
+      - snapshot_sha256
+      - manifest_content_sha256
+      - write_policy
+    properties:
+      hash_algorithm:
+        const: sha256
+      snapshot_id:
+        type: string
+        pattern: "^bybit-spot-ohlcv-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      snapshot_sha256:
+        $ref: "#/$defs/sha256"
+      manifest_content_sha256:
+        $ref: "#/$defs/sha256"
+      write_policy:
+        const: append_only_new_snapshot
+  storage:
+    type: object
+    additionalProperties: false
+    required:
+      - source_root
+      - clean_root
+      - feature_root
+      - final_holdout_root
+      - roots_must_be_distinct
+    properties:
+      source_root:
+        type: string
+        pattern: "^data/source/"
+      clean_root:
+        type: string
+        pattern: "^data/clean/"
+      feature_root:
+        type: string
+        pattern: "^data/features/"
+      final_holdout_root:
+        type: string
+        pattern: "^data/final_holdout/"
+      roots_must_be_distinct:
+        const: true
+  partitions:
+    type: array
+    minItems: 4
+    maxItems: 4
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/partition"
+  quality:
+    type: object
+    additionalProperties: false
+    required:
+      - fill_missing
+      - duplicate_action
+      - missing_action
+      - invalid_ohlc_action
+      - negative_volume_action
+      - zero_volume_action
+      - incomplete_last_candle_action
+      - error_count
+      - warning_count
+      - report_json_path
+      - report_markdown_path
+    properties:
+      fill_missing:
+        const: false
+      duplicate_action:
+        const: reject_partition
+      missing_action:
+        const: reject_partition
+      invalid_ohlc_action:
+        const: reject_partition
+      negative_volume_action:
+        const: reject_partition
+      zero_volume_action:
+        const: warn_and_retain
+      incomplete_last_candle_action:
+        const: drop_and_record
+      error_count:
+        type: integer
+        minimum: 0
+      warning_count:
+        type: integer
+        minimum: 0
+      report_json_path:
+        type: string
+        minLength: 1
+      report_markdown_path:
+        type: string
+        minLength: 1
+  split_contract:
+    type: object
+    additionalProperties: false
+    required:
+      - development_start
+      - development_end_exclusive
+      - final_holdout_start
+      - final_holdout_end_exclusive
+      - final_holdout_left_closed_right_open
+      - walk_forward_manifest
+    properties:
+      development_start:
+        const: "2022-01-01T00:00:00Z"
+      development_end_exclusive:
+        const: "2025-07-01T00:00:00Z"
+      final_holdout_start:
+        const: "2025-07-01T00:00:00Z"
+      final_holdout_end_exclusive:
+        const: "2026-07-01T00:00:00Z"
+      final_holdout_left_closed_right_open:
+        const: true
+      walk_forward_manifest:
+        const: data/manifests/regime-manifest.yaml
+  holdout_access:
+    type: object
+    additionalProperties: false
+    required:
+      - state
+      - access_count
+      - first_accessed_at_utc
+      - first_access_commit
+      - degraded_reason
+    properties:
+      state:
+        enum:
+          - SEALED_UNREAD
+          - CONSUMED_FINAL
+          - DEGRADED_TO_DEVELOPMENT
+      access_count:
+        type: integer
+        minimum: 0
+      first_accessed_at_utc:
+        type: [string, "null"]
+        format: date-time
+        pattern: "Z$"
+      first_access_commit:
+        type: [string, "null"]
+        pattern: "^[a-f0-9]{40}$"
+      degraded_reason:
+        type: [string, "null"]
+$defs:
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  partition:
+    type: object
+    additionalProperties: false
+    required:
+      - pair
+      - timeframe
+      - candle_type
+      - relative_path
+      - byte_size
+      - file_sha256
+      - first_candle_utc
+      - last_candle_utc
+      - candle_count
+    properties:
+      pair:
+        enum: [BTC/USDT, ETH/USDT]
+      timeframe:
+        enum: [4h, 1d]
+      candle_type:
+        const: spot
+      relative_path:
+        type: string
+        pattern: "^[^/].*\\.feather$"
+      byte_size:
+        type: integer
+        minimum: 1
+      file_sha256:
+        $ref: "#/$defs/sha256"
+      first_candle_utc:
+        type: string
+        format: date-time
+        pattern: "Z$"
+      last_candle_utc:
+        type: string
+        format: date-time
+        pattern: "Z$"
+      candle_count:
+        type: integer
+        minimum: 1

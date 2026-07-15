@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-15 / P0-04 DONE |
+| 最近进度更新 | 2026-07-15 / P0-05 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-04 DONE，下一顺序任务为 P0-05；P1-01、P2-01、P2-03 的离线确定性核心并行推进；Docker 精确运行时验证迁移至 P1-02，认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
+> 当前阶段：P0-05 READY_TO_VERIFY，数据合同产物与本地验证已完成，等待项目所有人基于当前提交独立复核；复核通过后的下一顺序任务为 P0-06。P1-01、P2-01、P2-03 的离线确定性核心并行推进；Docker 精确运行时验证迁移至 P1-02，认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
 
 ## 1. 计划目的与使用规则
 
@@ -74,11 +74,11 @@
 | G-01 | 目标交易所未定 | **已解决**：开发目标固定为 Bybit 国际版现货；常驻地区仅作为 Live Canary 外部准入检查 | P0-03 已锁定运行版本；端点实测由 P1-02/P3-06 负责 |
 | G-02 | Donchian 与 Dual EMA 尚未最终二选一 | **已解决**：第一策略和参数已由 ADR-0004 固定为 4h Donchian 20/10、ATR(20) × 2 stop；1d 仅做稳健性复测 | P2-01/P2-02 必须与 Strategy Card 同源 |
 | G-03 | Freqtrade、CCXT、Python 和镜像未锁定 | **已解决**：版本和 digest 已写入 `configs/common/runtime-versions.toml`；固定镜像内实测迁移至 P1-02 | 不阻塞 P0-04、P0-05 和离线开发；实测前不得完成 P1-02 或进入 Paper/Live |
-| G-04 | 数据原始层定义存在张力 | MVP 默认将 Freqtrade 下载产物视为不可变 source snapshot；若要求保留交易所原始 payload，单独批准最小采集器 | 容易无意开发第二套数据平台 |
+| G-04 | 数据原始层定义存在张力 | **已解决**：ADR-0005 固定 Freqtrade Feather 首次落盘文件为不可变 source snapshot，不保留原始 REST payload；actual hash 由 P1-03 下载后登记 | P1-03/P1-04 必须遵守 source/clean/features/holdout 隔离和禁止静默补缺合同 |
 | G-05 | Runtime DB 选型与 watchdog 只读路径未定 | 开发/dry-run 可用隔离 SQLite；生产候选优先评估 PostgreSQL 只读角色或受控只读 API | 无法证明单一写入者和恢复顺序 |
 | G-06 | callback 到 Audit DB 的异步通道未定 | 使用有界、可观测、可恢复的本地 outbox，再由 sidecar 写 Audit DB | callback 可能阻塞，或审计事件在崩溃时丢失 |
 | G-07 | Replay 的验证对象容易越界 | 只验证 alphaMind 风险、审计、适配与运维处置；Freqtrade 订单生命周期通过公开行为做集成测试 | 容易重新实现第二套订单状态机 |
-| G-08 | Paper 的最小信号、成交和独立事件数未预注册 | 依据历史频率和统计不确定性在看结果前固定 | 90 天后仍无法做客观晋升判断 |
+| G-08 | Paper 的最小信号、成交和独立事件数未预注册 | **已解决**：ADR-0004 已固定至少 90 天、12 个有效信号、8 个模拟成交和 4 个独立事件 | 证据不足时继续 Paper，不得降低门槛 |
 | G-09 | 部署平台与密钥方案未定 | Windows 仅用于本地研究；生产候选默认 Linux host + pinned Docker image | 生产可靠性和密钥边界不可验收 |
 | G-10 | Kill Switch 的实际动作未定 | 默认先禁止新入场、撤销未成交入场，并按 runbook 决定安全退出 | 风险触发后行为不确定 |
 
@@ -405,6 +405,16 @@ Strategy Card 必须固定：
 - 不允许静默补齐缺失行情；
 - source、clean 和 feature 数据物理或路径隔离；
 - final holdout 一旦用于调参即永久降级并留下记录。
+
+实际进度（2026-07-15）：
+
+- 状态：`READY_TO_VERIFY`；四项计划产物均已创建，等待项目所有人独立复核；
+- 数据合同：Bybit spot、BTC/USDT 与 ETH/USDT、4h/1d、`[2022-01-01, 2026-07-01)` UTC；
+- 开发验证：expanding train + 6 个月 validation，共 3 个 fold；
+- Final Holdout：`[2025-07-01, 2026-07-01)`，状态 `SEALED_UNREAD`；
+- 结构化验证：两个 Draft 2020-12 schema 合法，有效示例通过，`fill_missing=true` 和负成交量示例被拒绝，fold/holdout/regime 交叉约束通过；
+- 项目验证：`uv run pytest` 为 33 passed；`ruff check`、`ruff format --check`、`uv lock --check` 和 `git diff --check` 通过；
+- 延期边界：本任务没有下载或读取目标数据；actual file/snapshot SHA-256、数据质量报告和 holdout 访问证据由 P1-03、P1-04、P2-07 分别落地，缺失时阻止对应任务和门禁。
 
 ### P0-06 风险会计与 Kill Switch
 
@@ -1114,9 +1124,9 @@ git diff --check
 
 - `NOT_STARTED`
 - `IN_PROGRESS`
+- `READY_TO_VERIFY`
 - `BLOCKED`
 - `DONE`
-- `REJECTED`
 
 状态更新要求：
 
@@ -1150,13 +1160,13 @@ git diff --check
 
 后续开发从以下顺序开始：
 
-| 顺序 | 任务 | 初始状态 | 说明 |
+| 顺序 | 任务 | 当前状态 | 说明 |
 |---:|---|---|---|
 | 1 | P0-01 项目约束与责任矩阵 | DONE | 已确认个人项目、日本、450–500 USDT、10% 与 45 USDT 双损失边界、默认风险/策略/部署 |
 | 2 | P0-02 交易所 Capability Matrix | DONE | 已固定 Bybit 国际版、BTC/USDT 与 ETH/USDT，并记录 Freqtrade/API/Testnet/stoploss 边界 |
 | 3 | P0-03 运行环境和版本锁定 | DONE | 已锁定 Python、Freqtrade 2026.6、CCXT 4.5.61 和镜像 digest；容器实测迁移至 P1-02 强制验收 |
 | 4 | P0-04 第一策略与 Strategy Card | DONE | 已冻结 4h Donchian 20/10、ATR(20) × 2 stop、试验预算和证伪条件 |
-| 5 | P0-05 数据与验证合同 | NOT_STARTED | 在查看候选结果前冻结 |
+| 5 | P0-05 数据与验证合同 | READY_TO_VERIFY | 合同、schema、regime manifest 和本地验证已完成，等待项目所有人独立复核 |
 | 6 | P0-06 风险会计与 Kill Switch | NOT_STARTED | 固定会计与动作语义 |
 | 7 | P0-07 Audit、Replay 与数据库边界 | NOT_STARTED | 防止双写与过度设计 |
 | 8 | P0-08 Scope Frozen 评审 | NOT_STARTED | 通过后才允许 Phase 1 |

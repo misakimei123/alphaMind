@@ -1,0 +1,121 @@
+schema_version: 1
+manifest_id: donchian-v0.1.0-regimes-v1
+decision_id: ADR-0005
+strategy_id: donchian_trend
+strategy_version: 0.1.0
+created_at_utc: "2026-07-15T10:40:20Z"
+selection_role: diagnostic_only
+parameter_selection_allowed: false
+
+dataset_contract:
+  exchange: bybit
+  market_type: spot
+  candle_type: spot
+  pairs:
+    - BTC/USDT
+    - ETH/USDT
+  reference_timeframe: 4h
+  robustness_timeframe: 1d
+  timezone: UTC
+  source_start: "2022-01-01T00:00:00Z"
+  source_end_exclusive: "2026-07-01T00:00:00Z"
+  development_end_exclusive: "2025-07-01T00:00:00Z"
+  final_holdout:
+    start: "2025-07-01T00:00:00Z"
+    end_exclusive: "2026-07-01T00:00:00Z"
+    state: SEALED_UNREAD
+    access_count: 0
+
+walk_forward:
+  method: expanding_train_fixed_validation
+  validation_months: 6
+  step_months: 6
+  random_split_allowed: false
+  folds:
+    - id: WF-01
+      train_start: "2022-01-01T00:00:00Z"
+      train_end_exclusive: "2024-01-01T00:00:00Z"
+      validation_start: "2024-01-01T00:00:00Z"
+      validation_end_exclusive: "2024-07-01T00:00:00Z"
+    - id: WF-02
+      train_start: "2022-01-01T00:00:00Z"
+      train_end_exclusive: "2024-07-01T00:00:00Z"
+      validation_start: "2024-07-01T00:00:00Z"
+      validation_end_exclusive: "2025-01-01T00:00:00Z"
+    - id: WF-03
+      train_start: "2022-01-01T00:00:00Z"
+      train_end_exclusive: "2025-01-01T00:00:00Z"
+      validation_start: "2025-01-01T00:00:00Z"
+      validation_end_exclusive: "2025-07-01T00:00:00Z"
+
+classification:
+  point_in_time_only: true
+  pair_local: true
+  uses_future_candles: false
+  annualization_periods_4h: 2190
+  minimum_history_candles: 582
+  insufficient_history_label: unclassified
+  conflict_precedence:
+    - rapid_crash
+    - liquidity_stress
+    - bear_trend
+    - bull_trend
+    - sideways_whipsaw
+    - unclassified
+  metrics:
+    return_7d: close_t / close_t_minus_42_candles - 1
+    return_60d: close_t / close_t_minus_360_candles - 1
+    realized_volatility_30d: stddev(log_return_4h_last_180) * sqrt(2190)
+    volume_ratio_7d_to_prior_90d: median(volume_last_42) / median(volume_previous_540)
+    sign_changes_5d_over_60d: count_sign_changes(non_overlapping_5d_returns_last_60d)
+  rules:
+    - regime: rapid_crash
+      when: return_7d <= -0.15
+    - regime: liquidity_stress
+      when: volume_ratio_7d_to_prior_90d <= 0.40
+      limitation: OHLCV_volume_proxy_only
+    - regime: bear_trend
+      when: return_60d <= -0.20
+    - regime: bull_trend
+      when: return_60d >= 0.20
+    - regime: sideways_whipsaw
+      when: abs(return_60d) < 0.10 and realized_volatility_30d >= 0.60 and sign_changes_5d_over_60d >= 6
+    - regime: unclassified
+      when: no_prior_rule_matches
+
+calendar_stress_slices:
+  - id: development_pool_full
+    start: "2022-01-01T00:00:00Z"
+    end_exclusive: "2025-07-01T00:00:00Z"
+    expected_regimes: [bull_trend, bear_trend, sideways_whipsaw, rapid_crash, liquidity_stress]
+    role: development_pool_context
+  - id: calendar_stress_2022_q2
+    start: "2022-05-01T00:00:00Z"
+    end_exclusive: "2022-07-01T00:00:00Z"
+    expected_regimes: [rapid_crash, bear_trend, liquidity_stress]
+    role: diagnostic_only
+  - id: calendar_stress_2022_q4
+    start: "2022-11-01T00:00:00Z"
+    end_exclusive: "2023-01-01T00:00:00Z"
+    expected_regimes: [rapid_crash, liquidity_stress]
+    role: diagnostic_only
+  - id: calendar_trend_2024_q1
+    start: "2024-02-01T00:00:00Z"
+    end_exclusive: "2024-04-15T00:00:00Z"
+    expected_regimes: [bull_trend]
+    role: diagnostic_only
+  - id: calendar_stress_2024_aug
+    start: "2024-08-01T00:00:00Z"
+    end_exclusive: "2024-09-01T00:00:00Z"
+    expected_regimes: [rapid_crash, liquidity_stress]
+    role: diagnostic_only
+
+reporting_contract:
+  report_each_pair_separately: true
+  report_each_walk_forward_fold: true
+  report_each_rule_based_regime: true
+  report_each_calendar_slice: true
+  missing_required_regime_result: INCONCLUSIVE
+  empty_slice_result: INCONCLUSIVE
+  holdout_rules_mutable_after_access: false
+  regime_may_select_parameters: false

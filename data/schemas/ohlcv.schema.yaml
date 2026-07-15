@@ -1,0 +1,97 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/ohlcv.schema.yaml
+title: alphaMind canonical OHLCV partition
+description: >-
+  规范化 OHLCV 分区的语义 schema。Feather source 由 manifest 记录，进入 clean
+  层后必须映射为相同字段；跨字段 OHLC 关系和时间网格由质量检查器额外验证。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - dataset_id
+  - source_snapshot_id
+  - exchange
+  - market_type
+  - candle_type
+  - pair
+  - timeframe
+  - timezone
+  - interval_start
+  - interval_end_exclusive
+  - rows
+properties:
+  schema_version:
+    const: 1
+  dataset_id:
+    type: string
+    pattern: "^[a-z0-9][a-z0-9._-]{2,127}$"
+  source_snapshot_id:
+    type: string
+    pattern: "^bybit-spot-ohlcv-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  exchange:
+    const: bybit
+  market_type:
+    const: spot
+  candle_type:
+    const: spot
+  pair:
+    enum:
+      - BTC/USDT
+      - ETH/USDT
+  timeframe:
+    enum:
+      - 4h
+      - 1d
+  timezone:
+    const: UTC
+  interval_start:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  interval_end_exclusive:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  rows:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/$defs/candle"
+$defs:
+  finite_nonnegative:
+    type: number
+    minimum: 0
+  finite_positive:
+    type: number
+    exclusiveMinimum: 0
+  candle:
+    type: object
+    additionalProperties: false
+    required:
+      - timestamp
+      - open
+      - high
+      - low
+      - close
+      - volume
+      - source_status
+    properties:
+      timestamp:
+        type: string
+        format: date-time
+        pattern: "Z$"
+      open:
+        $ref: "#/$defs/finite_positive"
+      high:
+        $ref: "#/$defs/finite_positive"
+      low:
+        $ref: "#/$defs/finite_positive"
+      close:
+        $ref: "#/$defs/finite_positive"
+      volume:
+        $ref: "#/$defs/finite_nonnegative"
+      source_status:
+        const: observed
+    $comment: >-
+      实现必须额外验证 low <= min(open, close) <= max(open, close) <= high、时间戳严格递增、
+      无重复并严格落在 timeframe UTC 网格。JSON Schema 不表达这些跨字段和跨行约束。
