@@ -39,6 +39,10 @@ def test_compose_uses_only_locked_linux_image_and_has_no_live_service() -> None:
     assert services["data-quality"]["network_mode"] == "none"
     assert services["data-quality"]["environment"]["PYTHONPATH"] == "/workspace/src:/workspace"
     assert "/workspace/scripts/build_clean_dataset.py" in services["data-quality"]["command"]
+    assert services["benchmark-report"]["profiles"] == ["research"]
+    assert services["benchmark-report"]["network_mode"] == "none"
+    assert services["benchmark-report"]["environment"]["PYTHONPATH"] == "/workspace/src:/workspace"
+    assert "/workspace/scripts/build_benchmark_report.py" in services["benchmark-report"]["command"]
 
 
 def test_mode_configs_are_isolated_and_live_template_has_no_credentials() -> None:

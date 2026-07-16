@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
@@ -6,7 +7,11 @@ from pathlib import Path
 import yaml
 
 from alphamind.research.data_quality import validate_partition
-from scripts.build_clean_dataset import _canonical_report_sha256, _development_bounds
+from scripts.build_clean_dataset import (
+    _canonical_report_sha256,
+    _development_bounds,
+    canonical_markdown_sha256,
+)
 from scripts.check_repository import scan_markdown_links, scan_repository, scan_secrets
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -155,6 +160,13 @@ def test_data_quality_report_hash_excludes_self_reference() -> None:
     report["report_markdown_sha256"] = "e" * 64
 
     assert _canonical_report_sha256(report) == first
+
+
+def test_markdown_hash_canonicalizes_windows_checkout_line_endings(tmp_path: Path) -> None:
+    markdown = tmp_path / "evidence.md"
+    markdown.write_bytes(b"first\r\nsecond\r\n")
+
+    assert canonical_markdown_sha256(markdown) == hashlib.sha256(b"first\nsecond\n").hexdigest()
 
 
 def test_data_quality_bounds_follow_holdout_state() -> None:

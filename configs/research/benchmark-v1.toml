@@ -1,0 +1,17 @@
+schema_version = 1
+benchmark_version = "p1-05-v1"
+dataset_id = "bybit-spot-development-ef232b839406-p1-04-v1"
+initial_equity = "10000"
+
+[transaction_costs]
+# Bybit Non-VIP spot maker/taker 当前均为 0.1%；Live 前必须按账户 My Fee Rate 复核。
+fee_rate_per_side = "0.001"
+fee_source = "https://www.bybit.com/en/help-center/article/Trading-Fee-Structure"
+fee_source_checked_at_utc = "2026-07-16T00:00:00Z"
+# candle 数据没有可复核 order book，以下为固定工程假设，不冒充真实历史成交成本。
+half_spread_rate = "0.00025"
+slippage_rate_per_side = "0.0005"
+
+[simple_moving_average]
+# 单一 SMA(200) 只作为工程基准，不参与 Donchian 参数选择。
+window_periods = 200

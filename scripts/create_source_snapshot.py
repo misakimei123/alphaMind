@@ -39,6 +39,15 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def canonical_text_sha256(path: Path) -> str:
+    """按仓库 LF 合同计算 UTF-8 文本 hash，兼容既有 Windows CRLF checkout。"""
+
+    text = path.read_bytes().decode("utf-8")
+    if "\r" in text.replace("\r\n", ""):
+        raise ValueError("text evidence contains unsupported bare carriage returns")
+    return hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
+
+
 def snapshot_sha256(partitions: Iterable[Mapping[str, object]]) -> str:
     """按 ADR-0005 的相对路径排序规则计算 snapshot hash。"""
 
@@ -376,7 +385,7 @@ def verify_snapshot(project_root: Path, manifest_path: Path) -> dict[str, object
         project_root,
         (MANIFEST_RELATIVE_ROOT / f"{dataset_id}.exchange-metadata.json").as_posix(),
     )
-    actual_metadata_hash = file_sha256(metadata_path)
+    actual_metadata_hash = canonical_text_sha256(metadata_path)
     if actual_metadata_hash != source["exchange_metadata_sha256"]:
         raise RuntimeError(
             "exchange metadata hash mismatch: "

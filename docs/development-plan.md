@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-03 DONE、P1-04 READY_FOR_APPROVAL |
+| 最近进度更新 | 2026-07-16 / P1-04 DONE、P1-05 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03 均为 DONE；项目所有人已批准 `main@7301894` 的 P1-03 不可变 snapshot 与严格 holdout 降级证据。P1-04 已完成实现、本地门禁、真实 clean 构建和独立报告复核，进入 READY_FOR_APPROVAL，等待 GitHub Actions 与项目所有人批准。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03、P1-04 均为 DONE；GitHub Actions `deterministic-quality #7` 已在 `main@5c05086` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-04。P1-05 已完成统一绩效指标、确定性基准、真实 clean 数据报告和独立重算复核，当前为 READY_TO_VERIFY，等待 GitHub Actions 与项目所有人批准。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -613,7 +613,7 @@ Strategy Card 必须固定：
 
 ### P1-04 数据质量流水线
 
-当前状态（2026-07-16）：`READY_FOR_APPROVAL`；仅限开发数据、无静默修复、ERROR 阻断下游的确定性质量流水线已完成实现和真实数据验证，等待 GitHub Actions 与项目所有人批准后转为 DONE。
+当前状态（2026-07-16）：`DONE`；仅限开发数据、无静默修复、ERROR 阻断下游的确定性质量流水线已完成实现和真实数据验证。GitHub Actions `deterministic-quality #7` 已在 `main@5c05086` 成功，项目所有人于同日的继续开发指令中批准该任务。
 
 实现：
 
@@ -645,6 +645,8 @@ Strategy Card 必须固定：
 
 ### P1-05 基准与统一绩效指标
 
+当前状态（2026-07-16）：`READY_TO_VERIFY`；统一指标纯函数、四类确定性基准、真实 clean 数据报告和独立重算复核已完成，等待 GitHub Actions 与项目所有人批准后转为 DONE。
+
 实现：
 
 - 现金基准；
@@ -660,6 +662,17 @@ Strategy Card 必须固定：
 - 基准使用与策略一致的数据、费用和时间边界；
 - BTC 与 ETH Buy-and-Hold 分开报告；
 - 不允许只报告累计收益或胜率。
+
+开发进度（2026-07-16）：
+
+- `src/alphamind/research/performance.py` 从同一权益路径统一计算净收益、年化收益、MDD、Sharpe、Sortino、Calmar、Profit Factor、CVaR 95%、Turnover、Time Under Water 和暴露比例；无定义比率使用 `null`，禁止写入 Infinity 或用零值掩盖；
+- `src/alphamind/research/benchmarks.py` 实现现金、BTC/ETH 分资产 Buy-and-Hold、初始 50/50 期间不再平衡组合，以及 SMA(200) long/flat 工程基准；SMA 信号只读取已完成 candle close，最早在下一根 candle open 执行，末根 close 只做统一结算；
+- `configs/research/benchmark-v1.toml` 冻结同一初始权益和成本输入：Bybit Non-VIP spot 每侧 0.1% fee 来自公开费率页，半点差 0.025% 与每侧滑点 0.05% 明确标记为 candle 数据下的固定工程假设，后两项不冒充真实历史成交；
+- `scripts/build_benchmark_report.py` 只接受 P1-04 `ACCEPTED` 且 `downstream_experiment_allowed=true` 的 clean report，重新复核 source/clean hash 后生成 JSON/Markdown，并提供 `--verify-report` 独立重算入口；
+- 真实开发池报告 `bybit-spot-development-ef232b839406-p1-04-v1-p1-05-v1` 覆盖 `[2022-01-01, 2026-07-01)`，分别生成 4h/1d 的现金、两资产 Buy-and-Hold、50/50 与两资产 SMA 共 12 组记录；report content SHA-256 为 `774242be85f94abf02285c0deebfacee53a9614be6f20d4b9e56c904196775e9`；
+- 手工小样本已核对净收益、20% MDD、Profit Factor、CVaR、Turnover、Time Under Water 和暴露比例；固定测试证明成本增加不能改善 Buy-and-Hold 净收益、50/50 不再平衡、SMA 不在 signal candle 成交、缺口与双资产时间戳错位 fail-closed；
+- 本地门禁已通过：repository scan 检查 89 个文件，strict mypy 检查 18 个 source/script 文件，全量 pytest 为 73 passed，Ruff check 与 format check 覆盖 28 个 Python 文件；`uv lock --check`、Compose config、`git diff --check`、P1-04 容器复核与 P1-05 容器独立重算均通过；
+- Windows checkout 的既有 JSON/Markdown 证据可能被转换为 CRLF，导致内容相同但字节 hash 失败；`.gitattributes` 已固定 JSON/Markdown 为 LF，既有 worktree 复核仅规范化 CRLF 为 LF，bare carriage return 仍拒绝。P1-03 metadata 与 P1-04 Markdown 的记录 hash 均保持不变并重新验证通过。
 
 ### P1-06 实验登记与可复现报告
 
@@ -1258,9 +1271,10 @@ git diff --check
 | 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
 | 10 | P1-02 Freqtrade 固定环境 | DONE | 固定镜像、Compose、隔离配置和容器验证完成；`2860b48` 的 GitHub Actions 通过并由项目所有人批准 |
 | 11 | P1-03 数据下载与不可变清单 | DONE | snapshot、hash 与严格 holdout 降级处置均已验证，项目所有人批准 `main@7301894` |
-| 12 | P1-04 数据质量流水线 | READY_FOR_APPROVAL | 实现、真实 clean 构建和独立复核均通过；等待 GitHub Actions 与项目所有人批准 |
-| 13 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
-| 14 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
+| 12 | P1-04 数据质量流水线 | DONE | `main@5c05086` 的实现、真实 clean 构建、独立复核和 GitHub Actions 均通过，项目所有人已批准 |
+| 13 | P1-05 基准与统一绩效指标 | READY_TO_VERIFY | 统一指标、12 组真实数据基准与独立重算均通过；等待 GitHub Actions 与项目所有人批准 |
+| 14 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
+| 15 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

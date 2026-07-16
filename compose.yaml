@@ -108,4 +108,24 @@ services:
       - ./:/workspace:ro
       - ./data:/workspace/data
 
+  benchmark-report:
+    <<: *freqtrade-base
+    profiles: [research]
+    entrypoint: [python]
+    # P1-05 复用锁定镜像中的 pandas/pyarrow，只读 clean 数据并写入版本化研究报告。
+    environment:
+      PYTHONPATH: /workspace/src:/workspace
+    command:
+      - /workspace/scripts/build_benchmark_report.py
+      - --project-root
+      - /workspace
+      - --quality-report
+      - /workspace/data/manifests/quality/bybit-spot-development-ef232b839406-p1-04-v1/report.json
+    working_dir: /workspace
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+      - ./data:/workspace/data:ro
+      - ./research:/workspace/research
+
 # live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。

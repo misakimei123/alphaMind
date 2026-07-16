@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from alphamind.research.data_quality import validate_partition
 from scripts.create_source_snapshot import (
+    canonical_text_sha256,
     file_sha256,
     json_bytes,
     publish_snapshot,
@@ -49,6 +50,12 @@ def _canonical_report_sha256(report: dict[str, object]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def canonical_markdown_sha256(path: Path) -> str:
+    """按仓库 LF 合同计算 Markdown hash，兼容既有 Windows CRLF checkout。"""
+
+    return canonical_text_sha256(path)
 
 
 def _required_str(document: dict[str, Any], key: str) -> str:
@@ -180,7 +187,7 @@ def verify_clean_report(project_root: Path, report_path: Path) -> dict[str, obje
         raise RuntimeError("quality report path does not match its recorded path")
 
     markdown_path = _repo_path(project_root, _required_str(report, "report_markdown_path"))
-    actual_markdown_hash = file_sha256(markdown_path)
+    actual_markdown_hash = canonical_markdown_sha256(markdown_path)
     recorded_markdown_hash = _required_str(report, "report_markdown_sha256")
     if actual_markdown_hash != recorded_markdown_hash:
         raise RuntimeError(
