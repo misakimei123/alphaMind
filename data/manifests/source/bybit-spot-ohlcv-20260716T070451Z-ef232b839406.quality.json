@@ -1,0 +1,67 @@
+{
+  "clean_dataset_created": false,
+  "error_count": 212,
+  "partitions": [
+    {
+      "duplicate_count": 0,
+      "expected_candle_count": 9852,
+      "invalid_ohlc_count": 0,
+      "invalid_price_count": 0,
+      "missing_candle_count": 0,
+      "negative_volume_count": 0,
+      "non_increasing_count": 0,
+      "off_grid_count": 0,
+      "out_of_range_count": 91,
+      "pair": "BTC/USDT",
+      "timeframe": "4h",
+      "zero_volume_count": 0
+    },
+    {
+      "duplicate_count": 0,
+      "expected_candle_count": 1642,
+      "invalid_ohlc_count": 0,
+      "invalid_price_count": 0,
+      "missing_candle_count": 0,
+      "negative_volume_count": 0,
+      "non_increasing_count": 0,
+      "off_grid_count": 0,
+      "out_of_range_count": 15,
+      "pair": "BTC/USDT",
+      "timeframe": "1d",
+      "zero_volume_count": 0
+    },
+    {
+      "duplicate_count": 0,
+      "expected_candle_count": 9852,
+      "invalid_ohlc_count": 0,
+      "invalid_price_count": 0,
+      "missing_candle_count": 0,
+      "negative_volume_count": 0,
+      "non_increasing_count": 0,
+      "off_grid_count": 0,
+      "out_of_range_count": 91,
+      "pair": "ETH/USDT",
+      "timeframe": "4h",
+      "zero_volume_count": 0
+    },
+    {
+      "duplicate_count": 0,
+      "expected_candle_count": 1642,
+      "invalid_ohlc_count": 0,
+      "invalid_price_count": 0,
+      "missing_candle_count": 0,
+      "negative_volume_count": 0,
+      "non_increasing_count": 0,
+      "off_grid_count": 0,
+      "out_of_range_count": 15,
+      "pair": "ETH/USDT",
+      "timeframe": "1d",
+      "zero_volume_count": 0
+    }
+  ],
+  "scan_role": "p1_03_source_structure_only",
+  "schema_version": 1,
+  "snapshot_id": "bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+  "strategy_or_returns_evaluated": false,
+  "warning_count": 0
+}

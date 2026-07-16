@@ -33,6 +33,8 @@ def test_compose_uses_only_locked_linux_image_and_has_no_live_service() -> None:
     assert services["dry-run"]["profiles"] == ["dry-run"]
     assert "/freqtrade/configs/dry-run.json" in services["dry-run"]["command"]
     assert services["replay"]["network_mode"] == "none"
+    assert services["data-snapshot"]["profiles"] == ["data"]
+    assert "/workspace/scripts/create_source_snapshot.py" in services["data-snapshot"]["command"]
 
 
 def test_mode_configs_are_isolated_and_live_template_has_no_credentials() -> None:

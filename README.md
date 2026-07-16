@@ -37,3 +37,19 @@ docker compose --profile tools run --rm freqtrade-cli list-exchanges --all
 ```
 
 Compose 使用 `configs/common/runtime-versions.toml` 锁定的 `linux/amd64` platform digest。所有服务都必须显式选择 profile；`live.template.json` 没有凭据，也没有对应 Compose service，P5 批准前不能通过本项目 Compose 启动 Live。
+
+P1-03 只使用 Bybit 公开 OHLCV 接口创建新的不可变 source snapshot：
+
+```powershell
+docker compose --profile data run --rm data-snapshot
+```
+
+命令不使用 API Key、不运行策略，也不覆盖已有 snapshot。实际 Feather 文件由 Git 忽略；可复核 manifest、公开市场 metadata 和结构扫描报告保存在 `data/manifests/source/`。
+
+已有快照可在不访问网络的情况下重新计算全部不可变证据：
+
+```powershell
+docker compose --profile data run --rm data-snapshot /workspace/scripts/create_source_snapshot.py `
+  --project-root /workspace `
+  --verify-manifest /workspace/data/manifests/source/<snapshot_id>.manifest.json
+```

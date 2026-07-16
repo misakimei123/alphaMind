@@ -110,6 +110,12 @@ Final Holdout 固定为 `[2025-07-01, 2026-07-01)`，初始状态为 `SEALED_UNR
 - 若结果用于任何实质修改，该区间永久标记 `DEGRADED_TO_DEVELOPMENT`，原结果失去 final 资格，新候选必须预注册另一段从未访问的连续数据；
 - 不允许删除失败结果、重置访问计数或以“修复报告”为名重复运行。
 
+状态更新（2026-07-16）：P1-03 首次结构扫描在 `2026-07-16T07:01:34Z` 读取了完整分区的
+OHLC/volume 列，超出“P1/P2 数据质量只能读取开发池”的合同。项目所有人于
+`2026-07-16T07:10:12Z` 选择严格降级，因此原 Final Holdout 当前为
+`DEGRADED_TO_DEVELOPMENT`、`access_count=1`，不得用于 P2-07。访问证据保存在对应
+`*.holdout-access.json`；新 Final Holdout 必须使用此后未见且预先登记的连续区间。
+
 ## 7. Regime 与 Stress Slice
 
 `data/manifests/regime-manifest.yaml` 同时预注册：

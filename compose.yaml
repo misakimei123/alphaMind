@@ -76,4 +76,17 @@ services:
       - /freqtrade/configs/replay.json
     network_mode: none
 
+  data-snapshot:
+    <<: *freqtrade-base
+    profiles: [data]
+    entrypoint: [python]
+    command:
+      - /workspace/scripts/create_source_snapshot.py
+      - --project-root
+      - /workspace
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:ro
+      - ./data:/workspace/data
+
 # live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。

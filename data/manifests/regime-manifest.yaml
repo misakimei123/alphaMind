@@ -23,8 +23,13 @@ dataset_contract:
   final_holdout:
     start: "2025-07-01T00:00:00Z"
     end_exclusive: "2026-07-01T00:00:00Z"
-    state: SEALED_UNREAD
-    access_count: 0
+    state: DEGRADED_TO_DEVELOPMENT
+    access_count: 1
+    first_accessed_at_utc: "2026-07-16T07:01:34Z"
+    first_access_commit: null
+    first_access_worktree_base_commit: "630380e"
+    degraded_reason: p1_03_full_partition_ohlcv_integrity_scan
+    access_evidence: data/manifests/source/bybit-spot-ohlcv-20260716T070451Z-ef232b839406.holdout-access.json
 
 walk_forward:
   method: expanding_train_fixed_validation

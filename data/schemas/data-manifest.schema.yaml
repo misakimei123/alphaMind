@@ -19,7 +19,8 @@ properties:
     const: 1
   dataset_id:
     type: string
-    pattern: "^[a-z0-9][a-z0-9._-]{2,127}$"
+    # 通用 dataset ID 保持小写；source snapshot 额外遵循 ADR-0005 的 UTC T/Z 格式。
+    pattern: "^(?:[a-z0-9][a-z0-9._-]{2,127}|bybit-spot-ohlcv-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12})$"
   created_at_utc:
     type: string
     format: date-time

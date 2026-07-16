@@ -1,0 +1,116 @@
+{
+  "created_at_utc": "2026-07-16T07:04:51Z",
+  "dataset_id": "bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+  "holdout_access": {
+    "access_count": 0,
+    "degraded_reason": null,
+    "first_access_commit": null,
+    "first_accessed_at_utc": null,
+    "state": "SEALED_UNREAD"
+  },
+  "immutability": {
+    "hash_algorithm": "sha256",
+    "manifest_content_sha256": "f8fd29f72c149d9338adce006e028c9ea114ed35753e8801e5952b436744b44d",
+    "snapshot_id": "bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+    "snapshot_sha256": "ef232b839406bddd68b4a03febb98d34b116e6543ff01620b11686e025e4b6bb",
+    "write_policy": "append_only_new_snapshot"
+  },
+  "partitions": [
+    {
+      "byte_size": 317970,
+      "candle_count": 9943,
+      "candle_type": "spot",
+      "file_sha256": "5443b28eee8eb1848ddde77bc8d7131f1aa5e9064255508a223458481da7cf0e",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2026-07-16T00:00:00Z",
+      "pair": "BTC/USDT",
+      "relative_path": "BTC_USDT-4h.feather",
+      "timeframe": "4h"
+    },
+    {
+      "byte_size": 60762,
+      "candle_count": 1657,
+      "candle_type": "spot",
+      "file_sha256": "a6796e0c88d584886dcb3b6e5381fc2762ff68b98f42746033a07d0a1703f8eb",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2026-07-15T00:00:00Z",
+      "pair": "BTC/USDT",
+      "relative_path": "BTC_USDT-1d.feather",
+      "timeframe": "1d"
+    },
+    {
+      "byte_size": 285170,
+      "candle_count": 9943,
+      "candle_type": "spot",
+      "file_sha256": "46663a8cfd8aa197cd5e1e1a50a347b6900ed17ee8710057eaf261b6dcbf96ea",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2026-07-16T00:00:00Z",
+      "pair": "ETH/USDT",
+      "relative_path": "ETH_USDT-4h.feather",
+      "timeframe": "4h"
+    },
+    {
+      "byte_size": 56666,
+      "candle_count": 1657,
+      "candle_type": "spot",
+      "file_sha256": "24b80ae90ef0605f83c6b851ddc9272e7388eb49b80c53aa7335e7d09aa55174",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2026-07-15T00:00:00Z",
+      "pair": "ETH/USDT",
+      "relative_path": "ETH_USDT-1d.feather",
+      "timeframe": "1d"
+    }
+  ],
+  "quality": {
+    "duplicate_action": "reject_partition",
+    "error_count": 212,
+    "fill_missing": false,
+    "incomplete_last_candle_action": "drop_and_record",
+    "invalid_ohlc_action": "reject_partition",
+    "missing_action": "reject_partition",
+    "negative_volume_action": "reject_partition",
+    "report_json_path": "data/manifests/source/bybit-spot-ohlcv-20260716T070451Z-ef232b839406.quality.json",
+    "report_markdown_path": "data/manifests/source/bybit-spot-ohlcv-20260716T070451Z-ef232b839406.quality.md",
+    "warning_count": 0,
+    "zero_volume_action": "warn_and_retain"
+  },
+  "schema_version": 1,
+  "source": {
+    "candle_type": "spot",
+    "ccxt_version": "4.5.61",
+    "command": "freqtrade download-data --exchange bybit --trading-mode spot --pairs BTC/USDT ETH/USDT --timeframes 4h 1d --timerange 20220101-20260701 --data-format-ohlcv feather --datadir /workspace/data/source/bybit_spot/.staging-20260716T070114Z-78b1c5de",
+    "downloader": "freqtrade_download_data",
+    "exchange": "bybit",
+    "exchange_metadata_sha256": "b0f1e3d34db24b8fa225c30a5af93bf1699913a2db68bec7df1f305585529137",
+    "freqtrade_version": "2026.6",
+    "market_type": "spot",
+    "pairs": [
+      "BTC/USDT",
+      "ETH/USDT"
+    ],
+    "raw_exchange_payload_retained": false,
+    "requested_end_exclusive": "2026-07-01T00:00:00Z",
+    "requested_start": "2022-01-01T00:00:00Z",
+    "storage_format": "feather",
+    "timeframes": [
+      "4h",
+      "1d"
+    ],
+    "timezone": "UTC"
+  },
+  "split_contract": {
+    "development_end_exclusive": "2025-07-01T00:00:00Z",
+    "development_start": "2022-01-01T00:00:00Z",
+    "final_holdout_end_exclusive": "2026-07-01T00:00:00Z",
+    "final_holdout_left_closed_right_open": true,
+    "final_holdout_start": "2025-07-01T00:00:00Z",
+    "walk_forward_manifest": "data/manifests/regime-manifest.yaml"
+  },
+  "storage": {
+    "clean_root": "data/clean/bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+    "feature_root": "data/features/bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+    "final_holdout_root": "data/final_holdout/bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+    "roots_must_be_distinct": true,
+    "source_root": "data/source/bybit_spot/bybit-spot-ohlcv-20260716T070451Z-ef232b839406"
+  }
+}

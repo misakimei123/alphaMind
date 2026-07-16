@@ -1,0 +1,22 @@
+{
+  "access_count": 1,
+  "access_type": "automated_full_partition_ohlcv_integrity_scan",
+  "candidate_performance_evaluated": false,
+  "decision_at_utc": "2026-07-16T07:10:12Z",
+  "decision_owner": "misakimei123",
+  "decision": "strict_degradation",
+  "event_id": "holdout-access-20260716T070134Z-ef232b839406",
+  "first_access_commit": null,
+  "first_access_worktree_base_commit": "630380e",
+  "first_accessed_at_utc": "2026-07-16T07:01:34Z",
+  "holdout_end_exclusive": "2026-07-01T00:00:00Z",
+  "holdout_start": "2025-07-01T00:00:00Z",
+  "new_unseen_holdout_required": true,
+  "previous_state": "SEALED_UNREAD",
+  "reason": "P1-03 source structure scan read OHLC and volume columns across the final holdout before P2-07 approval",
+  "resulting_state": "DEGRADED_TO_DEVELOPMENT",
+  "schema_version": 1,
+  "snapshot_id": "bybit-spot-ohlcv-20260716T070451Z-ef232b839406",
+  "strategy_or_returns_evaluated": false,
+  "supersedes_embedded_manifest_holdout_state": true
+}

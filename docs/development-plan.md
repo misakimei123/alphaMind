@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-02 DONE、P1-03 IN_PROGRESS |
+| 最近进度更新 | 2026-07-16 / P1-02 DONE、P1-03 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01、P1-02 均为 DONE；项目所有人已根据 commit `2860b48` 的 GitHub Actions 成功证据批准 P1-02，P1-03 数据下载与不可变清单进入 IN_PROGRESS。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01、P1-02 均为 DONE；P1-03 已生成并独立复核真实 Bybit source snapshot，严格 holdout 降级处置也由项目所有人本地验证通过，进入 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -411,7 +411,7 @@ Strategy Card 必须固定：
 - 状态：`DONE`；四项计划产物和本地验证已完成，项目所有人于 2026-07-16 在 P0-08 总门禁批准中接受 `main@7a9d124` 的合同基线；
 - 数据合同：Bybit spot、BTC/USDT 与 ETH/USDT、4h/1d、`[2022-01-01, 2026-07-01)` UTC；
 - 开发验证：expanding train + 6 个月 validation，共 3 个 fold；
-- Final Holdout：`[2025-07-01, 2026-07-01)`，状态 `SEALED_UNREAD`；
+- Final Holdout：P0-05 完成时 `[2025-07-01, 2026-07-01)` 状态为 `SEALED_UNREAD`；该历史结论已被 P1-03 访问事件 supersede，当前状态见 P1-03；
 - 结构化验证：两个 Draft 2020-12 schema 合法，有效示例通过，`fill_missing=true` 和负成交量示例被拒绝，fold/holdout/regime 交叉约束通过；
 - 项目验证：`uv run pytest` 为 33 passed；`ruff check`、`ruff format --check`、`uv lock --check` 和 `git diff --check` 通过；
 - 延期边界：本任务没有下载或读取目标数据；actual file/snapshot SHA-256、数据质量报告和 holdout 访问证据由 P1-03、P1-04、P2-07 分别落地，缺失时阻止对应任务和门禁。
@@ -513,7 +513,7 @@ Strategy Card 必须固定：
 - 状态：`DONE`；`docs/decisions/phase-0-gate.md` 已完成逐项证据审查，项目所有人于 2026-07-16 明确批准 P0-08；
 - 设计缺口：G-01 至 G-10 均已有明确决策，G-09 由既有部署方向、运行时锁和 key 安全基线整合关闭；
 - capability：下单、查询、partial fill、幂等、权限与 stoploss 关键项均已分类；动态市场规则和真实写路径仍由 P1-02/P3-06/Live preflight 验证；
-- 冻结证据：Final Holdout 保持 `SEALED_UNREAD`、`access_count=0`；trial 初始预算为 14、禁止 Cartesian product、当前结果数为 0；
+- 冻结证据：P0-08 批准时 Final Holdout 为 `SEALED_UNREAD`、`access_count=0`；该历史结论已被 P1-03 访问事件 supersede；trial 初始预算为 14、禁止 Cartesian product、当前结果数为 0；
 - 项目验证：`uv run pytest` 为 55 passed；`ruff check .`、新增 gate 测试的 `ruff format --check`、`uv lock --check` 与 `git diff --check` 通过；全仓 format check 仍受 14 个未触碰历史文件的换行/格式基线影响，未在本任务中批量改写；
 - 复核结论：项目所有人的 P0-08 明确批准同时覆盖 ADR-0005 `7a9d124`、ADR-0006 `52f1ae8`、ADR-0007 `f36e6ba` 和 gate 审查 `5fe2555`，原 B-01 至 B-04 阻塞全部解除；
 - 变更边界：后续若实质修改数据/holdout、风险阈值、Runtime/Audit 所有权或 MVP 范围，相关任务必须重新进入评审，当前批准不能自动覆盖新版本。
@@ -582,7 +582,7 @@ Strategy Card 必须固定：
 
 ### P1-03 数据下载与不可变清单
 
-当前状态（2026-07-16）：`IN_PROGRESS`；项目所有人已批准进入本任务，开始按 ADR-0005 下载公开 OHLCV 并生成不可变 snapshot manifest。
+当前状态（2026-07-16）：`READY_TO_VERIFY`；真实 Bybit source snapshot、不可变 manifest、公开 metadata、哈希复核和严格 holdout 降级处置均已完成，并由项目所有人运行本地门禁验证通过，等待最终验收。
 
 实现：
 
@@ -597,6 +597,19 @@ Strategy Card 必须固定：
 - 重新计算 hash 与 manifest 一致；
 - 下载脚本不覆盖已有版本；
 - 数据目录的提交策略符合 `.gitignore` 和备份规则。
+
+实际进度（2026-07-16）：
+
+- 固定运行时：使用 P1-02 锁定的 Freqtrade `2026.6`、CCXT `4.5.61` 和镜像 digest；下载仅访问 Bybit 公开接口，不使用 API Key，不运行策略或回测；
+- source snapshot：`bybit-spot-ohlcv-20260716T070451Z-ef232b839406`，包含 BTC/USDT、ETH/USDT 的 4h/1d Feather 共 4 个文件，实际文件位于 Git 忽略的 `data/source/bybit_spot/`；
+- 不可变证据：snapshot SHA-256 为 `ef232b839406bddd68b4a03febb98d34b116e6543ff01620b11686e025e4b6bb`，manifest content SHA-256 为 `f8fd29f72c149d9338adce006e028c9ea114ed35753e8801e5952b436744b44d`，exchange metadata SHA-256 为 `b0f1e3d34db24b8fa225c30a5af93bf1699913a2db68bec7df1f305585529137`；
+- 独立复核：`--verify-manifest` 重新读取 4 个源文件并复算大小、逐文件 hash、snapshot hash、manifest hash 和 metadata hash，结果为 `status=verified`；下载/发布/证据写入均 fail-closed，已有目标和证据文件拒绝覆盖；
+- schema 修正：P1-03 实测发现 `dataset_id` 的通用小写规则与 ADR-0005 的大写 UTC `T/Z` snapshot 格式冲突；schema 仅增加对该精确 snapshot 格式的允许，不放宽其他 dataset ID；
+- source 结构事实：Freqtrade 对空目录下载附带右边界后的 candle，两个 4h 分区各 91 根、两个 1d 分区各 15 根，共 212 根，原始 source 按合同保留不改写；P1-04 必须在新 clean 数据版本中严格裁剪 `[2022-01-01, 2026-07-01)` 并让任何越界数据阻止实验输入；
+- holdout 事件：首次 P1-03 扫描读取了完整分区的 OHLC/volume 列；虽然未运行策略、收益或回测，但违反 P1/P2 数据质量只能读取开发池的严格合同。项目所有人选择严格降级，原 Final Holdout 当前为 `DEGRADED_TO_DEVELOPMENT`、`access_count=1`，访问事件以 JSON 追加记录，不改写不可变 source/manifest；
+- 修正边界：P1-03 工具已收窄为只读取完整文件的字节哈希与时间戳元数据；OHLC/volume、异常价格和成交量检查全部由 P1-04 在开发池内完成。P1-07/P2-07 由新的未见 Final Holdout 预注册解除阻塞；
+- 提交与备份：Git 只提交 manifest/metadata/报告，Feather 继续由 `.gitignore` 排除；仓库外备份必须按完整 snapshot 目录保存并在恢复后运行同一验证命令，P3 负责配置备份介质和生命周期。
+- 验证状态：项目所有人运行 repository scan（76 files）、mypy（12 source files）、全量 pytest、Ruff check、Ruff format check（21 files）、`uv lock --check`、Compose config、`git diff --check` 均通过；容器内独立复核返回 `status=verified`、`partition_count=4` 和 `holdout_state=DEGRADED_TO_DEVELOPMENT`。`git diff --check` 仅报告 Git 换行转换 warning，无 whitespace error。
 
 ### P1-04 数据质量流水线
 
@@ -1230,7 +1243,7 @@ git diff --check
 | 8 | P0-08 Scope Frozen 评审 | DONE | 项目所有人于 2026-07-16 批准 Scope Frozen，原 B-01 至 B-04 阻塞已解除 |
 | 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
 | 10 | P1-02 Freqtrade 固定环境 | DONE | 固定镜像、Compose、隔离配置和容器验证完成；`2860b48` 的 GitHub Actions 通过并由项目所有人批准 |
-| 11 | P1-03 数据下载与不可变清单 | IN_PROGRESS | 按 ADR-0005 下载 Bybit 公开 OHLCV，生成不可变文件清单与 SHA-256 |
+| 11 | P1-03 数据下载与不可变清单 | READY_TO_VERIFY | snapshot、hash 与严格 holdout 降级处置均已由项目所有人本地验证，等待最终验收 |
 | 12 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 13 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 

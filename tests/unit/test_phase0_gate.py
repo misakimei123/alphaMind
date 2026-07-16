@@ -38,7 +38,7 @@ def test_capability_matrix_classifies_order_and_reconciliation_requirements() ->
     assert environments["testnet"]["usage"] == "independent_contract_harness_only"
 
 
-def test_final_holdout_remains_sealed_and_unread() -> None:
+def test_final_holdout_degradation_is_recorded() -> None:
     manifest = load_yaml("data/manifests/regime-manifest.yaml")
     dataset_contract = manifest["dataset_contract"]
     assert isinstance(dataset_contract, dict)
@@ -48,8 +48,16 @@ def test_final_holdout_remains_sealed_and_unread() -> None:
     assert holdout == {
         "start": "2025-07-01T00:00:00Z",
         "end_exclusive": "2026-07-01T00:00:00Z",
-        "state": "SEALED_UNREAD",
-        "access_count": 0,
+        "state": "DEGRADED_TO_DEVELOPMENT",
+        "access_count": 1,
+        "first_accessed_at_utc": "2026-07-16T07:01:34Z",
+        "first_access_commit": None,
+        "first_access_worktree_base_commit": "630380e",
+        "degraded_reason": "p1_03_full_partition_ohlcv_integrity_scan",
+        "access_evidence": (
+            "data/manifests/source/"
+            "bybit-spot-ohlcv-20260716T070451Z-ef232b839406.holdout-access.json"
+        ),
     }
 
 
