@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P2-01 至 P2-04 DONE，P2-05 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P2-01 至 P2-05 DONE，下一任务 P2-06 |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-04 均为 DONE；P2-05 Walk-Forward 与 trial registry 已完成实现、一次性登记、锁定容器复算和本地门禁，当前为 READY_TO_VERIFY。参数选择仍被独立评审和 P2-06 阻止。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-05 均为 DONE；P2-05 Walk-Forward 与 trial registry 已完成实现、一次性登记、锁定容器复算、本地门禁和远端 CI，下一任务为 P2-06 自动反作弊检查。参数选择仍被独立评审和 P2-06 阻止。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -836,7 +836,7 @@ Strategy Card 必须固定：
 
 ### P2-05 Walk-Forward 与 trial registry
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；13 个 OAT trial、三个 expanding validation fold、统计校正、集中度报告、append-only 产物和锁定容器复算均已完成，等待远端 CI 与项目所有人批准。
+当前状态（2026-07-16）：`DONE`；13 个 OAT trial、三个 expanding validation fold、统计校正、集中度报告、append-only 产物、锁定容器复算、本地门禁和远端 CI 均已完成，项目所有人已批准继续并推送远程。
 
 实现：
 
@@ -864,9 +864,12 @@ Strategy Card 必须固定：
 - 所有 13 个 experiment 的 `review_result` 保持 `PENDING`、`parameter_selection=null`，独立评审与 P2-06 自动反作弊完成前没有 experiment 可进入参数选择；
 - 锁定 Freqtrade 2026.6、无网络、无密钥容器已重新计算全部 trial 并逐项匹配 committed trades/metrics，复核 registry、experiment manifest、summary manifest、runner/core/config/data hash，返回 `status=verified`；
 - P2-05 聚焦测试 9 个、全量 pytest 119 个通过；repository scan 检查 220 个文件，strict mypy 检查 24 个 source/script 文件，Ruff check/format 覆盖 40 个 Python 文件；`uv lock --check`、Compose config 和 `git diff --check` 均通过；
+- 功能提交 `main@7338dfa` 的 GitHub Actions `deterministic-quality #19` 全部通过；项目所有人于 2026-07-16 明确要求开发后推送远程，P2-05 据此批准为 DONE；
 - 残余边界：P2-05 是 candle 历史模拟，不证明 partial fill、真实 order book、交易写路径或生产成交；P2-06 必须继续完成 lookahead/recursive 和未来信息扫描，P3/P4/P5 分别验证运行集成、Paper 与 Live。
 
 ### P2-06 自动反作弊检查
+
+当前状态（2026-07-16）：`NOT_STARTED`；作为 P2-05 之后的下一开发任务，仍阻止参数选择与 Backtest Gate。
 
 至少运行：
 
@@ -1352,7 +1355,8 @@ git diff --check
 | 16 | P2-02 Freqtrade Strategy Adapter | DONE | `main@03e6884` 的唯一 strategy、纯函数逐行对账、锁定容器 resolver/backtest、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 17 | P2-03 风险定仓纯函数 | DONE | `main@f9ae212` 的单一公式、版本化 context、精度/极端损失拒绝、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 18 | P2-04 成本、成交与压力模型 | DONE | `main@53ebabd` 的 fill/cost 纯函数、11 项压力矩阵、可复现报告、锁定容器合同、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
-| 19 | P2-05 Walk-Forward 与 trial registry | READY_TO_VERIFY | 13 个 OAT trial、三个 expanding fold、bootstrap/DSR、集中度报告、append-only artifacts、119 项全仓测试和锁定容器复算均通过；selection 继续被独立评审与 P2-06 阻止 |
+| 19 | P2-05 Walk-Forward 与 trial registry | DONE | `main@7338dfa` 的 13 个 OAT trial、三个 expanding fold、bootstrap/DSR、集中度报告、append-only artifacts、119 项全仓测试、锁定容器复算和 GitHub Actions 均通过，项目所有人已批准；selection 继续被独立评审与 P2-06 阻止 |
+| 20 | P2-06 自动反作弊检查 | NOT_STARTED | 下一开发任务；必须完成 lookahead、recursive、未来信息和未登记选择扫描，继续阻止参数选择与 Backtest Gate |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
