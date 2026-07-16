@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P2-01 至 P2-03 DONE，P2-04 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P2-01 至 P2-04 DONE，下一任务 P2-05 |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-03 均为 DONE；P2-04 成本、成交与压力模型已完成实现和本地门禁，当前为 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-04 均为 DONE；`main@53ebabd` 的 GitHub Actions `deterministic-quality #17` 已成功，项目所有人于 2026-07-16 指示完成后推送远程 main 并批准 P2-04。下一任务为 P2-05 Walk-Forward 与 trial registry。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -805,7 +805,7 @@ Strategy Card 必须固定：
 
 ### P2-04 成本、成交与压力模型
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；确定性 fill/cost 纯函数、版本化配置、压力矩阵、可复现报告、锁定容器合同和本地门禁已完成，等待远端 CI 与项目所有人批准。
+当前状态（2026-07-16）：`DONE`；确定性 fill/cost 纯函数、版本化配置、压力矩阵、可复现报告、锁定容器合同、本地门禁和远端 CI 均已通过，项目所有人已批准。
 
 实现：
 
@@ -831,6 +831,7 @@ Strategy Card 必须固定：
 - `build_execution_model_report.py` 生成带 config SHA-256 的 JSON/Markdown 报告，测试证明同输入重跑字节语义一致且所有 scenario 均进入报告；
 - 锁定 Freqtrade 2026.6 容器实测 `_get_order_filled`：请求价格位于 candle low/high 内返回 true，区间外返回 false；alphaMind 在该事实之上保留更严格的显式确认边界，避免把 backtest fill 假设冒充 dry/live 事实；
 - P2-04 单元测试 14 个、含 Freqtrade 合同测试的聚焦测试 19 个、全量 pytest 110 个通过；repository scan 检查 107 个文件，strict mypy 检查 22 个 source/script 文件，Ruff check/format 覆盖 36 个 Python 文件；`uv lock --check`、Compose config、锁定容器 contract-check 和 `git diff --check` 均通过；
+- 功能提交 `main@53ebabd` 的 GitHub Actions `deterministic-quality #17` 全部通过；项目所有人于 2026-07-16 明确要求完成后推送远程 main，P2-04 据此批准为 DONE；
 - 残余边界：P2-04 不模拟 partial fill、API timeout、撤单竞争或真实 order book；这些行为继续由 P3-05 Replay、P3-06 Contract Harness、P4 Paper 和 P5 Live Canary 分层验证。
 
 ### P2-05 Walk-Forward 与 trial registry
@@ -1334,7 +1335,7 @@ git diff --check
 | 15 | P2-01 纯 Donchian 信号逻辑 | DONE | `main@3e3c141` 的 point-in-time 信号、fail-closed 边界、4h/1d UTC、无成交输出和 GitHub Actions 均通过，项目所有人已批准 |
 | 16 | P2-02 Freqtrade Strategy Adapter | DONE | `main@03e6884` 的唯一 strategy、纯函数逐行对账、锁定容器 resolver/backtest、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 17 | P2-03 风险定仓纯函数 | DONE | `main@f9ae212` 的单一公式、版本化 context、精度/极端损失拒绝、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
-| 18 | P2-04 成本、成交与压力模型 | READY_TO_VERIFY | fill/cost 纯函数、11 项压力矩阵、可复现报告、锁定容器合同和 110 项全仓测试均通过；等待远端 CI 与项目所有人批准 |
+| 18 | P2-04 成本、成交与压力模型 | DONE | `main@53ebabd` 的 fill/cost 纯函数、11 项压力矩阵、可复现报告、锁定容器合同、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
