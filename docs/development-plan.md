@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P0-06 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P0-07 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-06 READY_TO_VERIFY，风险会计、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核；复核通过后的下一顺序任务为 P0-07。P0-05 仍为 READY_TO_VERIFY，尚未被实现者自行升级为 DONE。P1-01、P2-01、P2-03 的离线确定性核心并行推进；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
+> 当前阶段：P0-07 READY_TO_VERIFY，Audit/Replay 决策与两个 schema 已完成，等待项目所有人独立复核；复核通过后的下一顺序任务为 P0-08 Scope Frozen 评审。P0-05、P0-06 仍为 READY_TO_VERIFY，尚未被实现者自行升级为 DONE。P1-01、P2-01、P2-03 的离线确定性核心并行推进；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
 
 ## 1. 计划目的与使用规则
 
@@ -75,12 +75,12 @@
 | G-02 | Donchian 与 Dual EMA 尚未最终二选一 | **已解决**：第一策略和参数已由 ADR-0004 固定为 4h Donchian 20/10、ATR(20) × 2 stop；1d 仅做稳健性复测 | P2-01/P2-02 必须与 Strategy Card 同源 |
 | G-03 | Freqtrade、CCXT、Python 和镜像未锁定 | **已解决**：版本和 digest 已写入 `configs/common/runtime-versions.toml`；固定镜像内实测迁移至 P1-02 | 不阻塞 P0-04、P0-05 和离线开发；实测前不得完成 P1-02 或进入 Paper/Live |
 | G-04 | 数据原始层定义存在张力 | **已解决**：ADR-0005 固定 Freqtrade Feather 首次落盘文件为不可变 source snapshot，不保留原始 REST payload；actual hash 由 P1-03 下载后登记 | P1-03/P1-04 必须遵守 source/clean/features/holdout 隔离和禁止静默补缺合同 |
-| G-05 | Runtime DB 选型与 watchdog 只读路径未定 | 开发/dry-run 可用隔离 SQLite；生产候选优先评估 PostgreSQL 只读角色或受控只读 API | 无法证明单一写入者和恢复顺序 |
-| G-06 | callback 到 Audit DB 的异步通道未定 | 使用有界、可观测、可恢复的本地 outbox，再由 sidecar 写 Audit DB | callback 可能阻塞，或审计事件在崩溃时丢失 |
-| G-07 | Replay 的验证对象容易越界 | 只验证 alphaMind 风险、审计、适配与运维处置；Freqtrade 订单生命周期通过公开行为做集成测试 | 容易重新实现第二套订单状态机 |
+| G-05 | Runtime DB 选型与 watchdog 只读路径未定 | **已解决**：ADR-0007 固定本地/dry-run 隔离 SQLite 只读路径，Paper/Live 候选使用 PostgreSQL SELECT-only 角色；Freqtrade 保持唯一写入和 migration 所有者 | P3-04 必须实测只读权限、版本 allowlist、RPO/RTO 和恢复顺序 |
+| G-06 | callback 到 Audit DB 的异步通道未定 | **已解决**：ADR-0007 固定独立 SQLite WAL outbox、50 ms callback 上限、10,000/256 MiB 容量、分级背压与幂等 sidecar writer | P3-03 必须验证 crash/retry/dead-letter，达到阈值时新入场 fail-closed |
+| G-07 | Replay 的验证对象容易越界 | **已解决**：Replay 只验证 alphaMind 风险、审计、适配与运维处置；partial fill/submit unknown 使用 fixture 与锁定版本 Freqtrade 集成测试，不建立第二订单权威 | P3-05 必须证明 Replay 无生产凭据、无交易写权限且证据不越层 |
 | G-08 | Paper 的最小信号、成交和独立事件数未预注册 | **已解决**：ADR-0004 已固定至少 90 天、12 个有效信号、8 个模拟成交和 4 个独立事件 | 证据不足时继续 Paper，不得降低门槛 |
 | G-09 | 部署平台与密钥方案未定 | Windows 仅用于本地研究；生产候选默认 Linux host + pinned Docker image | 生产可靠性和密钥边界不可验收 |
-| G-10 | Kill Switch 的实际动作未定 | 默认先禁止新入场、撤销未成交入场，并按 runbook 决定安全退出 | 风险触发后行为不确定 |
+| G-10 | Kill Switch 的实际动作未定 | **已解决**：ADR-0006 与 runbook 固定 entry fail-closed、撤销未成交入场、保留安全退出、Kill 人工处置和恢复证据 | P3-05 必须完成故障与恢复演练 |
 
 `G-04` 和 `G-07` 是最容易造成过度设计的两点。前者不能为了“保存一切”提前建设通用行情平台；后者不能为了测试 partial fill 而在 Freqtrade 外维护一套生产订单真相。
 
@@ -482,6 +482,17 @@ Strategy Card 必须固定：
 - outbox 积压超阈值时新入场 fail-closed；
 - Audit DB 不参与 Freqtrade 状态恢复；
 - Replay 代码没有交易写权限和生产 API Key。
+
+实际进度（2026-07-16）：
+
+- 状态：`READY_TO_VERIFY`；ADR、AuditEvent schema 和 Experiment schema 三项产物已创建，等待项目所有人独立复核；
+- 数据库合同：Freqtrade 是 Runtime DB 唯一写入/migration 所有者；本地/dry-run 使用隔离 SQLite 只读路径，Paper/Live 候选使用 PostgreSQL SELECT-only 角色；恢复顺序与 `RPO <= 5 分钟`、`RTO <= 60 分钟` 目标已冻结；
+- Outbox 合同：独立 SQLite WAL、50 ms callback 上限、16 KiB 单事件、10,000 pending/256 MiB 硬容量、5,000/2 分钟/128 MiB 预警和 8,000/5 分钟/192 MiB 入场停止阈值已冻结；
+- Writer 合同：at-least-once、event ID + content hash 幂等、100 条 batch、60 秒 lease、1–60 秒退避、20 次后 dead-letter 和 7 天已交付保留已冻结；
+- Replay 合同：无生产凭据/交易写权限，partial fill 与 submit unknown 使用 contract fixture 和锁定版本 Freqtrade integration，不建立第二订单状态机；
+- 结构化验证：两个 Draft 2020-12 schema 可解析；合法 replay audit、预注册/已完成 experiment 通过；Runtime authority、secret、Replay 写权限、伪造生产证据、holdout 访问和负成本等非法示例被拒绝；
+- 项目验证：`uv run pytest` 为 52 passed；`ruff check .`、新增 P0-07 测试文件的 `ruff format --check`、`uv lock --check` 与 `git diff --check` 通过；全仓 format check 仍受 14 个未触碰历史文件的换行/格式基线影响，未在本任务中批量改写；
+- 延期边界：P3-03 实现并验证 outbox/writer，P3-04 验证数据库隔离与恢复，P3-05 验证 Replay/fault injection；本任务没有数据库、网络、凭据或交易写入。
 
 ### P0-08 Scope Frozen 评审
 
@@ -1178,7 +1189,7 @@ git diff --check
 | 4 | P0-04 第一策略与 Strategy Card | DONE | 已冻结 4h Donchian 20/10、ATR(20) × 2 stop、试验预算和证伪条件 |
 | 5 | P0-05 数据与验证合同 | READY_TO_VERIFY | 合同、schema、regime manifest 和本地验证已完成，等待项目所有人独立复核 |
 | 6 | P0-06 风险会计与 Kill Switch | READY_TO_VERIFY | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核 |
-| 7 | P0-07 Audit、Replay 与数据库边界 | NOT_STARTED | 防止双写与过度设计 |
+| 7 | P0-07 Audit、Replay 与数据库边界 | READY_TO_VERIFY | ADR、AuditEvent/Experiment schema 与本地验证已完成，等待项目所有人独立复核 |
 | 8 | P0-08 Scope Frozen 评审 | NOT_STARTED | 通过后才允许 Phase 1 |
 | 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 先建立 Python 3.12、pytest、ruff 与无密钥测试骨架 |
 | 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |

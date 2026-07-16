@@ -1,0 +1,407 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/experiment.schema.yaml
+title: alphaMind Experiment v1
+description: >-
+  策略实验的预注册与结果 envelope。预注册字段在开始后不可覆盖，结果和 artifact
+  只能追加并引用冻结的数据、代码、配置与运行环境。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - experiment_id
+  - created_at_utc
+  - status
+  - owner
+  - evidence_layer
+  - hypothesis
+  - strategy
+  - runtime
+  - dataset
+  - validation
+  - trial_budget
+  - cost_model
+  - started_at_utc
+  - completed_at_utc
+  - result
+  - artifacts
+  - registration_sha256
+properties:
+  schema_version:
+    const: 1
+  experiment_id:
+    type: string
+    pattern: "^exp-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  created_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  status:
+    enum:
+      - PRE_REGISTERED
+      - RUNNING
+      - COMPLETED
+      - REJECTED
+      - INVALIDATED
+  owner:
+    type: string
+    minLength: 1
+    maxLength: 128
+  evidence_layer:
+    enum:
+      - historical_backtest
+      - freqtrade_dry_run
+      - deterministic_replay
+      - testnet_contract
+      - live_canary
+  hypothesis:
+    type: object
+    additionalProperties: false
+    required:
+      - statement
+      - economic_rationale
+      - primary_metric
+      - pass_condition
+      - falsification_conditions
+    properties:
+      statement:
+        type: string
+        minLength: 20
+        maxLength: 2000
+      economic_rationale:
+        type: string
+        minLength: 20
+        maxLength: 4000
+      primary_metric:
+        type: string
+        pattern: "^[a-z][a-z0-9_]{2,63}$"
+      pass_condition:
+        type: string
+        minLength: 5
+        maxLength: 1000
+      falsification_conditions:
+        type: array
+        minItems: 1
+        maxItems: 32
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 5
+          maxLength: 1000
+  strategy:
+    type: object
+    additionalProperties: false
+    required:
+      - strategy_id
+      - strategy_version
+      - project_commit
+      - strategy_config_sha256
+      - parameters
+    properties:
+      strategy_id:
+        type: string
+        pattern: "^[a-z][a-z0-9_]{2,63}$"
+      strategy_version:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      project_commit:
+        $ref: "#/$defs/git_commit"
+      strategy_config_sha256:
+        $ref: "#/$defs/sha256"
+      parameters:
+        type: object
+        minProperties: 1
+        maxProperties: 64
+        additionalProperties:
+          anyOf:
+            - type: string
+            - type: integer
+            - type: boolean
+  runtime:
+    type: object
+    additionalProperties: false
+    required:
+      - runtime_lock_sha256
+      - python_version
+      - freqtrade_version
+      - ccxt_version
+      - random_seed
+    properties:
+      runtime_lock_sha256:
+        $ref: "#/$defs/sha256"
+      python_version:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      freqtrade_version:
+        const: "2026.6"
+      ccxt_version:
+        const: "4.5.61"
+      random_seed:
+        type: [integer, "null"]
+        minimum: 0
+  dataset:
+    type: object
+    additionalProperties: false
+    required:
+      - dataset_id
+      - manifest_path
+      - manifest_sha256
+      - development_start
+      - development_end_exclusive
+      - final_holdout_start
+      - final_holdout_end_exclusive
+      - holdout_state
+      - holdout_access_count
+      - holdout_first_access_commit
+    properties:
+      dataset_id:
+        type: string
+        pattern: "^[a-z0-9][a-z0-9._-]{2,127}$"
+      manifest_path:
+        type: string
+        pattern: "^data/manifests/[^/]+\\.ya?ml$"
+      manifest_sha256:
+        $ref: "#/$defs/sha256"
+      development_start:
+        const: "2022-01-01T00:00:00Z"
+      development_end_exclusive:
+        const: "2025-07-01T00:00:00Z"
+      final_holdout_start:
+        const: "2025-07-01T00:00:00Z"
+      final_holdout_end_exclusive:
+        const: "2026-07-01T00:00:00Z"
+      holdout_state:
+        enum:
+          - SEALED_UNREAD
+          - CONSUMED_FINAL
+          - DEGRADED_TO_DEVELOPMENT
+      holdout_access_count:
+        type: integer
+        minimum: 0
+      holdout_first_access_commit:
+        anyOf:
+          - $ref: "#/$defs/git_commit"
+          - type: "null"
+  validation:
+    type: object
+    additionalProperties: false
+    required:
+      - walk_forward_manifest
+      - folds
+      - metrics
+      - regime_reporting_required
+      - lookahead_analysis_required
+      - recursive_analysis_required
+    properties:
+      walk_forward_manifest:
+        const: data/manifests/regime-manifest.yaml
+      folds:
+        type: array
+        minItems: 1
+        maxItems: 16
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^WF-[0-9]{2}$"
+      metrics:
+        type: array
+        minItems: 1
+        maxItems: 64
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{2,63}$"
+      regime_reporting_required:
+        const: true
+      lookahead_analysis_required:
+        type: boolean
+      recursive_analysis_required:
+        type: boolean
+  trial_budget:
+    type: object
+    additionalProperties: false
+    required:
+      - trial_index
+      - maximum_trials
+      - prior_result_used
+      - parameter_selection_allowed
+    properties:
+      trial_index:
+        type: integer
+        minimum: 1
+      maximum_trials:
+        type: integer
+        minimum: 1
+        maximum: 100
+      prior_result_used:
+        type: boolean
+      parameter_selection_allowed:
+        type: boolean
+    $comment: 实现必须验证 trial_index 不大于 maximum_trials。
+  cost_model:
+    type: object
+    additionalProperties: false
+    required:
+      - fee_rate
+      - slippage_rate
+      - gap_buffer_rate
+      - all_costs_nonnegative
+    properties:
+      fee_rate:
+        $ref: "#/$defs/nonnegative_decimal"
+      slippage_rate:
+        $ref: "#/$defs/nonnegative_decimal"
+      gap_buffer_rate:
+        $ref: "#/$defs/nonnegative_decimal"
+      all_costs_nonnegative:
+        const: true
+  started_at_utc:
+    anyOf:
+      - $ref: "#/$defs/utc_timestamp"
+      - type: "null"
+  completed_at_utc:
+    anyOf:
+      - $ref: "#/$defs/utc_timestamp"
+      - type: "null"
+  result:
+    anyOf:
+      - $ref: "#/$defs/result"
+      - type: "null"
+  artifacts:
+    type: array
+    maxItems: 64
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/artifact"
+  registration_sha256:
+    $ref: "#/$defs/sha256"
+    $comment: >-
+      对开始前的不可变预注册字段执行 RFC 8785/JCS canonical JSON 后计算；结果字段不参与。
+allOf:
+  - if:
+      properties:
+        status:
+          const: PRE_REGISTERED
+      required: [status]
+    then:
+      properties:
+        started_at_utc: {const: null}
+        completed_at_utc: {const: null}
+        result: {const: null}
+        artifacts: {maxItems: 0}
+  - if:
+      properties:
+        status:
+          const: RUNNING
+      required: [status]
+    then:
+      properties:
+        started_at_utc:
+          $ref: "#/$defs/utc_timestamp"
+        completed_at_utc: {const: null}
+        result: {const: null}
+  - if:
+      properties:
+        status:
+          enum: [COMPLETED, REJECTED, INVALIDATED]
+      required: [status]
+    then:
+      properties:
+        started_at_utc:
+          $ref: "#/$defs/utc_timestamp"
+        completed_at_utc:
+          $ref: "#/$defs/utc_timestamp"
+        result:
+          $ref: "#/$defs/result"
+        artifacts:
+          minItems: 1
+  - if:
+      properties:
+        dataset:
+          properties:
+            holdout_state:
+              const: SEALED_UNREAD
+          required: [holdout_state]
+      required: [dataset]
+    then:
+      properties:
+        dataset:
+          properties:
+            holdout_access_count: {const: 0}
+            holdout_first_access_commit: {const: null}
+  - if:
+      properties:
+        evidence_layer:
+          enum:
+            - historical_backtest
+            - freqtrade_dry_run
+            - deterministic_replay
+      required: [evidence_layer]
+    then:
+      properties:
+        result:
+          anyOf:
+            - type: "null"
+            - allOf:
+                - $ref: "#/$defs/result"
+                - properties:
+                    production_write_path_verified: {const: false}
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  git_commit:
+    type: string
+    pattern: "^[a-f0-9]{40}$"
+  nonnegative_decimal:
+    type: string
+    pattern: "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+  artifact:
+    type: object
+    additionalProperties: false
+    required:
+      - role
+      - path
+      - sha256
+    properties:
+      role:
+        enum:
+          - report
+          - metrics
+          - logs
+          - config
+          - manifest
+      path:
+        type: string
+        pattern: "^(?:research|data|artifacts)/[^\\\\]+$"
+      sha256:
+        $ref: "#/$defs/sha256"
+  result:
+    type: object
+    additionalProperties: false
+    required:
+      - outcome
+      - primary_metric_value
+      - reason_codes
+      - production_write_path_verified
+    properties:
+      outcome:
+        enum:
+          - PASS
+          - FAIL
+          - INCONCLUSIVE
+          - INVALIDATED
+      primary_metric_value:
+        type: [string, "null"]
+        pattern: "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+      reason_codes:
+        type: array
+        minItems: 1
+        maxItems: 32
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{2,127}$"
+      production_write_path_verified:
+        type: boolean

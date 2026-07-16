@@ -195,6 +195,24 @@ dry-run 和 live 必须使用独立数据库；多实例必须使用独立数据
 
 Audit DB 不能生成订单、覆盖 Freqtrade Trade/Order 状态，或在启动时反向恢复 Freqtrade。运行恢复顺序是：交易所和 Freqtrade Runtime DB 先恢复并完成处置，Audit DB 后补审计事件。
 
+详细所有权、只读路径、outbox、writer 和 Replay 合同以
+[ADR-0007](decisions/0007-audit-and-replay.md)、
+[`audit-event.schema.yaml`](../data/schemas/audit-event.schema.yaml) 与
+[`experiment.schema.yaml`](../data/schemas/experiment.schema.yaml) 为准。
+
+callback 只向独立 SQLite WAL outbox 追加事件，不执行远程 DB/API 请求。outbox 固定 10,000
+pending/256 MiB 硬容量；达到 8,000 pending、最老事件 5 分钟或 192 MiB 中任一条件时，
+新入场 fail-closed，并保留最后 2,000 个逻辑槽位给 exit、Kill、reconcile 和 operator 事件。
+Audit Writer 以 `event_id` 和 content hash 幂等写入；Audit DB 的 Runtime 引用始终为只读，
+不得通过外键、trigger 或恢复脚本修改 Freqtrade 状态。
+
+### 6.3 Replay 边界
+
+Replay 进程不持有生产 API Key、Runtime/Audit 生产凭据或交易写权限。partial fill、submit
+unknown 和重复事件使用冻结 fixture、fake adapter 与锁定版本 Freqtrade integration 验证；
+Replay 只能证明 alphaMind 风险、审计、适配和运维处置逻辑，不能成为生产订单状态权威，也
+不能声称真实交易所写路径已经通过。
+
 ## 7. 验证证据分层
 
 | 层级 | 证明内容 | 明确不能证明 |

@@ -1,0 +1,256 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/audit-event.schema.yaml
+title: alphaMind AuditEvent v1
+description: >-
+  Research/Audit DB 的公共事件 envelope。事件只保存只读证据，不能成为 Freqtrade
+  Trade/Order 的运行权威或恢复源。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - event_id
+  - event_type
+  - event_version
+  - occurred_at_utc
+  - recorded_at_utc
+  - producer
+  - execution_context
+  - provenance
+  - runtime_links
+  - reason_codes
+  - payload_schema
+  - payload
+  - payload_sha256
+  - event_content_sha256
+  - runtime_authority
+  - contains_secrets
+properties:
+  schema_version:
+    const: 1
+  event_id:
+    type: string
+    format: uuid
+    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+  event_type:
+    enum:
+      - signal_created
+      - risk_decision
+      - entry_decision
+      - exit_requested
+      - order_observed
+      - trade_state_observed
+      - risk_snapshot_published
+      - risk_state_changed
+      - reconciliation_result
+      - audit_backpressure
+      - audit_delivery_failure
+      - operator_action
+      - system_alert
+      - experiment_registered
+      - experiment_completed
+  event_version:
+    const: 1
+  occurred_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  recorded_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+    $comment: 实现必须验证 recorded_at_utc 不早于 occurred_at_utc。
+  producer:
+    type: object
+    additionalProperties: false
+    required:
+      - component
+      - instance_id
+      - sequence
+    properties:
+      component:
+        enum:
+          - freqtrade_strategy
+          - risk_watchdog
+          - audit_writer
+          - replay_runner
+          - experiment_runner
+          - operator
+      instance_id:
+        type: string
+        pattern: "^[a-z0-9][a-z0-9._-]{2,127}$"
+      sequence:
+        type: integer
+        minimum: 0
+  execution_context:
+    type: object
+    additionalProperties: false
+    required:
+      - environment
+      - evidence_layer
+      - credentials_profile
+      - trade_write_permitted
+      - production_write_path_verified
+    properties:
+      environment:
+        enum:
+          - backtest
+          - dry_run
+          - replay
+          - testnet_contract
+          - live_canary
+      evidence_layer:
+        enum:
+          - historical_backtest
+          - freqtrade_dry_run
+          - deterministic_replay
+          - testnet_contract
+          - live_canary
+      credentials_profile:
+        enum:
+          - none
+          - fixture_only
+          - read_only
+          - dry_run
+          - testnet_restricted
+          - production_trade
+      trade_write_permitted:
+        type: boolean
+      production_write_path_verified:
+        type: boolean
+  provenance:
+    type: object
+    additionalProperties: false
+    required:
+      - project_commit
+      - strategy_id
+      - strategy_version
+      - strategy_config_sha256
+      - runtime_lock_sha256
+      - risk_snapshot_id
+      - experiment_id
+    properties:
+      project_commit:
+        $ref: "#/$defs/git_commit"
+      strategy_id:
+        type: [string, "null"]
+        pattern: "^[a-z][a-z0-9_]{2,63}$"
+      strategy_version:
+        type: [string, "null"]
+        pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      strategy_config_sha256:
+        anyOf:
+          - $ref: "#/$defs/sha256"
+          - type: "null"
+      runtime_lock_sha256:
+        $ref: "#/$defs/sha256"
+      risk_snapshot_id:
+        type: [string, "null"]
+        pattern: "^risk-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      experiment_id:
+        type: [string, "null"]
+        pattern: "^exp-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  runtime_links:
+    type: array
+    maxItems: 16
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/runtime_link"
+  reason_codes:
+    type: array
+    maxItems: 32
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^[a-z][a-z0-9_]{2,127}$"
+  payload_schema:
+    type: string
+    format: uri-reference
+    minLength: 1
+  payload:
+    type: object
+    maxProperties: 64
+    $comment: canonical JSON UTF-8 后的完整事件不得超过 16 KiB。
+  payload_sha256:
+    $ref: "#/$defs/sha256"
+  event_content_sha256:
+    $ref: "#/$defs/sha256"
+    $comment: >-
+      对除 event_content_sha256 外的完整事件执行 RFC 8785/JCS canonical JSON 后计算。
+  runtime_authority:
+    const: false
+  contains_secrets:
+    const: false
+allOf:
+  - if:
+      properties:
+        execution_context:
+          properties:
+            environment:
+              const: replay
+          required: [environment]
+      required: [execution_context]
+    then:
+      properties:
+        producer:
+          properties:
+            component:
+              const: replay_runner
+        execution_context:
+          properties:
+            evidence_layer:
+              const: deterministic_replay
+            credentials_profile:
+              const: fixture_only
+            trade_write_permitted:
+              const: false
+            production_write_path_verified:
+              const: false
+  - if:
+      properties:
+        execution_context:
+          properties:
+            evidence_layer:
+              enum:
+                - historical_backtest
+                - freqtrade_dry_run
+                - deterministic_replay
+          required: [evidence_layer]
+      required: [execution_context]
+    then:
+      properties:
+        execution_context:
+          properties:
+            production_write_path_verified:
+              const: false
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  git_commit:
+    type: string
+    pattern: "^[a-f0-9]{40}$"
+  runtime_link:
+    type: object
+    additionalProperties: false
+    required:
+      - source
+      - reference_type
+      - reference_id
+      - read_only
+    properties:
+      source:
+        enum:
+          - exchange
+          - freqtrade_runtime_db
+      reference_type:
+        enum:
+          - trade_id
+          - order_id
+          - client_order_id
+          - transaction_id
+      reference_id:
+        type: string
+        minLength: 1
+        maxLength: 256
+      read_only:
+        const: true
