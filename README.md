@@ -24,3 +24,16 @@ git diff --check
 ```
 
 完整阶段、门禁和开发边界见 [开发计划](docs/development-plan.md)。
+
+## 锁定的 Freqtrade 环境
+
+Docker Desktop 切换到 Linux containers 后，可以只运行无密钥、无交易写权限的 P1-02 验证：
+
+```powershell
+docker compose --profile tools run --rm runtime-check
+docker compose --profile tools run --rm contract-check
+docker compose --profile tools run --rm freqtrade-cli --version
+docker compose --profile tools run --rm freqtrade-cli list-exchanges --all
+```
+
+Compose 使用 `configs/common/runtime-versions.toml` 锁定的 `linux/amd64` platform digest。所有服务都必须显式选择 profile；`live.template.json` 没有凭据，也没有对应 Compose service，P5 批准前不能通过本项目 Compose 启动 Live。

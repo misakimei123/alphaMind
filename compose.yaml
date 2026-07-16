@@ -1,0 +1,79 @@
+name: alphamind
+
+x-freqtrade-base: &freqtrade-base
+  image: freqtradeorg/freqtrade@sha256:1e9298ae0895531fd47c4f13d10e5708b3b8b6e5241292f364fc23f201b5acaa
+  platform: linux/amd64
+  init: true
+  restart: "no"
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp
+  volumes:
+    - ./configs/freqtrade:/freqtrade/configs:ro
+    - ./user_data:/freqtrade/user_data
+
+services:
+  runtime-check:
+    <<: *freqtrade-base
+    profiles: [tools]
+    entrypoint: [python]
+    command:
+      - /workspace/scripts/verify_runtime_lock.py
+      - --config
+      - /workspace/configs/common/runtime-versions.toml
+      - --target
+      - freqtrade
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+
+  contract-check:
+    <<: *freqtrade-base
+    profiles: [tools]
+    entrypoint: [python]
+    command:
+      - /workspace/scripts/verify_freqtrade_contract.py
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+
+  freqtrade-cli:
+    <<: *freqtrade-base
+    profiles: [tools]
+    command: [--version]
+    network_mode: none
+
+  backtest:
+    <<: *freqtrade-base
+    profiles: [backtest]
+    command:
+      - backtesting
+      - --config
+      - /freqtrade/configs/backtest.json
+      - --strategy-path
+      - /freqtrade/user_data/strategies
+
+  dry-run:
+    <<: *freqtrade-base
+    profiles: [dry-run]
+    command:
+      - trade
+      - --config
+      - /freqtrade/configs/dry-run.json
+      - --strategy-path
+      - /freqtrade/user_data/strategies
+
+  replay:
+    <<: *freqtrade-base
+    profiles: [replay]
+    command:
+      - show-config
+      - --config
+      - /freqtrade/configs/replay.json
+    network_mode: none
+
+# live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。

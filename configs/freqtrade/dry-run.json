@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.freqtrade.io/schema.json",
+  "add_config_files": [
+    "common.json"
+  ],
+  "dry_run": true,
+  "dry_run_wallet": 500,
+  "bot_name": "alphamind-dry-run",
+  "db_url": "sqlite:////freqtrade/user_data/db/dry-run.sqlite"
+}

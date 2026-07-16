@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P0-08、P1-01 DONE |
+| 最近进度更新 | 2026-07-16 / P1-02 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate 已由项目所有人批准，P0-01 至 P0-08 均为 DONE；P1-01 的 Windows 本地门禁与提交 `e56d21a` 对应 Linux CI 均已通过并标记 DONE。下一条研究底座关键路径为 P1-02；P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate 与 P1-01 均为 DONE；P1-02 的固定镜像、Compose、隔离配置与容器验证已完成，状态为 READY_TO_VERIFY，等待项目所有人复核。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -566,6 +566,18 @@ Strategy Card 必须固定：
 - 配置层不能通过单一布尔开关把 dry-run 变为 live；
 - live 配置模板没有 key，且默认不可启动；
 - dry-run 与 live 使用不同 Runtime DB。
+
+实际进度（2026-07-16）：
+
+- 状态：`READY_TO_VERIFY`；实现与本机 Docker 验收已完成，等待项目所有人复核后才能标记 `DONE`；
+- 固定运行时：在 Docker Desktop 4.67.0、Engine 29.3.1、Compose 5.1.1 的 Linux amd64 daemon 上拉取并复用 `freqtradeorg/freqtrade@sha256:1e9298ae0895531fd47c4f13d10e5708b3b8b6e5241292f364fc23f201b5acaa`；镜像检查结果为 `linux/amd64`；
+- 版本证据：容器内 `scripts/verify_runtime_lock.py --target freqtrade` 返回 Python 3.14.6、Freqtrade 2026.6、CCXT 4.5.61，均与 `runtime-versions.toml` 一致；
+- Compose：`compose.yaml` 的全部服务使用固定 platform digest、只读根文件系统、drop all capabilities、`no-new-privileges` 和显式 profile；默认不启动任何服务；
+- 环境隔离：backtest、dry-run、replay 使用独立配置和 SQLite Runtime DB；replay 与 tools 验证禁用网络；live 只有无 key 的 `live.template.json`，没有 Compose service，P5 批准前不可通过本项目 Compose 启动；
+- 目标合同：公共配置固定 Bybit spot、BTC/USDT、ETH/USDT 与 4h；锁定容器的 `list-exchanges --all` 返回 `Bybit (Supported)`，四套配置均由 Freqtrade `show-config` 成功解析；
+- callback 合同：`verify_freqtrade_contract.py` 已核对 `populate_indicators`、entry/exit trend、`custom_stake_amount`、`custom_stoploss` 与 `confirm_trade_entry` 的参数名和顺序；
+- 项目验证：repository scan 检查 69 个文件无发现；mypy 检查 11 个 source/script 文件通过；`uv run pytest` 为 63 passed；Ruff 20 个文件、`uv lock --check`、`git diff --check` 与 `docker compose config --quiet` 均通过；
+- 延期边界：本任务没有连接认证 API、创建 key、下载市场数据、实现 strategy adapter 或启动 backtest/dry-run/live；真实市场 metadata 由 P1-03/P3-06 验证，Paper/Live PostgreSQL 与恢复由 P3-04/P4/P5 验证。
 
 ### P1-03 数据下载与不可变清单
 
@@ -1214,8 +1226,9 @@ git diff --check
 | 7 | P0-07 Audit、Replay 与数据库边界 | DONE | ADR、AuditEvent/Experiment schema 与本地验证已完成，并由项目所有人在 P0-08 批准中接受 |
 | 8 | P0-08 Scope Frozen 评审 | DONE | 项目所有人于 2026-07-16 批准 Scope Frozen，原 B-01 至 B-04 阻塞已解除 |
 | 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
-| 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
-| 11 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
+| 10 | P1-02 Freqtrade 固定环境 | READY_TO_VERIFY | 固定镜像、Compose、隔离配置、版本/callback 合同与容器验证已完成，等待项目所有人复核 |
+| 11 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
+| 12 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

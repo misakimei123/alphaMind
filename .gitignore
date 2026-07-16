@@ -212,6 +212,22 @@ data/clean/
 data/features/
 data/final_holdout/
 
+# Freqtrade 运行时产物；目录说明文件和配置模板继续纳入版本控制
+user_data/data/*
+!user_data/data/README.md
+user_data/db/*
+!user_data/db/README.md
+user_data/logs/*
+!user_data/logs/README.md
+user_data/backtest_results/*
+!user_data/backtest_results/README.md
+user_data/**/*.sqlite*
+user_data/freqaimodels/
+user_data/hyperopt_results/
+user_data/hyperopts/
+user_data/notebooks/
+user_data/plot/
+
 # PyPI configuration file
 .pypirc
 
