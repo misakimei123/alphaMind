@@ -52,7 +52,10 @@ Bybit V5 API 本身提供 spot TP/SL 订单，但当前 Freqtrade Bybit spot 适
 
 ## 4. RiskSnapshot 合同
 
-risk watchdog 生成版本化、原子替换的只读快照：
+risk watchdog 生成版本化、原子替换的只读快照。规范性字段和状态约束以
+[`risk-snapshot.schema.yaml`](../data/schemas/risk-snapshot.schema.yaml) 为准，会计与操作语义以
+[ADR-0006](decisions/0006-risk-accounting.md) 和
+[Kill Switch runbook](runbooks/kill-switch.md) 为准。以下为非完整结构摘录（金额使用十进制字符串）：
 
 ```yaml
 schema_version: 1
@@ -60,25 +63,30 @@ snapshot_id: ""
 generated_at_utc: ""
 expires_at_utc: ""
 account_id: ""
-nav: 0
-available_cash: 0
-unrealized_pnl: 0
-accrued_fees: 0
-daily_pnl: 0
-weekly_pnl: 0
-drawdown_from_adjusted_hwm: 0
-open_exposure: 0
-pending_order_exposure: 0
-entry_allowed: false
-close_only: true
-kill_switch: false
-reason_codes: []
+accounting_currency: USDT
+accounting:
+  nav: "500"
+  daily_pnl: "0"
+  weekly_pnl: "0"
+  cashflow_adjusted_high_water_mark: "500"
+  drawdown_fraction: "0"
+exposure:
+  open_exposure_quote: "0"
+  pending_entry_exposure_quote: "0"
+decision:
+  state: ENTRY_ALLOWED
+  entry_allowed: true
+  close_only: false
+  kill_switch: false
+  safe_exit_allowed: true
+  reason_codes: [risk_checks_passed]
 ```
 
 运行规则：
 
 - 所有时间边界使用 UTC；
-- `generated_at_utc` 超过预设新鲜度时禁止新入场；
+- 目标每 15 秒发布，快照 TTL 为 60 秒，账户和行情源在生成时不得超过 30 秒；
+- 快照缺失、陈旧、损坏、版本不支持或时钟异常时禁止新入场；
 - `entry_allowed=false` 只能阻止新风险，不能阻止止损、安全退出和撤销未成交入场单；
 - `kill_switch=true` 进入 `CLOSE_ONLY` 或人工处置状态，具体退出方式必须由 runbook 预先定义；
 - watchdog 不直接调用交易所写接口；
@@ -151,7 +159,7 @@ approved_quantity = floor_to_exchange_step(min(
 
 ### 5.3 熔断语义
 
-初始阈值仍为待 Phase 0 确认的保守默认值：
+P0-06 冻结的保守阈值为：
 
 | 规则 | 口径 | 动作 |
 |---|---|---|

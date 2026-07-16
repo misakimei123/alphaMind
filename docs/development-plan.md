@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-15 / P0-05 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P0-06 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-05 READY_TO_VERIFY，数据合同产物与本地验证已完成，等待项目所有人基于当前提交独立复核；复核通过后的下一顺序任务为 P0-06。P1-01、P2-01、P2-03 的离线确定性核心并行推进；Docker 精确运行时验证迁移至 P1-02，认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
+> 当前阶段：P0-06 READY_TO_VERIFY，风险会计、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核；复核通过后的下一顺序任务为 P0-07。P0-05 仍为 READY_TO_VERIFY，尚未被实现者自行升级为 DONE。P1-01、P2-01、P2-03 的离线确定性核心并行推进；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
 
 ## 1. 计划目的与使用规则
 
@@ -447,6 +447,16 @@ Strategy Card 必须固定：
 - 明确这些是计划风险而非最大实际亏损保证；
 - Kill Switch 不阻塞安全退出；
 - 每个风险状态都有可测试的输入、输出和操作动作。
+
+实际进度（2026-07-16）：
+
+- 状态：`READY_TO_VERIFY`；三项计划产物均已创建，等待项目所有人独立复核；
+- 会计合同：USDT 会计币种、保守退出 mark、手续费/负债、外部现金流、UTC 日/周、现金流调整高水位与项目绝对损失公式已冻结；
+- 状态合同：`ENTRY_ALLOWED`、`CLOSE_ONLY`、`KILLED_MANUAL_REVIEW` 的确定输入、输出、优先级、撤销入场和安全退出动作已冻结；
+- 快照合同：15 秒目标发布、60 秒 TTL、30 秒源新鲜度、5 秒未来时钟容差、schema v1、原子替换和 missing/stale/corrupt/unsupported fail-closed 已冻结；
+- 结构化验证：RiskSnapshot Draft 2020-12 schema 可解析，有效三状态示例通过，非法状态布尔组合、未知字段、浮点金额和 `safe_exit_allowed=false` 示例被拒绝；
+- 项目验证：`uv run pytest` 为 41 passed；`ruff check .`、新增测试文件的 `ruff format --check`、`uv lock --check` 与 `git diff --check` 通过；全仓 format check 仍报告 13 个未触碰历史文件，未在本任务中批量改写；
+- 延期边界：本任务不实现 watchdog、Freqtrade callback 或交易写路径；运行会计/原子发布由 P3-01 验证，消费者 fail-closed 与安全退出由 P3-02 验证，故障和恢复演练由 P3-05 验证。
 
 ### P0-07 Audit、Replay 与数据库边界
 
@@ -1167,7 +1177,7 @@ git diff --check
 | 3 | P0-03 运行环境和版本锁定 | DONE | 已锁定 Python、Freqtrade 2026.6、CCXT 4.5.61 和镜像 digest；容器实测迁移至 P1-02 强制验收 |
 | 4 | P0-04 第一策略与 Strategy Card | DONE | 已冻结 4h Donchian 20/10、ATR(20) × 2 stop、试验预算和证伪条件 |
 | 5 | P0-05 数据与验证合同 | READY_TO_VERIFY | 合同、schema、regime manifest 和本地验证已完成，等待项目所有人独立复核 |
-| 6 | P0-06 风险会计与 Kill Switch | NOT_STARTED | 固定会计与动作语义 |
+| 6 | P0-06 风险会计与 Kill Switch | READY_TO_VERIFY | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核 |
 | 7 | P0-07 Audit、Replay 与数据库边界 | NOT_STARTED | 防止双写与过度设计 |
 | 8 | P0-08 Scope Frozen 评审 | NOT_STARTED | 通过后才允许 Phase 1 |
 | 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 先建立 Python 3.12、pytest、ruff 与无密钥测试骨架 |
