@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-04 DONE、P1-05 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P1-05 DONE、P1-06 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03、P1-04 均为 DONE；GitHub Actions `deterministic-quality #7` 已在 `main@5c05086` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-04。P1-05 已完成统一绩效指标、确定性基准、真实 clean 数据报告和独立重算复核，当前为 READY_TO_VERIFY，等待 GitHub Actions 与项目所有人批准。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-05 均为 DONE；GitHub Actions `deterministic-quality #8` 已在 `main@1098a48` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-05。P1-06 已完成 schema、不可变登记、固定报告、artifact manifest、失败结果保留和策略选择门禁，本地全量门禁通过，当前为 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -645,7 +645,7 @@ Strategy Card 必须固定：
 
 ### P1-05 基准与统一绩效指标
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；统一指标纯函数、四类确定性基准、真实 clean 数据报告和独立重算复核已完成，等待 GitHub Actions 与项目所有人批准后转为 DONE。
+当前状态（2026-07-16）：`DONE`；统一指标纯函数、四类确定性基准、真实 clean 数据报告和独立重算复核已完成，GitHub Actions `deterministic-quality #8` 已在 `main@1098a48` 成功，项目所有人已批准。
 
 实现：
 
@@ -676,6 +676,8 @@ Strategy Card 必须固定：
 
 ### P1-06 实验登记与可复现报告
 
+当前状态（2026-07-16）：`READY_TO_VERIFY`；实现和本地全量门禁已完成，等待 GitHub Actions 与项目所有人批准后转为 DONE。
+
 实现：
 
 - hypothesis、experiment、Strategy Card 和 trial registry schema；
@@ -689,6 +691,14 @@ Strategy Card 必须固定：
 - 同环境重复运行得到一致交易列表和允许误差内的指标；
 - 未登记实验不能进入策略选择；
 - 报告明确区分 train、validation、holdout 和 stress slice。
+
+开发进度（2026-07-16）：
+
+- 新增 Hypothesis、Strategy Card、Trial Registry 和 Artifact Manifest Draft 2020-12 schema；扩展既有 Experiment schema，冻结 hypothesis/config/data/environment hash、feature 与成本模型版本、random seed、review result 和四类 slice；严格降级数据使用 `[2022-01-01, 2026-07-01)`，不再伪装为未读 Final Holdout；
+- `research/hypotheses/donchian_trend_v1.yaml` 与既有 Strategy Card SHA-256 同源；`research/experiments/trial-registry.json` 冻结 14 次上限和失败 trial 保留规则，entries 保持为空，P1-06 没有提前消耗 P2-05 trial 或写入虚构回测结果；
+- `src/alphamind/research/experiment_registry.py` 和 `scripts/manage_experiment.py` 实现 register、verify、finalize、review 四阶段追加链路；registration 不可覆盖，结果、报告、交易列表、指标和评审使用新 artifact，registry 禁止重复 experiment ID/trial index；
+- 固定报告始终分列 train、validation、holdout、stress；artifact manifest 复核 registration semantic hash、manifest content hash 和全部输入输出逐字节 SHA-256；策略选择只接受 `COMPLETED + PASS + APPROVED`，未登记、失败或待评审结果 fail-closed；
+- 聚焦测试 17 个通过，覆盖 schema、真实 Strategy Card hash、holdout 状态约束、按 ID 定位、重复登记拒绝、失败结果保留、独立评审、交易列表确定性和指标误差边界；全量门禁为 79 passed，repository scan 检查 99 个文件，strict mypy 检查 20 个 source/script 文件，Ruff check/format 覆盖 31 个 Python 文件，`uv lock --check`、Compose config 和 `git diff --check` 均通过。
 
 ### P1-07 Research Ready 门禁
 
@@ -1272,9 +1282,10 @@ git diff --check
 | 10 | P1-02 Freqtrade 固定环境 | DONE | 固定镜像、Compose、隔离配置和容器验证完成；`2860b48` 的 GitHub Actions 通过并由项目所有人批准 |
 | 11 | P1-03 数据下载与不可变清单 | DONE | snapshot、hash 与严格 holdout 降级处置均已验证，项目所有人批准 `main@7301894` |
 | 12 | P1-04 数据质量流水线 | DONE | `main@5c05086` 的实现、真实 clean 构建、独立复核和 GitHub Actions 均通过，项目所有人已批准 |
-| 13 | P1-05 基准与统一绩效指标 | READY_TO_VERIFY | 统一指标、12 组真实数据基准与独立重算均通过；等待 GitHub Actions 与项目所有人批准 |
-| 14 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
-| 15 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
+| 13 | P1-05 基准与统一绩效指标 | DONE | `main@1098a48` 的统一指标、12 组真实数据基准、独立重算和 GitHub Actions 均通过，项目所有人已批准 |
+| 14 | P1-06 实验登记与可复现报告 | READY_TO_VERIFY | schema、append-only 生命周期、固定报告、artifact manifest、失败保留和选择门禁已实现；本地全量门禁通过 |
+| 15 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
+| 16 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

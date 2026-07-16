@@ -1,0 +1,192 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/strategy-card.schema.yaml
+title: alphaMind Strategy Card v1
+description: 候选策略在实验前冻结的规则、风险、试验预算和证伪合同。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - strategy
+  - universe
+  - signal
+  - volatility_and_stop
+  - risk
+  - disabled_features
+  - parameter_trials
+  - evidence_thresholds
+  - falsification
+  - stress_requirements
+  - change_control
+properties:
+  schema_version:
+    const: 1
+  strategy:
+    type: object
+    required: [id, version, status, decision_id, hypothesis, objective, profit_claimed]
+    properties:
+      id:
+        type: string
+        pattern: "^[a-z][a-z0-9_]{2,63}$"
+      version:
+        $ref: "#/$defs/version"
+      status:
+        type: string
+        minLength: 3
+      decision_id:
+        type: string
+        pattern: "^ADR-[0-9]{4}$"
+      hypothesis:
+        type: string
+        minLength: 20
+      objective:
+        type: string
+        pattern: "^[a-z][a-z0-9_]{2,127}$"
+      profit_claimed:
+        type: boolean
+  universe:
+    type: object
+    required:
+      - exchange
+      - market_type
+      - pairs
+      - direction
+      - leverage
+      - primary_timeframe
+      - robustness_timeframes
+      - timezone
+    properties:
+      exchange: {type: string, minLength: 2}
+      market_type: {enum: [spot, margin, futures]}
+      pairs:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, pattern: "^[A-Z0-9]+/[A-Z0-9]+$"}
+      direction: {enum: [long_flat, short_flat, long_short]}
+      leverage: {type: integer, minimum: 1}
+      primary_timeframe: {type: string, pattern: "^[1-9][0-9]*[mhdw]$"}
+      robustness_timeframes:
+        type: array
+        uniqueItems: true
+        items: {type: string, pattern: "^[1-9][0-9]*[mhdw]$"}
+      timezone: {const: UTC}
+  signal:
+    type: object
+    required:
+      - completed_candles_only
+      - current_candle_excluded_from_channel
+      - entry
+      - exit
+      - warmup
+      - same_candle_entry_fill_allowed
+      - earliest_backtest_fill
+    properties:
+      completed_candles_only: {const: true}
+      current_candle_excluded_from_channel: {const: true}
+      entry: {$ref: "#/$defs/channel_rule"}
+      exit: {$ref: "#/$defs/channel_rule"}
+      warmup:
+        type: object
+        required: [startup_candle_count, insufficient_history_action]
+        properties:
+          startup_candle_count: {type: integer, minimum: 1}
+          insufficient_history_action: {enum: [hold, reject]}
+      same_candle_entry_fill_allowed: {const: false}
+      earliest_backtest_fill: {const: next_candle_open}
+  volatility_and_stop:
+    type: object
+    required:
+      - indicator
+      - atr_period_candles
+      - atr_smoothing
+      - initial_stop_multiple
+      - stop_can_widen
+      - trailing_stop_enabled
+    properties:
+      indicator: {const: ATR}
+      atr_period_candles: {type: integer, minimum: 1}
+      atr_smoothing: {type: string, minLength: 3}
+      initial_stop_multiple: {$ref: "#/$defs/nonnegative_decimal"}
+      stop_can_widen: {const: false}
+      trailing_stop_enabled: {type: boolean}
+  risk:
+    type: object
+    required:
+      - risk_config
+      - planned_risk_fraction
+      - max_open_trades
+      - quantity_rounding
+      - dca_enabled
+      - pyramiding_enabled
+    properties:
+      risk_config: {type: string, pattern: "^configs/[A-Za-z0-9._/-]+\\.toml$"}
+      planned_risk_fraction: {$ref: "#/$defs/nonnegative_decimal"}
+      max_open_trades: {type: integer, minimum: 1}
+      quantity_rounding: {type: string, minLength: 3}
+      dca_enabled: {const: false}
+      pyramiding_enabled: {const: false}
+  disabled_features:
+    type: object
+    minProperties: 1
+  parameter_trials:
+    type: object
+    required:
+      - selection_method
+      - maximum_parameterized_trials
+      - cartesian_product_allowed
+      - baseline
+      - perturbations
+      - robustness_only
+      - failed_trials_must_be_retained
+    properties:
+      selection_method: {type: string, minLength: 3}
+      maximum_parameterized_trials: {type: integer, minimum: 1, maximum: 100}
+      cartesian_product_allowed: {const: false}
+      baseline: {type: object, minProperties: 1}
+      perturbations: {type: object, minProperties: 1}
+      robustness_only: {type: object, minProperties: 1}
+      failed_trials_must_be_retained: {const: true}
+  evidence_thresholds:
+    type: object
+    minProperties: 1
+  falsification:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items: {type: string, pattern: "^[a-z][a-z0-9_]{2,127}$"}
+  stress_requirements:
+    type: object
+    required: [fee_multiplier, slippage_multiplier, required_regimes]
+    properties:
+      fee_multiplier: {$ref: "#/$defs/nonnegative_decimal"}
+      slippage_multiplier: {$ref: "#/$defs/nonnegative_decimal"}
+      required_regimes:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, pattern: "^[a-z][a-z0-9_]{2,63}$"}
+  change_control:
+    type: object
+    required:
+      - signal_or_risk_change_requires_new_version
+      - final_holdout_can_select_parameters
+      - paper_clock_resets_on_material_change
+    properties:
+      signal_or_risk_change_requires_new_version: {const: true}
+      final_holdout_can_select_parameters: {const: false}
+      paper_clock_resets_on_material_change: {const: true}
+$defs:
+  version:
+    type: string
+    pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+  nonnegative_decimal:
+    type: string
+    pattern: "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+  channel_rule:
+    type: object
+    required: [rule, window_candles, comparison, reason_code]
+    properties:
+      rule: {type: string, minLength: 3}
+      window_candles: {type: integer, minimum: 1}
+      comparison: {enum: [strict, inclusive]}
+      reason_code: {type: string, pattern: "^[a-z][a-z0-9_]{2,63}$"}

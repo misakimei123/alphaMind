@@ -24,6 +24,7 @@ required:
   - completed_at_utc
   - result
   - artifacts
+  - review_result
   - registration_sha256
 properties:
   schema_version:
@@ -55,12 +56,23 @@ properties:
     type: object
     additionalProperties: false
     required:
+      - hypothesis_id
+      - hypothesis_path
+      - hypothesis_sha256
       - statement
       - economic_rationale
       - primary_metric
       - pass_condition
       - falsification_conditions
     properties:
+      hypothesis_id:
+        type: string
+        pattern: "^hyp-[a-z0-9][a-z0-9-]{2,63}-v[0-9]+$"
+      hypothesis_path:
+        type: string
+        pattern: "^research/hypotheses/[A-Za-z0-9._/-]+\\.ya?ml$"
+      hypothesis_sha256:
+        $ref: "#/$defs/sha256"
       statement:
         type: string
         minLength: 20
@@ -91,7 +103,10 @@ properties:
     required:
       - strategy_id
       - strategy_version
+      - strategy_card_path
+      - strategy_card_sha256
       - project_commit
+      - strategy_config_path
       - strategy_config_sha256
       - parameters
     properties:
@@ -101,8 +116,16 @@ properties:
       strategy_version:
         type: string
         pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      strategy_card_path:
+        type: string
+        pattern: "^research/strategy_cards/[A-Za-z0-9._/-]+\\.ya?ml$"
+      strategy_card_sha256:
+        $ref: "#/$defs/sha256"
       project_commit:
         $ref: "#/$defs/git_commit"
+      strategy_config_path:
+        type: string
+        pattern: "^configs/[A-Za-z0-9._/-]+$"
       strategy_config_sha256:
         $ref: "#/$defs/sha256"
       parameters:
@@ -118,12 +141,16 @@ properties:
     type: object
     additionalProperties: false
     required:
+      - runtime_lock_path
       - runtime_lock_sha256
       - python_version
       - freqtrade_version
       - ccxt_version
       - random_seed
     properties:
+      runtime_lock_path:
+        type: string
+        pattern: "^configs/[A-Za-z0-9._/-]+\\.toml$"
       runtime_lock_sha256:
         $ref: "#/$defs/sha256"
       python_version:
@@ -143,6 +170,7 @@ properties:
       - dataset_id
       - manifest_path
       - manifest_sha256
+      - feature_version
       - development_start
       - development_end_exclusive
       - final_holdout_start
@@ -159,10 +187,15 @@ properties:
         pattern: "^data/manifests/[^/]+\\.ya?ml$"
       manifest_sha256:
         $ref: "#/$defs/sha256"
+      feature_version:
+        type: string
+        pattern: "^[a-z0-9][a-z0-9._-]{0,63}$"
       development_start:
         const: "2022-01-01T00:00:00Z"
       development_end_exclusive:
-        const: "2025-07-01T00:00:00Z"
+        enum:
+          - "2025-07-01T00:00:00Z"
+          - "2026-07-01T00:00:00Z"
       final_holdout_start:
         const: "2025-07-01T00:00:00Z"
       final_holdout_end_exclusive:
@@ -189,6 +222,7 @@ properties:
       - regime_reporting_required
       - lookahead_analysis_required
       - recursive_analysis_required
+      - slices
     properties:
       walk_forward_manifest:
         const: data/manifests/regime-manifest.yaml
@@ -214,6 +248,30 @@ properties:
         type: boolean
       recursive_analysis_required:
         type: boolean
+      slices:
+        type: object
+        additionalProperties: false
+        required: [train, validation, holdout, stress]
+        properties:
+          train:
+            type: array
+            minItems: 1
+            maxItems: 32
+            items: {$ref: "#/$defs/data_slice"}
+          validation:
+            type: array
+            minItems: 1
+            maxItems: 32
+            items: {$ref: "#/$defs/data_slice"}
+          holdout:
+            type: array
+            maxItems: 1
+            items: {$ref: "#/$defs/data_slice"}
+          stress:
+            type: array
+            minItems: 1
+            maxItems: 32
+            items: {$ref: "#/$defs/data_slice"}
   trial_budget:
     type: object
     additionalProperties: false
@@ -239,11 +297,22 @@ properties:
     type: object
     additionalProperties: false
     required:
+      - version
+      - config_path
+      - config_sha256
       - fee_rate
       - slippage_rate
       - gap_buffer_rate
       - all_costs_nonnegative
     properties:
+      version:
+        type: string
+        pattern: "^[a-z0-9][a-z0-9._-]{0,63}$"
+      config_path:
+        type: string
+        pattern: "^configs/[A-Za-z0-9._/-]+$"
+      config_sha256:
+        $ref: "#/$defs/sha256"
       fee_rate:
         $ref: "#/$defs/nonnegative_decimal"
       slippage_rate:
@@ -270,6 +339,11 @@ properties:
     uniqueItems: true
     items:
       $ref: "#/$defs/artifact"
+  review_result:
+    enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
   registration_sha256:
     $ref: "#/$defs/sha256"
     $comment: >-
@@ -286,6 +360,7 @@ allOf:
         completed_at_utc: {const: null}
         result: {const: null}
         artifacts: {maxItems: 0}
+        review_result: {const: PENDING}
   - if:
       properties:
         status:
@@ -297,6 +372,7 @@ allOf:
           $ref: "#/$defs/utc_timestamp"
         completed_at_utc: {const: null}
         result: {const: null}
+        review_result: {const: PENDING}
   - if:
       properties:
         status:
@@ -324,8 +400,49 @@ allOf:
       properties:
         dataset:
           properties:
+            development_end_exclusive: {const: "2025-07-01T00:00:00Z"}
             holdout_access_count: {const: 0}
             holdout_first_access_commit: {const: null}
+  - if:
+      properties:
+        dataset:
+          properties:
+            holdout_state:
+              const: DEGRADED_TO_DEVELOPMENT
+          required: [holdout_state]
+      required: [dataset]
+    then:
+      properties:
+        dataset:
+          properties:
+            development_end_exclusive: {const: "2026-07-01T00:00:00Z"}
+            holdout_access_count: {minimum: 1}
+            holdout_first_access_commit: {$ref: "#/$defs/git_commit"}
+        validation:
+          properties:
+            slices:
+              properties:
+                holdout: {maxItems: 0}
+  - if:
+      properties:
+        dataset:
+          properties:
+            holdout_state:
+              const: CONSUMED_FINAL
+          required: [holdout_state]
+      required: [dataset]
+    then:
+      properties:
+        dataset:
+          properties:
+            development_end_exclusive: {const: "2025-07-01T00:00:00Z"}
+            holdout_access_count: {minimum: 1}
+            holdout_first_access_commit: {$ref: "#/$defs/git_commit"}
+        validation:
+          properties:
+            slices:
+              properties:
+                holdout: {minItems: 1, maxItems: 1}
   - if:
       properties:
         evidence_layer:
@@ -357,6 +474,18 @@ $defs:
   nonnegative_decimal:
     type: string
     pattern: "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+  data_slice:
+    type: object
+    additionalProperties: false
+    required: [slice_id, start, end_exclusive]
+    properties:
+      slice_id:
+        type: string
+        pattern: "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,63}$"
+      start:
+        $ref: "#/$defs/utc_timestamp"
+      end_exclusive:
+        $ref: "#/$defs/utc_timestamp"
   artifact:
     type: object
     additionalProperties: false
@@ -372,6 +501,8 @@ $defs:
           - logs
           - config
           - manifest
+          - trades
+          - review
       path:
         type: string
         pattern: "^(?:research|data|artifacts)/[^\\\\]+$"

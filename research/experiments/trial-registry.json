@@ -1,0 +1,10 @@
+{
+  "entries": [],
+  "failed_trials_must_be_retained": true,
+  "maximum_trials": 14,
+  "schema_version": 1,
+  "strategy_card_path": "research/strategy_cards/donchian_trend_v0.1.0.yaml",
+  "strategy_card_sha256": "5069ee45c52628a392ead673c749407e7c90219214ad5568c61d72fe2aa69805",
+  "strategy_id": "donchian_trend",
+  "strategy_version": "0.1.0"
+}

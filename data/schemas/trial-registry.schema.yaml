@@ -1,0 +1,115 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/trial-registry.schema.yaml
+title: alphaMind Trial Registry v1
+description: 每个 Strategy Card 的 append-only trial 索引；失败、拒绝和失效记录不得删除。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - strategy_id
+  - strategy_version
+  - strategy_card_path
+  - strategy_card_sha256
+  - maximum_trials
+  - failed_trials_must_be_retained
+  - entries
+properties:
+  schema_version: {const: 1}
+  strategy_id:
+    type: string
+    pattern: "^[a-z][a-z0-9_]{2,63}$"
+  strategy_version:
+    type: string
+    pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+  strategy_card_path:
+    type: string
+    pattern: "^research/strategy_cards/[A-Za-z0-9._/-]+\\.ya?ml$"
+  strategy_card_sha256:
+    $ref: "#/$defs/sha256"
+  maximum_trials:
+    type: integer
+    minimum: 1
+    maximum: 100
+  failed_trials_must_be_retained:
+    const: true
+  entries:
+    type: array
+    maxItems: 100
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/entry"
+$defs:
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  nullable_sha256:
+    anyOf:
+      - $ref: "#/$defs/sha256"
+      - type: "null"
+  nullable_path:
+    type: [string, "null"]
+    pattern: "^research/experiments/[A-Za-z0-9._/-]+$"
+  entry:
+    type: object
+    additionalProperties: false
+    required:
+      - trial_index
+      - experiment_id
+      - registration_path
+      - registration_sha256
+      - status
+      - outcome
+      - review_result
+      - report_path
+      - report_sha256
+      - artifact_manifest_path
+      - artifact_manifest_sha256
+      - review_path
+      - review_sha256
+    properties:
+      trial_index:
+        type: integer
+        minimum: 1
+      experiment_id:
+        type: string
+        pattern: "^exp-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      registration_path:
+        type: string
+        pattern: "^research/experiments/[A-Za-z0-9._/-]+/registration\\.json$"
+      registration_sha256:
+        $ref: "#/$defs/sha256"
+      status:
+        enum: [PRE_REGISTERED, RUNNING, COMPLETED, REJECTED, INVALIDATED]
+      outcome:
+        type: [string, "null"]
+        enum: [PASS, FAIL, INCONCLUSIVE, INVALIDATED, null]
+      review_result:
+        enum: [PENDING, APPROVED, REJECTED]
+      report_path:
+        $ref: "#/$defs/nullable_path"
+      report_sha256:
+        $ref: "#/$defs/nullable_sha256"
+      artifact_manifest_path:
+        $ref: "#/$defs/nullable_path"
+      artifact_manifest_sha256:
+        $ref: "#/$defs/nullable_sha256"
+      review_path:
+        $ref: "#/$defs/nullable_path"
+      review_sha256:
+        $ref: "#/$defs/nullable_sha256"
+    allOf:
+      - if:
+          properties:
+            status: {enum: [COMPLETED, REJECTED, INVALIDATED]}
+          required: [status]
+        then:
+          properties:
+            outcome: {enum: [PASS, FAIL, INCONCLUSIVE, INVALIDATED]}
+      - if:
+          properties:
+            review_result: {const: APPROVED}
+          required: [review_result]
+        then:
+          properties:
+            status: {const: COMPLETED}
+            outcome: {const: PASS}
