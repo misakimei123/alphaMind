@@ -54,8 +54,6 @@ services:
       - backtesting
       - --config
       - /freqtrade/configs/backtest.json
-      - --strategy-path
-      - /freqtrade/user_data/strategies
 
   dry-run:
     <<: *freqtrade-base
@@ -64,8 +62,6 @@ services:
       - trade
       - --config
       - /freqtrade/configs/dry-run.json
-      - --strategy-path
-      - /freqtrade/user_data/strategies
 
   replay:
     <<: *freqtrade-base

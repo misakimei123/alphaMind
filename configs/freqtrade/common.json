@@ -6,8 +6,25 @@
   "tradable_balance_ratio": 0.99,
   "fiat_display_currency": "USD",
   "timeframe": "4h",
+  "strategy": "DonchianTrendStrategy",
+  "position_adjustment_enable": false,
+  "use_exit_signal": true,
+  "exit_profit_only": false,
+  "ignore_roi_if_entry_signal": false,
   "trading_mode": "spot",
   "margin_mode": "",
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  },
   "exchange": {
     "name": "bybit",
     "pair_whitelist": [
@@ -21,12 +38,6 @@
       "method": "StaticPairList"
     }
   ],
-  "telegram": {
-    "enabled": false
-  },
-  "api_server": {
-    "enabled": false
-  },
   "initial_state": "stopped",
   "force_entry_enable": false,
   "cancel_open_orders_on_exit": false

@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P2-01 DONE、P2-02 IN_PROGRESS |
+| 最近进度更新 | 2026-07-16 / P2-01 DONE、P2-02 READY_TO_VERIFY |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 均为 DONE；GitHub Actions `deterministic-quality #11` 已在 `main@3e3c141` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P2-01。当前进入 P2-02 Freqtrade Strategy Adapter，P2-03 的离线确定性核心保持并行。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 均为 DONE；GitHub Actions `deterministic-quality #11` 已在 `main@3e3c141` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P2-01。P2-02 Freqtrade Strategy Adapter 已完成实现和本地门禁，当前为 READY_TO_VERIFY；P2-03 的离线确定性核心保持并行。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -741,7 +741,7 @@ Strategy Card 必须固定：
 
 ### P2-02 Freqtrade Strategy Adapter
 
-当前状态（2026-07-16）：`IN_PROGRESS`；正在核对 Freqtrade 2026.6 callback 合同并实现唯一 strategy adapter。
+当前状态（2026-07-16）：`READY_TO_VERIFY`；唯一 strategy adapter、锁定容器合同和本地质量门禁已完成，等待独立评审后才能标记 `DONE`。
 
 实现：
 
@@ -757,6 +757,16 @@ Strategy Card 必须固定：
 - backtest 和 dry-run 使用同一 strategy 源文件；
 - strategy 不持有或读取生产 key；
 - 不使用 `iloc[-1]` 等未来信息模式生成历史信号。
+
+实际进度（2026-07-16）：
+
+- `DonchianTrendStrategy` 是 `user_data/strategies/` 中唯一 strategy，固定 interface v3、4h、long/flat、20/10 channel、稳定 entry/exit tag 和 `0.1.0` version；rolling threshold 均先计算再 `shift(1)`，signal candle 不进入自身阈值；
+- adapter 对 OHLCV、UTC 时间、连续 4h active window 和可选 `is_closed` 标志执行 fail-closed 检查，并在锁定镜像内与 P2-01 纯函数逐行对账；构造 fixture 仅在第 20 行 entry、第 24 行 exit，缺失 candle 场景的结果同样一致；
+- Freqtrade 2026.6 的 callback 参数合同、strategy settings 和 resolver 加载均通过；`list-strategies` 只返回一个 `DonchianTrendStrategy` 且状态为 `OK`，合并后的 backtest 配置通过 schema/runtime 校验；
+- 公共配置移除了禁用但仍触发必填凭据校验的 Telegram/API 空壳，补齐锁定版运行时必需的 entry/exit pricing；backtest 与 dry-run 均通过默认 strategy 目录加载同一文件，不再重复声明相同 `strategy-path`；
+- P3-02 风险快照、风险定仓和硬止损 callback 落地前，`confirm_trade_entry` 固定返回 `False`；离线 backtest 成功覆盖 2022-01-21 至 2026-07-16，0 trades 是该执行门禁的预期证据，不代表策略有效性结论；
+- 本地门禁：repository scan 检查 100 个文件，strict mypy 检查 20 个 source/script 文件，Ruff check/format 覆盖 32 个 Python 文件，全量 pytest 为 85 passed；`uv lock --check`、Compose config 和 `git diff --check` 均通过；
+- 残余门禁：P2-02 等待远端 CI 与项目所有人批准，保持 `READY_TO_VERIFY`；P3-02 完成前禁止放开 entry execution，真实 dry-run/Paper/Live 仍受对应阶段门禁约束。
 
 ### P2-03 风险定仓纯函数
 
@@ -1296,7 +1306,7 @@ git diff --check
 | 13 | P1-05 基准与统一绩效指标 | DONE | `main@1098a48` 的统一指标、12 组真实数据基准、独立重算和 GitHub Actions 均通过，项目所有人已批准 |
 | 14 | P1-06 实验登记与可复现报告 | DONE | `main@61fd1e9` 的 schema、append-only 生命周期、固定报告、artifact manifest、失败保留、选择门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 15 | P2-01 纯 Donchian 信号逻辑 | DONE | `main@3e3c141` 的 point-in-time 信号、fail-closed 边界、4h/1d UTC、无成交输出和 GitHub Actions 均通过，项目所有人已批准 |
-| 16 | P2-02 Freqtrade Strategy Adapter | IN_PROGRESS | 正在按锁定版 callback 合同映射唯一 strategy，不接认证 API 或生产 key |
+| 16 | P2-02 Freqtrade Strategy Adapter | READY_TO_VERIFY | 唯一 strategy、纯函数逐行对账、锁定容器 resolver/backtest 与本地门禁已通过；等待独立评审，不接认证 API 或生产 key |
 | 17 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
