@@ -245,14 +245,40 @@ def verify_strategy_adapter(strategy_type: Any) -> dict[str, object]:
     }
 
 
+def verify_backtest_fill_contract(backtesting_module: Any) -> dict[str, bool]:
+    """实测锁定版本只把 candle high/low 内的请求价格视为可成交。"""
+
+    row: list[Any] = [None] * (max(backtesting_module.LOW_IDX, backtesting_module.HIGH_IDX) + 1)
+    row[backtesting_module.LOW_IDX] = 95.0
+    row[backtesting_module.HIGH_IDX] = 105.0
+    callback = backtesting_module.Backtesting._get_order_filled
+    within_range = callback(None, 100.0, tuple(row))
+    below_range = callback(None, 90.0, tuple(row))
+    above_range = callback(None, 110.0, tuple(row))
+    if within_range is not True or below_range is not False or above_range is not False:
+        raise RuntimeError("Freqtrade backtest candle-touch fill contract changed")
+    return {
+        "within_candle_range_fills": within_range,
+        "below_candle_range_fills": below_range,
+        "above_candle_range_fills": above_range,
+    }
+
+
 def main() -> int:
     interface = importlib.import_module("freqtrade.strategy.interface")
     actual = verify_callback_parameters(interface.IStrategy)
+    backtesting = importlib.import_module("freqtrade.optimize.backtesting")
+    fill_contract = verify_backtest_fill_contract(backtesting)
     strategy_type = _load_strategy_type(STRATEGY_PATH)
     strategy = verify_strategy_adapter(strategy_type)
     print(
         json.dumps(
-            {"status": "ok", "callbacks": actual, "strategy": strategy},
+            {
+                "status": "ok",
+                "backtest_fill_contract": fill_contract,
+                "callbacks": actual,
+                "strategy": strategy,
+            },
             sort_keys=True,
         )
     )

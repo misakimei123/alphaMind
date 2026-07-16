@@ -8,6 +8,19 @@ from alphamind.research.donchian import (
     DonchianSignal,
     evaluate_donchian,
 )
+from alphamind.research.execution import (
+    ExecutionBar,
+    ExecutionCostModel,
+    ExecutionOrder,
+    ExecutionResult,
+    FillReason,
+    FillStatus,
+    OrderSide,
+    OrderType,
+    StressScenario,
+    build_p2_04_scenarios,
+    simulate_execution,
+)
 
 __all__ = [
     "Candle",
@@ -15,5 +28,16 @@ __all__ = [
     "DonchianParameters",
     "DonchianReason",
     "DonchianSignal",
+    "ExecutionBar",
+    "ExecutionCostModel",
+    "ExecutionOrder",
+    "ExecutionResult",
+    "FillReason",
+    "FillStatus",
+    "OrderSide",
+    "OrderType",
+    "StressScenario",
+    "build_p2_04_scenarios",
     "evaluate_donchian",
+    "simulate_execution",
 ]

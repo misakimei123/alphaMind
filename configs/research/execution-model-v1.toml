@@ -1,0 +1,24 @@
+schema_version = 1
+model_version = "p2-04-v1"
+market_type = "spot"
+timeframe = "4h"
+fill_timing = "next_candle_open"
+limit_fill_policy = "explicit_confirmation"
+
+[costs]
+# Bybit Non-VIP spot maker/taker 当前均为 0.1%；Live 前必须按账户费率重新验证。
+maker_fee_rate = "0.001"
+taker_fee_rate = "0.001"
+fee_source = "https://www.bybit.com/en/help-center/article/Trading-Fee-Structure"
+fee_source_checked_at_utc = "2026-07-16T10:12:34Z"
+# candle 数据没有历史 order book，spread/slippage 是保守工程假设而非成交事实。
+half_spread_rate = "0.00025"
+slippage_rate_per_side = "0.0005"
+
+[stress]
+fee_multiplier = "2"
+slippage_multiplier = "3"
+parameter_multipliers = ["0.8", "0.9", "1.1", "1.2"]
+daily_price_shocks = ["-0.10", "-0.20"]
+missing_candle_action = "unfilled"
+delay_periods = [1]

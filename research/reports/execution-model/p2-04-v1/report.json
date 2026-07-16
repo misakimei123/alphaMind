@@ -1,0 +1,140 @@
+{
+  "config_path": "configs/research/execution-model-v1.toml",
+  "config_sha256": "4d0816d838a893db2801ea501dfbf37d836b9198362ad7f97e24c3213275470f",
+  "costs": {
+    "assumption_boundary": "fee 来自公开 Non-VIP spot rate；spread/slippage 是固定工程假设，不证明真实历史成交",
+    "fee_source": "https://www.bybit.com/en/help-center/article/Trading-Fee-Structure",
+    "fee_source_checked_at_utc": "2026-07-16T10:12:34Z",
+    "half_spread_rate": "0.00025",
+    "maker_fee_rate": "0.001",
+    "slippage_rate_per_side": "0.0005",
+    "taker_fee_rate": "0.001"
+  },
+  "evidence_boundary": {
+    "dry_run": "验证模拟订单行为，不证明交易所接单",
+    "historical_backtest": "验证确定性成本敏感度，不证明真实 fill 或 partial fill",
+    "live_canary": "首次验证受限真实写路径与实际成交偏差"
+  },
+  "fill_contract": {
+    "limit_fill_policy": "explicit_confirmation",
+    "partial_fill_claimed": false,
+    "same_candle_fill_allowed": false,
+    "timing": "next_candle_open"
+  },
+  "market_type": "spot",
+  "model_version": "p2-04-v1",
+  "scenarios": [
+    {
+      "daily_price_shock": null,
+      "disclosure": "基础成本与 next-candle open 成交",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "baseline",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "maker/taker fee 同时放大 2 倍",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "2",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "fee_2x",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "每侧 slippage 放大 3 倍，spread 不变",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "slippage_3x",
+      "slippage_multiplier": "3"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "单次参数向下扰动 20%，禁止 Cartesian product",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": "0.8",
+      "scenario_id": "parameter_minus_20pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "单次参数向下扰动 10%，禁止 Cartesian product",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": "0.9",
+      "scenario_id": "parameter_minus_10pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "单次参数向上扰动 10%，禁止 Cartesian product",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": "1.1",
+      "scenario_id": "parameter_plus_10pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "单次参数向上扰动 20%，禁止 Cartesian product",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": "1.2",
+      "scenario_id": "parameter_plus_20pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": "-0.10",
+      "disclosure": "单日价格冲击 -10%，不改变成交成本假设",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "daily_drop_10pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": "-0.20",
+      "disclosure": "单日价格冲击 -20%，不改变成交成本假设",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "daily_drop_20pct",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "预期成交 candle 缺失，订单保持未成交",
+      "execution_delay_periods": 0,
+      "fee_multiplier": "1",
+      "missing_candle": true,
+      "parameter_multiplier": null,
+      "scenario_id": "missing_candle",
+      "slippage_multiplier": "1"
+    },
+    {
+      "daily_price_shock": null,
+      "disclosure": "成交推迟一根完整 candle，并使用延迟 candle open",
+      "execution_delay_periods": 1,
+      "fee_multiplier": "1",
+      "missing_candle": false,
+      "parameter_multiplier": null,
+      "scenario_id": "delay_one_period",
+      "slippage_multiplier": "1"
+    }
+  ],
+  "schema_version": 1,
+  "timeframe": "4h"
+}
