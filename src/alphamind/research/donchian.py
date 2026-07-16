@@ -102,6 +102,8 @@ def evaluate_donchian(
 
     if not candles:
         raise ValueError("candles must not be empty")
+    if not isinstance(in_position, bool):
+        raise TypeError("in_position must be bool")
 
     latest = candles[-1]
     for previous, current in pairwise(candles):
@@ -109,6 +111,16 @@ def evaluate_donchian(
             raise ValueError("candle timestamps must be strictly increasing")
 
     required_candle_count = max(parameters.entry_window, parameters.exit_window) + 1
+    if len(candles) < required_candle_count:
+        # 历史长度不足时先稳定返回 warm-up；短窗口内的 gap 或未闭状态不应改变原因码。
+        return DonchianDecision(
+            signal=DonchianSignal.HOLD,
+            reason=DonchianReason.WARMUP,
+            signal_timestamp=latest.timestamp,
+            reference_price=latest.close,
+            entry_threshold=None,
+            exit_threshold=None,
+        )
     active_window = candles[-required_candle_count:]
 
     # 只检查本次计算实际使用的窗口；窗口中的未完成 candle 一律 fail-closed。
@@ -137,16 +149,6 @@ def evaluate_donchian(
         )
 
     history = active_window[:-1]
-    if len(history) < max(parameters.entry_window, parameters.exit_window):
-        return DonchianDecision(
-            signal=DonchianSignal.HOLD,
-            reason=DonchianReason.WARMUP,
-            signal_timestamp=latest.timestamp,
-            reference_price=latest.close,
-            entry_threshold=None,
-            exit_threshold=None,
-        )
-
     # rolling 阈值严格滞后一根，防止当前 candle 同时抬高阈值并触发信号。
     entry_threshold = max(candle.high for candle in history[-parameters.entry_window :])
     exit_threshold = min(candle.low for candle in history[-parameters.exit_window :])
