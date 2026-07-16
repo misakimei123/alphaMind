@@ -1,0 +1,82 @@
+{
+  "experiment_id": "exp-20260716T104148Z-1846ceabe780",
+  "files": [
+    {
+      "direction": "INPUT",
+      "path": "research/hypotheses/donchian_trend_v1.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "hypothesis",
+      "sha256": "95e99238d0fcbfc830658bed5291368ba418eb8ca1f494ef84d58a83db0cc232",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "research/strategy_cards/donchian_trend_v0.1.0.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "strategy_card",
+      "sha256": "5069ee45c52628a392ead673c749407e7c90219214ad5568c61d72fe2aa69805",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/research/walk-forward-v1.toml",
+      "record_count": null,
+      "required": true,
+      "role": "strategy_config",
+      "sha256": "227accaa13110f27a307ff4da523b06f00dab7cf172ac2ceab820b7b0a501125",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/common/runtime-versions.toml",
+      "record_count": null,
+      "required": true,
+      "role": "runtime_lock",
+      "sha256": "8316a227153a4b65862210642d17034f5d15a6d2a8003df65522fd881ff92262",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "data/manifests/walk-forward-development-v1.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "dataset_manifest",
+      "sha256": "0f9526532458aa2f2fe049f30081b28f78da5b8cc0e441632eea83fcfc513c6a",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/research/execution-model-v1.toml",
+      "record_count": null,
+      "required": true,
+      "role": "cost_model",
+      "sha256": "4d0816d838a893db2801ea501dfbf37d836b9198362ad7f97e24c3213275470f",
+      "slice": "all"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-1846ceabe780/registration.json",
+      "record_count": null,
+      "required": true,
+      "role": "registration",
+      "sha256": "779085a3150d210421c17ccb6d5478efa4617e5e3ecf5b4a28986e70fa827b48",
+      "slice": "none"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-1846ceabe780/report-pre-registered.md",
+      "record_count": null,
+      "required": true,
+      "role": "report",
+      "sha256": "eae9e2b1bffcf87e14c2389be342689f5e5e9c3c7f472ddea67bbb8de653556f",
+      "slice": "none"
+    }
+  ],
+  "generated_at_utc": "2026-07-16T10:41:48Z",
+  "manifest_content_sha256": "0ba7c4f6247cda91124168d1f1914798d73e69b24b08499307865600f4e021dc",
+  "registration_sha256": "ead25040f3b165a2b511a984939902d64ab50033abc0dc957138688387522d52",
+  "schema_version": 1,
+  "status": "PRE_REGISTERED"
+}

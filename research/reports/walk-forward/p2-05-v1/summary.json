@@ -1,0 +1,485 @@
+{
+  "config_path": "configs/research/walk-forward-v1.toml",
+  "config_sha256": "227accaa13110f27a307ff4da523b06f00dab7cf172ac2ceab820b7b0a501125",
+  "dataset_manifest_path": "data/manifests/walk-forward-development-v1.yaml",
+  "dataset_manifest_sha256": "0f9526532458aa2f2fe049f30081b28f78da5b8cc0e441632eea83fcfc513c6a",
+  "evidence_boundary": {
+    "anti_cheat": "P2-06 pending; no parameter is selectable",
+    "final_holdout": "not used; validation ends at 2025-07-01",
+    "live_execution": "not tested",
+    "review": "all experiment review_result values remain PENDING"
+  },
+  "folds": [
+    {
+      "fold_id": "WF-01",
+      "train_end_exclusive": "2024-01-01T00:00:00Z",
+      "train_start": "2022-01-01T00:00:00Z",
+      "validation_end_exclusive": "2024-07-01T00:00:00Z",
+      "validation_start": "2024-01-01T00:00:00Z"
+    },
+    {
+      "fold_id": "WF-02",
+      "train_end_exclusive": "2024-07-01T00:00:00Z",
+      "train_start": "2022-01-01T00:00:00Z",
+      "validation_end_exclusive": "2025-01-01T00:00:00Z",
+      "validation_start": "2024-07-01T00:00:00Z"
+    },
+    {
+      "fold_id": "WF-03",
+      "train_end_exclusive": "2025-01-01T00:00:00Z",
+      "train_start": "2022-01-01T00:00:00Z",
+      "validation_end_exclusive": "2025-07-01T00:00:00Z",
+      "validation_start": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "model_version": "p2-05-v1",
+  "registry_path": "research/experiments/trial-registry.json",
+  "registry_sha256": "af12f3f6a1c9143f267d160fed3b76e6fbff2b0d9fa01ecdfe8d57ae90906ce4",
+  "schema_version": 1,
+  "selection": {
+    "evidence_thresholds": {
+      "minimum_independent_breakout_events": 12,
+      "minimum_out_of_sample_completed_trades": 40
+    },
+    "falsification_reason_codes": [],
+    "independent_review_status": "PENDING",
+    "insufficient_evidence_reason_codes": [],
+    "neighbor_nonnegative_count": 12,
+    "neighbor_nonnegative_ratio": "1.000000000000",
+    "parameter_selection": null,
+    "parameter_selection_blocker": "independent_review_and_p2_06_pending",
+    "status": "PASS"
+  },
+  "trial_count": 13,
+  "trials": [
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.643399807168"
+      },
+      "experiment_id": "exp-20260716T104148Z-8ba8496a2525",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-8ba8496a2525/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": null,
+        "entry_window": 20,
+        "exit_window": 10,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "baseline",
+      "trial_index": 1,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.241977318066",
+          "upper": "0.553138257924"
+        },
+        "expectancy_r": "0.123626724896",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.044717683460",
+        "net_return_compounded_across_reset_folds": "0.031040150646",
+        "nonannualized_sharpe": "0.010207358180",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 107
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.586750184201"
+      },
+      "experiment_id": "exp-20260716T104148Z-717dab19d361",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-717dab19d361/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "entry_window",
+        "entry_window": 16,
+        "exit_window": 10,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "entry_16",
+      "trial_index": 2,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.260496376701",
+          "upper": "0.504508112538"
+        },
+        "expectancy_r": "0.085183146727",
+        "fold_count": 3,
+        "independent_event_count": 68,
+        "maximum_drawdown": "0.048026703777",
+        "net_return_compounded_across_reset_folds": "0.023419791348",
+        "nonannualized_sharpe": "0.007540167959",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 122
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.584005516874"
+      },
+      "experiment_id": "exp-20260716T104148Z-1846ceabe780",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-1846ceabe780/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "entry_window",
+        "entry_window": 18,
+        "exit_window": 10,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "entry_18",
+      "trial_index": 3,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.252315068240",
+          "upper": "0.488852931331"
+        },
+        "expectancy_r": "0.085886264736",
+        "fold_count": 3,
+        "independent_event_count": 64,
+        "maximum_drawdown": "0.045944504153",
+        "net_return_compounded_across_reset_folds": "0.022416249869",
+        "nonannualized_sharpe": "0.007420244582",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 115
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.605767280091"
+      },
+      "experiment_id": "exp-20260716T104148Z-013466daf24c",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-013466daf24c/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "entry_window",
+        "entry_window": 22,
+        "exit_window": 10,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "entry_22",
+      "trial_index": 4,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.262757656532",
+          "upper": "0.547782061996"
+        },
+        "expectancy_r": "0.103954468261",
+        "fold_count": 3,
+        "independent_event_count": 58,
+        "maximum_drawdown": "0.045447904388",
+        "net_return_compounded_across_reset_folds": "0.025095319380",
+        "nonannualized_sharpe": "0.008427088546",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 105
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.631591586152"
+      },
+      "experiment_id": "exp-20260716T104148Z-ce7e63b14336",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-ce7e63b14336/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "entry_window",
+        "entry_window": 24,
+        "exit_window": 10,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "entry_24",
+      "trial_index": 5,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.262109447727",
+          "upper": "0.603149859645"
+        },
+        "expectancy_r": "0.121652942184",
+        "fold_count": 3,
+        "independent_event_count": 56,
+        "maximum_drawdown": "0.045433115675",
+        "net_return_compounded_across_reset_folds": "0.028354197344",
+        "nonannualized_sharpe": "0.009650924286",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 100
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.707633240337"
+      },
+      "experiment_id": "exp-20260716T104148Z-4113e3937e7f",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-4113e3937e7f/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "exit_window",
+        "entry_window": 20,
+        "exit_window": 8,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "exit_8",
+      "trial_index": 6,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.223411767898",
+          "upper": "0.563229066306"
+        },
+        "expectancy_r": "0.142516034773",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.043050781973",
+        "net_return_compounded_across_reset_folds": "0.037357051127",
+        "nonannualized_sharpe": "0.013273059472",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 110
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.687170218064"
+      },
+      "experiment_id": "exp-20260716T104148Z-4db36ed7b69d",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-4db36ed7b69d/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "exit_window",
+        "entry_window": 20,
+        "exit_window": 9,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "exit_9",
+      "trial_index": 7,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.224534160919",
+          "upper": "0.594964915409"
+        },
+        "expectancy_r": "0.144507214787",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.044218683434",
+        "net_return_compounded_across_reset_folds": "0.037070179643",
+        "nonannualized_sharpe": "0.012395717189",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 108
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.711584931136"
+      },
+      "experiment_id": "exp-20260716T104148Z-350f7f223ef2",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-350f7f223ef2/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "exit_window",
+        "entry_window": 20,
+        "exit_window": 11,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "exit_11",
+      "trial_index": 8,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.215805829321",
+          "upper": "0.632149745393"
+        },
+        "expectancy_r": "0.169695807335",
+        "fold_count": 3,
+        "independent_event_count": 60,
+        "maximum_drawdown": "0.044218683434",
+        "net_return_compounded_across_reset_folds": "0.042867787758",
+        "nonannualized_sharpe": "0.013642316146",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 105
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.695577351691"
+      },
+      "experiment_id": "exp-20260716T104148Z-387f98ec5da6",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-387f98ec5da6/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "exit_window",
+        "entry_window": 20,
+        "exit_window": 12,
+        "stop_multiple": "2.0"
+      },
+      "trial_id": "exit_12",
+      "trial_index": 9,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.216997550542",
+          "upper": "0.643128275075"
+        },
+        "expectancy_r": "0.164157235779",
+        "fold_count": 3,
+        "independent_event_count": 59,
+        "maximum_drawdown": "0.042837201047",
+        "net_return_compounded_across_reset_folds": "0.040470690499",
+        "nonannualized_sharpe": "0.012794877330",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 103
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.646037338632"
+      },
+      "experiment_id": "exp-20260716T104148Z-6dfd6a867a1c",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-6dfd6a867a1c/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "stop_multiple",
+        "entry_window": 20,
+        "exit_window": 10,
+        "stop_multiple": "1.6"
+      },
+      "trial_id": "stop_1_6",
+      "trial_index": 10,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.274136514995",
+          "upper": "0.647848194519"
+        },
+        "expectancy_r": "0.142502670639",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.051208679518",
+        "net_return_compounded_across_reset_folds": "0.036686086079",
+        "nonannualized_sharpe": "0.010332111749",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 111
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.662790787823"
+      },
+      "experiment_id": "exp-20260716T104148Z-eb258c1e857f",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-eb258c1e857f/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "stop_multiple",
+        "entry_window": 20,
+        "exit_window": 10,
+        "stop_multiple": "1.8"
+      },
+      "trial_id": "stop_1_8",
+      "trial_index": 11,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.242844497147",
+          "upper": "0.622198762432"
+        },
+        "expectancy_r": "0.144775950244",
+        "fold_count": 3,
+        "independent_event_count": 62,
+        "maximum_drawdown": "0.047866409875",
+        "net_return_compounded_across_reset_folds": "0.036811409137",
+        "nonannualized_sharpe": "0.011153261570",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 108
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.685090241389"
+      },
+      "experiment_id": "exp-20260716T104148Z-06cace052ab8",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-06cace052ab8/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "stop_multiple",
+        "entry_window": 20,
+        "exit_window": 10,
+        "stop_multiple": "2.2"
+      },
+      "trial_id": "stop_2_2",
+      "trial_index": 12,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.203576904187",
+          "upper": "0.569371120261"
+        },
+        "expectancy_r": "0.142333212764",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.042945908676",
+        "net_return_compounded_across_reset_folds": "0.035104321576",
+        "nonannualized_sharpe": "0.012279177501",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 103
+      }
+    },
+    {
+      "deflated_sharpe": {
+        "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+        "expected_maximum_nonannualized_sharpe": "0.003668664768",
+        "probability": "0.711395127255"
+      },
+      "experiment_id": "exp-20260716T104148Z-47308f5b32cc",
+      "metrics_path": "research/experiments/exp-20260716T104148Z-47308f5b32cc/metrics.json",
+      "outcome": "PASS",
+      "parameters": {
+        "atr_period": 20,
+        "changed_parameter": "stop_multiple",
+        "entry_window": 20,
+        "exit_window": 10,
+        "stop_multiple": "2.4"
+      },
+      "trial_id": "stop_2_4",
+      "trial_index": 13,
+      "validation": {
+        "bootstrap_expectancy_r_ci": {
+          "lower": "-0.185773276882",
+          "upper": "0.552334686435"
+        },
+        "expectancy_r": "0.152913778322",
+        "fold_count": 3,
+        "independent_event_count": 61,
+        "maximum_drawdown": "0.040953112455",
+        "net_return_compounded_across_reset_folds": "0.037020208663",
+        "nonannualized_sharpe": "0.013651925827",
+        "positive_expectancy_fold_count": 2,
+        "trade_count": 100
+      }
+    }
+  ]
+}

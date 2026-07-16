@@ -1,8 +1,12 @@
 # Experiment registry
 
-本目录保存 P1-06 的 append-only 实验记录。当前
-[`trial-registry.json`](trial-registry.json) 只冻结 Donchian Strategy Card、14 次试验预算和
-“失败 trial 必须保留”规则；在 P2-05 创建首个预注册 trial 前，`entries` 必须保持为空。
+本目录保存 append-only 实验记录。[`trial-registry.json`](trial-registry.json) 已在 P2-05 一次性
+登记 baseline 和 12 个 OAT 邻域 trial；每个 trial 均保留 registration、completion、交易、指标、
+固定报告和 artifact manifest。14 次预算当前消耗 13 次，不得删除失败结果、复用 index 或根据结果
+追加未预注册参数。
+
+P2-05 只得出统计层检查结果，没有完成独立评审或 P2-06 反作弊。所有 entry 的 `review_result` 均为
+`PENDING`，因此没有 experiment 能通过 `assert_selectable_experiment` 进入策略选择。
 
 ## Lifecycle
 

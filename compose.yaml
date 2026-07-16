@@ -124,4 +124,23 @@ services:
       - ./data:/workspace/data:ro
       - ./research:/workspace/research
 
+  walk-forward-report:
+    <<: *freqtrade-base
+    profiles: [research]
+    entrypoint: [python]
+    # P2-05 先写入全部预注册，再读取 clean 数据并追加结果；容器无网络且不挂载交易凭据。
+    environment:
+      PYTHONPATH: /workspace/src:/workspace
+    command:
+      - /workspace/scripts/build_walk_forward_report.py
+      - --project-root
+      - /workspace
+      - --build
+    working_dir: /workspace
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+      - ./data:/workspace/data:ro
+      - ./research:/workspace/research
+
 # live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。

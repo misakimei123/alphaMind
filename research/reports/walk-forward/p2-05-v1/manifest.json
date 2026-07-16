@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "path": "research/reports/walk-forward/p2-05-v1/summary.json",
+      "sha256": "0987afb3e8e5936e14cfc6a462550ec620a374a20bf3709d928a89a9f18a32a7"
+    },
+    {
+      "path": "research/reports/walk-forward/p2-05-v1/summary.md",
+      "sha256": "faec8d397e3e88e4f2a38ad5b448c124ce0b593d6c53e891272caa0c50450fe1"
+    },
+    {
+      "path": "research/experiments/trial-registry.json",
+      "sha256": "af12f3f6a1c9143f267d160fed3b76e6fbff2b0d9fa01ecdfe8d57ae90906ce4"
+    },
+    {
+      "path": "scripts/build_walk_forward_report.py",
+      "sha256": "eda9475ae029d25dee84a3155e21bf13678c0a01e7b82a12e5b322cb50c76d31"
+    },
+    {
+      "path": "src/alphamind/research/walk_forward.py",
+      "sha256": "a6e13ff2249d1ed95f3b31ee3fcae78c60ab6149bab7de95cb1f9a27967e3b35"
+    },
+    {
+      "path": "configs/research/walk-forward-v1.toml",
+      "sha256": "227accaa13110f27a307ff4da523b06f00dab7cf172ac2ceab820b7b0a501125"
+    },
+    {
+      "path": "data/manifests/walk-forward-development-v1.yaml",
+      "sha256": "0f9526532458aa2f2fe049f30081b28f78da5b8cc0e441632eea83fcfc513c6a"
+    }
+  ],
+  "model_version": "p2-05-v1",
+  "schema_version": 1
+}

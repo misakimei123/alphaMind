@@ -1,0 +1,109 @@
+{
+  "experiment_id": "exp-20260716T104148Z-717dab19d361",
+  "files": [
+    {
+      "direction": "INPUT",
+      "path": "research/hypotheses/donchian_trend_v1.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "hypothesis",
+      "sha256": "95e99238d0fcbfc830658bed5291368ba418eb8ca1f494ef84d58a83db0cc232",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "research/strategy_cards/donchian_trend_v0.1.0.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "strategy_card",
+      "sha256": "5069ee45c52628a392ead673c749407e7c90219214ad5568c61d72fe2aa69805",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/research/walk-forward-v1.toml",
+      "record_count": null,
+      "required": true,
+      "role": "strategy_config",
+      "sha256": "227accaa13110f27a307ff4da523b06f00dab7cf172ac2ceab820b7b0a501125",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/common/runtime-versions.toml",
+      "record_count": null,
+      "required": true,
+      "role": "runtime_lock",
+      "sha256": "8316a227153a4b65862210642d17034f5d15a6d2a8003df65522fd881ff92262",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "data/manifests/walk-forward-development-v1.yaml",
+      "record_count": null,
+      "required": true,
+      "role": "dataset_manifest",
+      "sha256": "0f9526532458aa2f2fe049f30081b28f78da5b8cc0e441632eea83fcfc513c6a",
+      "slice": "all"
+    },
+    {
+      "direction": "INPUT",
+      "path": "configs/research/execution-model-v1.toml",
+      "record_count": null,
+      "required": true,
+      "role": "cost_model",
+      "sha256": "4d0816d838a893db2801ea501dfbf37d836b9198362ad7f97e24c3213275470f",
+      "slice": "all"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-717dab19d361/registration.json",
+      "record_count": null,
+      "required": true,
+      "role": "registration",
+      "sha256": "fd460aeae62db54d2e8ed95c023a88790eabfe213bc6475abc9dc97b0b459e66",
+      "slice": "none"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-717dab19d361/completion.json",
+      "record_count": null,
+      "required": true,
+      "role": "completion",
+      "sha256": "b708b24224d61345c9074dd8f2fcf93e8152579f9f42b93108ff890777847a22",
+      "slice": "none"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-717dab19d361/trades.json",
+      "record_count": 122,
+      "required": true,
+      "role": "trades",
+      "sha256": "1b4548b152439b550526e5fb925102181a4434665d63f85025f85a46f91f9d99",
+      "slice": "none"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-717dab19d361/metrics.json",
+      "record_count": 9,
+      "required": true,
+      "role": "metrics",
+      "sha256": "2bd4d5e663d90b015750300407260cec235001b135a5bc7a1d8a1032b93b3c63",
+      "slice": "none"
+    },
+    {
+      "direction": "OUTPUT",
+      "path": "research/experiments/exp-20260716T104148Z-717dab19d361/report-final.md",
+      "record_count": null,
+      "required": true,
+      "role": "report",
+      "sha256": "58bba45977f7bfec2b05d9a77b34734034089d4b7cf7d784c6098fbd5a439948",
+      "slice": "none"
+    }
+  ],
+  "generated_at_utc": "2026-07-16T10:41:48Z",
+  "manifest_content_sha256": "0daddc06624021c7885cc2b1afb259af9c8695eb4042f3db764fed9e923c42d8",
+  "registration_sha256": "40415ea55aed9f429d4ac00fda44d47a8294cbecf6ad658f574f8206d6957b15",
+  "schema_version": 1,
+  "status": "COMPLETED"
+}

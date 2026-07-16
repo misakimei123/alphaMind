@@ -1,0 +1,190 @@
+{
+  "aggregate_validation": {
+    "bootstrap_expectancy_r_ci": {
+      "lower": "-0.215805829321",
+      "upper": "0.632149745393"
+    },
+    "expectancy_r": "0.169695807335",
+    "fold_count": 3,
+    "independent_event_count": 60,
+    "maximum_drawdown": "0.044218683434",
+    "net_return_compounded_across_reset_folds": "0.042867787758",
+    "nonannualized_sharpe": "0.013642316146",
+    "positive_expectancy_fold_count": 2,
+    "trade_count": 105
+  },
+  "calendar_slices": [
+    {
+      "expectancy_r": null,
+      "net_pnl_quote": "0",
+      "slice_id": "calendar_stress_2022_q2",
+      "trade_count": 0
+    },
+    {
+      "expectancy_r": null,
+      "net_pnl_quote": "0",
+      "slice_id": "calendar_stress_2022_q4",
+      "trade_count": 0
+    },
+    {
+      "expectancy_r": "2.260164259447",
+      "net_pnl_quote": "562.618234461150",
+      "slice_id": "calendar_trend_2024_q1",
+      "trade_count": 10
+    },
+    {
+      "expectancy_r": "-0.265366170513",
+      "net_pnl_quote": "-32.928378457300",
+      "slice_id": "calendar_stress_2024_aug",
+      "trade_count": 5
+    }
+  ],
+  "concentration": {
+    "gross_profit_quote": "1840.497230664825",
+    "pair_net_pnl_quote": {
+      "BTC/USDT": "198.855192175425",
+      "ETH/USDT": "235.392749614025"
+    },
+    "positive_profit_hhi": "0.085916350594",
+    "top_5_profit_contribution": "0.549624444698",
+    "top_5_trades": [
+      {
+        "entry_price": "2379.08",
+        "entry_signal_timestamp": "2024-02-06T16:00:00Z",
+        "entry_timestamp": "2024-02-06T20:00:00Z",
+        "exit_price": "3374.02",
+        "exit_reason": "channel_exit",
+        "exit_timestamp": "2024-03-05T20:00:00Z",
+        "fold_id": "WF-01",
+        "net_pnl_quote": "354.041813521000",
+        "pair": "ETH/USDT",
+        "quantity": "0.35948",
+        "return_r": "14.23467999730119217373510333"
+      },
+      {
+        "entry_price": "74360.5",
+        "entry_signal_timestamp": "2024-11-06T00:00:00Z",
+        "entry_timestamp": "2024-11-06T04:00:00Z",
+        "exit_price": "95902.0",
+        "exit_reason": "channel_exit",
+        "exit_timestamp": "2024-11-24T16:00:00Z",
+        "fold_id": "WF-02",
+        "net_pnl_quote": "183.395486215625",
+        "pair": "BTC/USDT",
+        "quantity": "0.008633",
+        "return_r": "7.373605221362418491385056595"
+      },
+      {
+        "entry_price": "1901.1",
+        "entry_signal_timestamp": "2025-05-08T00:00:00Z",
+        "entry_timestamp": "2025-05-08T04:00:00Z",
+        "exit_price": "2408.02",
+        "exit_reason": "channel_exit",
+        "exit_timestamp": "2025-05-18T20:00:00Z",
+        "fold_id": "WF-03",
+        "net_pnl_quote": "162.607803004800",
+        "pair": "ETH/USDT",
+        "quantity": "0.32562",
+        "return_r": "6.646603234498021660152343167"
+      },
+      {
+        "entry_price": "43612.0",
+        "entry_signal_timestamp": "2024-02-07T16:00:00Z",
+        "entry_timestamp": "2024-02-07T20:00:00Z",
+        "exit_price": "50985.2",
+        "exit_reason": "channel_exit",
+        "exit_timestamp": "2024-02-17T16:00:00Z",
+        "fold_id": "WF-01",
+        "net_pnl_quote": "157.999003062900",
+        "pair": "BTC/USDT",
+        "quantity": "0.021921",
+        "return_r": "6.344133768337013668344411439"
+      },
+      {
+        "entry_price": "52836.8",
+        "entry_signal_timestamp": "2024-02-26T12:00:00Z",
+        "entry_timestamp": "2024-02-26T16:00:00Z",
+        "exit_price": "61435.1",
+        "exit_reason": "channel_exit",
+        "exit_timestamp": "2024-03-05T20:00:00Z",
+        "fold_id": "WF-01",
+        "net_pnl_quote": "153.538162567350",
+        "pair": "BTC/USDT",
+        "quantity": "0.018282",
+        "return_r": "5.916093693996760246270159327"
+      }
+    ]
+  },
+  "deflated_sharpe": {
+    "effective_trial_count_policy": "raw_13_conservative_upper_bound",
+    "expected_maximum_nonannualized_sharpe": "0.003668664768",
+    "probability": "0.711584931136"
+  },
+  "parameters": {
+    "atr_period": 20,
+    "changed_parameter": "exit_window",
+    "entry_window": 20,
+    "exit_window": 11,
+    "stop_multiple": "2.0"
+  },
+  "train_folds": [
+    {
+      "expectancy_r": "0.283909844481",
+      "final_equity": "10880.019363485075",
+      "fold_id": "WF-01",
+      "independent_event_count": 74,
+      "maximum_drawdown": "0.044021043212",
+      "net_return": "0.088001936349",
+      "trade_count": 126
+    },
+    {
+      "expectancy_r": "0.351771556919",
+      "final_equity": "11403.707095138525",
+      "fold_id": "WF-02",
+      "independent_event_count": 93,
+      "maximum_drawdown": "0.044021043212",
+      "net_return": "0.140370709514",
+      "trade_count": 157
+    },
+    {
+      "expectancy_r": "0.325412273942",
+      "final_equity": "11586.988972471350",
+      "fold_id": "WF-03",
+      "independent_event_count": 113,
+      "maximum_drawdown": "0.047652198632",
+      "net_return": "0.158698897247",
+      "trade_count": 190
+    }
+  ],
+  "trial_id": "exit_11",
+  "trial_index": 8,
+  "validation_folds": [
+    {
+      "expectancy_r": "0.627593941678",
+      "final_equity": "10481.327894082125",
+      "fold_id": "WF-01",
+      "independent_event_count": 19,
+      "maximum_drawdown": "0.039462623891",
+      "net_return": "0.048132789408",
+      "trade_count": 31
+    },
+    {
+      "expectancy_r": "0.188152155837",
+      "final_equity": "10155.559474570025",
+      "fold_id": "WF-02",
+      "independent_event_count": 20,
+      "maximum_drawdown": "0.017686483156",
+      "net_return": "0.015555947457",
+      "trade_count": 34
+    },
+    {
+      "expectancy_r": "-0.200863143007",
+      "final_equity": "9797.360573137300",
+      "fold_id": "WF-03",
+      "independent_event_count": 21,
+      "maximum_drawdown": "0.044218683434",
+      "net_return": "-0.020263942686",
+      "trade_count": 40
+    }
+  ]
+}

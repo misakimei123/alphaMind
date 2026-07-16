@@ -1,0 +1,162 @@
+{
+  "artifacts": [],
+  "completed_at_utc": null,
+  "cost_model": {
+    "all_costs_nonnegative": true,
+    "config_path": "configs/research/execution-model-v1.toml",
+    "config_sha256": "4d0816d838a893db2801ea501dfbf37d836b9198362ad7f97e24c3213275470f",
+    "fee_rate": "0.001",
+    "gap_buffer_rate": "0.002",
+    "slippage_rate": "0.00075",
+    "version": "p2-04-v1"
+  },
+  "created_at_utc": "2026-07-16T10:41:48Z",
+  "dataset": {
+    "dataset_id": "bybit-spot-development-ef232b839406-p1-04-v1",
+    "development_end_exclusive": "2026-07-01T00:00:00Z",
+    "development_start": "2022-01-01T00:00:00Z",
+    "feature_version": "ohlcv-v1",
+    "final_holdout_end_exclusive": "2026-07-01T00:00:00Z",
+    "final_holdout_start": "2025-07-01T00:00:00Z",
+    "holdout_access_count": 1,
+    "holdout_first_access_commit": "630380e7dcf03744f3419366a7874bae3c0d8002",
+    "holdout_state": "DEGRADED_TO_DEVELOPMENT",
+    "manifest_path": "data/manifests/walk-forward-development-v1.yaml",
+    "manifest_sha256": "0f9526532458aa2f2fe049f30081b28f78da5b8cc0e441632eea83fcfc513c6a"
+  },
+  "evidence_layer": "historical_backtest",
+  "experiment_id": "exp-20260716T104148Z-8ba8496a2525",
+  "hypothesis": {
+    "economic_rationale": "市场参与者对新信息的分阶段调整可能造成价格突破后的有限持续性；少数较大趋势收益 应补偿假突破、手续费、滑点和保守 gap buffer 带来的损失。",
+    "falsification_conditions": [
+      "majority_walk_forward_folds_have_non_positive_net_expectancy",
+      "stressed_aggregate_oos_expectancy_is_non_positive",
+      "fewer_than_70_percent_neighbor_trials_keep_non_negative_expectancy",
+      "cashflow_adjusted_drawdown_reaches_5_percent_kill_switch",
+      "lookahead_or_same_candle_fill_bias_detected",
+      "profitability_requires_dca_leverage_or_post_hoc_filters"
+    ],
+    "hypothesis_id": "hyp-donchian-trend-v1",
+    "hypothesis_path": "research/hypotheses/donchian_trend_v1.yaml",
+    "hypothesis_sha256": "95e99238d0fcbfc830658bed5291368ba418eb8ca1f494ef84d58a83db0cc232",
+    "pass_condition": "全部预注册统计、风险、稳健性和证伪门槛必须同时满足",
+    "primary_metric": "expectancy_r",
+    "statement": "Donchian long/flat 趋势规则在冻结开发池的独立验证窗口中能够捕捉持续性价格突破， 并在计入预注册交易成本后保留正的净期望。"
+  },
+  "owner": "alphamind-research",
+  "registration_sha256": "3f3179aded09293c64a56c1dce406e9744e5eb6593a263b8d620f7f9ead8e2a7",
+  "result": null,
+  "review_result": "PENDING",
+  "runtime": {
+    "ccxt_version": "4.5.61",
+    "freqtrade_version": "2026.6",
+    "python_version": "3.12.9",
+    "random_seed": 20260716,
+    "runtime_lock_path": "configs/common/runtime-versions.toml",
+    "runtime_lock_sha256": "8316a227153a4b65862210642d17034f5d15a6d2a8003df65522fd881ff92262"
+  },
+  "schema_version": 1,
+  "started_at_utc": null,
+  "status": "PRE_REGISTERED",
+  "strategy": {
+    "parameters": {
+      "atr_period": 20,
+      "entry_window": 20,
+      "exit_window": 10,
+      "stop_multiple": "2.0",
+      "trial_id": "baseline"
+    },
+    "project_commit": "03e68843368f97fdd4a4a8fb9a7c25aa01de1647",
+    "strategy_card_path": "research/strategy_cards/donchian_trend_v0.1.0.yaml",
+    "strategy_card_sha256": "5069ee45c52628a392ead673c749407e7c90219214ad5568c61d72fe2aa69805",
+    "strategy_config_path": "configs/research/walk-forward-v1.toml",
+    "strategy_config_sha256": "227accaa13110f27a307ff4da523b06f00dab7cf172ac2ceab820b7b0a501125",
+    "strategy_id": "donchian_trend",
+    "strategy_version": "0.1.0"
+  },
+  "trial_budget": {
+    "maximum_trials": 14,
+    "parameter_selection_allowed": true,
+    "prior_result_used": false,
+    "trial_index": 1
+  },
+  "validation": {
+    "folds": [
+      "WF-01",
+      "WF-02",
+      "WF-03"
+    ],
+    "lookahead_analysis_required": true,
+    "metrics": [
+      "expectancy_r",
+      "maximum_drawdown",
+      "trade_count",
+      "independent_event_count",
+      "bootstrap_confidence_interval",
+      "deflated_sharpe_probability",
+      "profit_concentration"
+    ],
+    "recursive_analysis_required": true,
+    "regime_reporting_required": true,
+    "slices": {
+      "holdout": [],
+      "stress": [
+        {
+          "end_exclusive": "2022-07-01T00:00:00Z",
+          "slice_id": "calendar_stress_2022_q2",
+          "start": "2022-05-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2023-01-01T00:00:00Z",
+          "slice_id": "calendar_stress_2022_q4",
+          "start": "2022-11-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2024-04-15T00:00:00Z",
+          "slice_id": "calendar_trend_2024_q1",
+          "start": "2024-02-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2024-09-01T00:00:00Z",
+          "slice_id": "calendar_stress_2024_aug",
+          "start": "2024-08-01T00:00:00Z"
+        }
+      ],
+      "train": [
+        {
+          "end_exclusive": "2024-01-01T00:00:00Z",
+          "slice_id": "WF-01-train",
+          "start": "2022-01-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2024-07-01T00:00:00Z",
+          "slice_id": "WF-02-train",
+          "start": "2022-01-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2025-01-01T00:00:00Z",
+          "slice_id": "WF-03-train",
+          "start": "2022-01-01T00:00:00Z"
+        }
+      ],
+      "validation": [
+        {
+          "end_exclusive": "2024-07-01T00:00:00Z",
+          "slice_id": "WF-01-validation",
+          "start": "2024-01-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2025-01-01T00:00:00Z",
+          "slice_id": "WF-02-validation",
+          "start": "2024-07-01T00:00:00Z"
+        },
+        {
+          "end_exclusive": "2025-07-01T00:00:00Z",
+          "slice_id": "WF-03-validation",
+          "start": "2025-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "walk_forward_manifest": "data/manifests/regime-manifest.yaml"
+  }
+}

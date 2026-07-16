@@ -1,0 +1,27 @@
+schema_version: 1
+manifest_id: walk-forward-development-v1
+dataset_id: bybit-spot-development-ef232b839406-p1-04-v1
+selection_scope:
+  start: "2022-01-01T00:00:00Z"
+  end_exclusive: "2025-07-01T00:00:00Z"
+  final_holdout_used: false
+clean_snapshot:
+  root: data/clean/bybit-spot-development-ef232b839406-p1-04-v1
+  sha256: 75ba42c33919b1acc6a6f032d67326960ab4b2dda3d84b28dde0d4410bb8f07a
+quality_report:
+  path: data/manifests/quality/bybit-spot-development-ef232b839406-p1-04-v1/report.json
+  file_sha256: 958616ebcfcdf8d4fd2dc262be17e6ddad19d81a75b026c3360fdf0da26d685d
+  content_sha256: 06cb68e83a5cdccc5bafdffead91cfe22531d586d06848eb5d68fc7e9c7ae33c
+  status: ACCEPTED
+  downstream_experiment_allowed: true
+regime_manifest:
+  path: data/manifests/regime-manifest.yaml
+  sha256: 6dc4ac6957936ea606bc4debb2d0b252ad8c7c9f78ff84f9da202b3e702d2b81
+exchange_metadata:
+  path: data/manifests/source/bybit-spot-ohlcv-20260716T070451Z-ef232b839406.exchange-metadata.json
+  sha256: c59e13775571722f3d7d15a903702d989f728ac3c0a3ac0807ad833d04c3d4c3
+holdout_history:
+  state: DEGRADED_TO_DEVELOPMENT
+  access_count: 1
+  first_access_worktree_base_commit: 630380e7dcf03744f3419366a7874bae3c0d8002
+  p2_05_validation_end_exclusive: "2025-07-01T00:00:00Z"

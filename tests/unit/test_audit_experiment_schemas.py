@@ -227,7 +227,12 @@ def test_p1_06_repository_contract_files_are_valid(
     hypothesis_validator.validate(hypothesis)
     strategy_card_validator.validate(strategy_card)
     trial_registry_validator.validate(registry)
-    assert registry["entries"] == []
+    # P1-06 初始空 registry 已由 P2-05 合法追加；这里继续验证预算、唯一性和未审批边界。
+    assert len(registry["entries"]) == 13
+    assert {entry["trial_index"] for entry in registry["entries"]} == set(range(1, 14))
+    assert all(entry["status"] == "COMPLETED" for entry in registry["entries"])
+    assert all(entry["outcome"] == "PASS" for entry in registry["entries"])
+    assert all(entry["review_result"] == "PENDING" for entry in registry["entries"])
     strategy_card_sha256 = hashlib.sha256(strategy_card_path.read_bytes()).hexdigest()
     assert hypothesis["strategy_card"]["sha256"] == strategy_card_sha256
     assert registry["strategy_card_sha256"] == strategy_card_sha256
