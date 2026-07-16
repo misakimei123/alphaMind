@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-06 DONE、P2-01 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P2-01 DONE、P2-02 IN_PROGRESS |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06 均为 DONE；GitHub Actions `deterministic-quality #9` 已在 `main@61fd1e9` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-06。P2-01 已完成验收补强和本地全量门禁，当前为 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-03 的离线确定性核心保持并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 均为 DONE；GitHub Actions `deterministic-quality #11` 已在 `main@3e3c141` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P2-01。当前进入 P2-02 Freqtrade Strategy Adapter，P2-03 的离线确定性核心保持并行。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -714,7 +714,7 @@ Strategy Card 必须固定：
 
 ### P2-01 纯 Donchian 信号逻辑
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；point-in-time 纯函数和全部本地验收已完成，等待 GitHub Actions 后转为 DONE。
+当前状态（2026-07-16）：`DONE`；point-in-time 纯函数、本地全量门禁和 `main@3e3c141` 的 GitHub Actions `deterministic-quality #11` 均已通过，项目所有人已批准。
 
 实现：
 
@@ -740,6 +740,8 @@ Strategy Card 必须固定：
 - 全量门禁为 83 passed，repository scan 检查 99 个文件，strict mypy 检查 20 个 source/script 文件，Ruff check/format 覆盖 31 个 Python 文件，`uv lock --check`、Compose config 和 `git diff --check` 均通过。
 
 ### P2-02 Freqtrade Strategy Adapter
+
+当前状态（2026-07-16）：`IN_PROGRESS`；正在核对 Freqtrade 2026.6 callback 合同并实现唯一 strategy adapter。
 
 实现：
 
@@ -1293,8 +1295,9 @@ git diff --check
 | 12 | P1-04 数据质量流水线 | DONE | `main@5c05086` 的实现、真实 clean 构建、独立复核和 GitHub Actions 均通过，项目所有人已批准 |
 | 13 | P1-05 基准与统一绩效指标 | DONE | `main@1098a48` 的统一指标、12 组真实数据基准、独立重算和 GitHub Actions 均通过，项目所有人已批准 |
 | 14 | P1-06 实验登记与可复现报告 | DONE | `main@61fd1e9` 的 schema、append-only 生命周期、固定报告、artifact manifest、失败保留、选择门禁和 GitHub Actions 均通过，项目所有人已批准 |
-| 15 | P2-01 纯 Donchian 信号逻辑 | READY_TO_VERIFY | point-in-time 信号、fail-closed 边界、4h/1d UTC 与无成交输出验收均通过；等待 GitHub Actions |
-| 16 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
+| 15 | P2-01 纯 Donchian 信号逻辑 | DONE | `main@3e3c141` 的 point-in-time 信号、fail-closed 边界、4h/1d UTC、无成交输出和 GitHub Actions 均通过，项目所有人已批准 |
+| 16 | P2-02 Freqtrade Strategy Adapter | IN_PROGRESS | 正在按锁定版 callback 合同映射唯一 strategy，不接认证 API 或生产 key |
+| 17 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
