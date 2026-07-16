@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-02 DONE、P1-03 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P1-03 DONE、P1-04 IN_PROGRESS |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01、P1-02 均为 DONE；P1-03 已生成并独立复核真实 Bybit source snapshot，严格 holdout 降级处置也由项目所有人本地验证通过，进入 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03 均为 DONE；项目所有人已批准 `main@7301894` 的 P1-03 不可变 snapshot 与严格 holdout 降级证据，P1-04 数据质量流水线进入 IN_PROGRESS。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -582,7 +582,7 @@ Strategy Card 必须固定：
 
 ### P1-03 数据下载与不可变清单
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；真实 Bybit source snapshot、不可变 manifest、公开 metadata、哈希复核和严格 holdout 降级处置均已完成，并由项目所有人运行本地门禁验证通过，等待最终验收。
+当前状态（2026-07-16）：`DONE`；真实 Bybit source snapshot、不可变 manifest、公开 metadata、哈希复核和严格 holdout 降级处置均已完成，项目所有人已在 `main@7301894` 基线上批准本任务。
 
 实现：
 
@@ -612,6 +612,8 @@ Strategy Card 必须固定：
 - 验证状态：项目所有人运行 repository scan（76 files）、mypy（12 source files）、全量 pytest、Ruff check、Ruff format check（21 files）、`uv lock --check`、Compose config、`git diff --check` 均通过；容器内独立复核返回 `status=verified`、`partition_count=4` 和 `holdout_state=DEGRADED_TO_DEVELOPMENT`。`git diff --check` 仅报告 Git 换行转换 warning，无 whitespace error。
 
 ### P1-04 数据质量流水线
+
+当前状态（2026-07-16）：`IN_PROGRESS`；项目所有人已批准进入本任务，开始实现仅限开发池、无静默修复、ERROR 阻断下游的确定性质量流水线。
 
 实现：
 
@@ -1243,9 +1245,10 @@ git diff --check
 | 8 | P0-08 Scope Frozen 评审 | DONE | 项目所有人于 2026-07-16 批准 Scope Frozen，原 B-01 至 B-04 阻塞已解除 |
 | 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
 | 10 | P1-02 Freqtrade 固定环境 | DONE | 固定镜像、Compose、隔离配置和容器验证完成；`2860b48` 的 GitHub Actions 通过并由项目所有人批准 |
-| 11 | P1-03 数据下载与不可变清单 | READY_TO_VERIFY | snapshot、hash 与严格 holdout 降级处置均已由项目所有人本地验证，等待最终验收 |
-| 12 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
-| 13 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
+| 11 | P1-03 数据下载与不可变清单 | DONE | snapshot、hash 与严格 holdout 降级处置均已验证，项目所有人批准 `main@7301894` |
+| 12 | P1-04 数据质量流水线 | IN_PROGRESS | 仅处理开发池，输出确定性 JSON/Markdown 报告并以 ERROR 阻断 clean 发布 |
+| 13 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
+| 14 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
