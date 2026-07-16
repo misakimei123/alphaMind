@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P0-07 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P0-08 BLOCKED |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-07 READY_TO_VERIFY，Audit/Replay 决策与两个 schema 已完成，等待项目所有人独立复核；复核通过后的下一顺序任务为 P0-08 Scope Frozen 评审。P0-05、P0-06 仍为 READY_TO_VERIFY，尚未被实现者自行升级为 DONE。P1-01、P2-01、P2-03 的离线确定性核心并行推进；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受阶段门禁约束
+> 当前阶段：P0-08 BLOCKED，Phase 0 gate 证据审查已完成，但 P0-05、P0-06、P0-07 缺少项目所有人的独立复核记录，Codex 不能自行批准；解除条件见 `docs/decisions/phase-0-gate.md`。P1-01、P2-01、P2-03 的无密钥、无网络、无交易写权限离线确定性核心可在既有授权范围内继续；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受门禁约束
 
 ## 1. 计划目的与使用规则
 
@@ -79,7 +79,7 @@
 | G-06 | callback 到 Audit DB 的异步通道未定 | **已解决**：ADR-0007 固定独立 SQLite WAL outbox、50 ms callback 上限、10,000/256 MiB 容量、分级背压与幂等 sidecar writer | P3-03 必须验证 crash/retry/dead-letter，达到阈值时新入场 fail-closed |
 | G-07 | Replay 的验证对象容易越界 | **已解决**：Replay 只验证 alphaMind 风险、审计、适配与运维处置；partial fill/submit unknown 使用 fixture 与锁定版本 Freqtrade 集成测试，不建立第二订单权威 | P3-05 必须证明 Replay 无生产凭据、无交易写权限且证据不越层 |
 | G-08 | Paper 的最小信号、成交和独立事件数未预注册 | **已解决**：ADR-0004 已固定至少 90 天、12 个有效信号、8 个模拟成交和 4 个独立事件 | 证据不足时继续 Paper，不得降低门槛 |
-| G-09 | 部署平台与密钥方案未定 | Windows 仅用于本地研究；生产候选默认 Linux host + pinned Docker image | 生产可靠性和密钥边界不可验收 |
+| G-09 | 部署平台与密钥方案未定 | **已解决**：P0-08 gate 整合 P0-01/P0-02/P0-03，固定 Windows 无 key 研究、Linux amd64 pinned Docker 生产候选、分离 trade/read-only key、禁 Withdrawal、IP 绑定与仓库外 `0400` 只读 secret 文件 | P3-07/P3-08 必须实测 host 加固、secret mount、撤销与轮换；失败时不得进入 Paper/Live |
 | G-10 | Kill Switch 的实际动作未定 | **已解决**：ADR-0006 与 runbook 固定 entry fail-closed、撤销未成交入场、保留安全退出、Kill 人工处置和恢复证据 | P3-05 必须完成故障与恢复演练 |
 
 `G-04` 和 `G-07` 是最容易造成过度设计的两点。前者不能为了“保存一切”提前建设通用行情平台；后者不能为了测试 partial fill 而在 Freqtrade 外维护一套生产订单真相。
@@ -507,6 +507,16 @@ Strategy Card 必须固定：
 - 评审结果写入 `docs/decisions/phase-0-gate.md`。
 
 不通过：继续 Phase 0，不得创建策略实现。
+
+实际进度（2026-07-16）：
+
+- 状态：`BLOCKED`；`docs/decisions/phase-0-gate.md` 已完成逐项证据审查；
+- 设计缺口：G-01 至 G-10 均已有明确决策，G-09 由既有部署方向、运行时锁和 key 安全基线整合关闭；
+- capability：下单、查询、partial fill、幂等、权限与 stoploss 关键项均已分类；动态市场规则和真实写路径仍由 P1-02/P3-06/Live preflight 验证；
+- 冻结证据：Final Holdout 保持 `SEALED_UNREAD`、`access_count=0`；trial 初始预算为 14、禁止 Cartesian product、当前结果数为 0；
+- 项目验证：`uv run pytest` 为 55 passed；`ruff check .`、新增 gate 测试的 `ruff format --check`、`uv lock --check` 与 `git diff --check` 通过；全仓 format check 仍受 14 个未触碰历史文件的换行/格式基线影响，未在本任务中批量改写；
+- 阻塞事实：P0-05、P0-06、P0-07 均由 Codex 实施且没有项目所有人针对固定 commit 的独立复核记录；
+- 解除条件：项目所有人分别复核 ADR-0005、ADR-0006、ADR-0007，再确认 Phase 0 gate 没有扩大 MVP 范围；实质修改必须重新测试和复核，不能直接批准旧版本。
 
 ## 7. Phase 1：研究底座
 
@@ -1190,7 +1200,7 @@ git diff --check
 | 5 | P0-05 数据与验证合同 | READY_TO_VERIFY | 合同、schema、regime manifest 和本地验证已完成，等待项目所有人独立复核 |
 | 6 | P0-06 风险会计与 Kill Switch | READY_TO_VERIFY | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核 |
 | 7 | P0-07 Audit、Replay 与数据库边界 | READY_TO_VERIFY | ADR、AuditEvent/Experiment schema 与本地验证已完成，等待项目所有人独立复核 |
-| 8 | P0-08 Scope Frozen 评审 | NOT_STARTED | 通过后才允许 Phase 1 |
+| 8 | P0-08 Scope Frozen 评审 | BLOCKED | Gate 审查已完成；等待项目所有人独立复核 P0-05～P0-07 并确认 Scope Frozen |
 | 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 先建立 Python 3.12、pytest、ruff 与无密钥测试骨架 |
 | 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 11 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
