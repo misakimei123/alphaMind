@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-05 DONE、P1-06 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-16 / P1-06 DONE、P2-01 IN_PROGRESS |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-05 均为 DONE；GitHub Actions `deterministic-quality #8` 已在 `main@1098a48` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-05。P1-06 已完成 schema、不可变登记、固定报告、artifact manifest、失败结果保留和策略选择门禁，本地全量门禁通过，当前为 READY_TO_VERIFY。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06 均为 DONE；GitHub Actions `deterministic-quality #9` 已在 `main@61fd1e9` 成功，项目所有人于 2026-07-16 的继续开发指令中批准 P1-06。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。当前继续完成 P2-01，P2-03 的离线确定性核心保持并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -676,7 +676,7 @@ Strategy Card 必须固定：
 
 ### P1-06 实验登记与可复现报告
 
-当前状态（2026-07-16）：`READY_TO_VERIFY`；实现和本地全量门禁已完成，等待 GitHub Actions 与项目所有人批准后转为 DONE。
+当前状态（2026-07-16）：`DONE`；实现、本地全量门禁和 `main@61fd1e9` 的 GitHub Actions `deterministic-quality #9` 均已通过，项目所有人已批准。
 
 实现：
 
@@ -1283,7 +1283,7 @@ git diff --check
 | 11 | P1-03 数据下载与不可变清单 | DONE | snapshot、hash 与严格 holdout 降级处置均已验证，项目所有人批准 `main@7301894` |
 | 12 | P1-04 数据质量流水线 | DONE | `main@5c05086` 的实现、真实 clean 构建、独立复核和 GitHub Actions 均通过，项目所有人已批准 |
 | 13 | P1-05 基准与统一绩效指标 | DONE | `main@1098a48` 的统一指标、12 组真实数据基准、独立重算和 GitHub Actions 均通过，项目所有人已批准 |
-| 14 | P1-06 实验登记与可复现报告 | READY_TO_VERIFY | schema、append-only 生命周期、固定报告、artifact manifest、失败保留和选择门禁已实现；本地全量门禁通过 |
+| 14 | P1-06 实验登记与可复现报告 | DONE | `main@61fd1e9` 的 schema、append-only 生命周期、固定报告、artifact manifest、失败保留、选择门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 15 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 16 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
