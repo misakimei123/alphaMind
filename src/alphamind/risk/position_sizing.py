@@ -27,6 +27,13 @@ class LimitingCap(StrEnum):
     AVAILABLE_BALANCE = "available_balance"
 
 
+class RiskContextSource(StrEnum):
+    """风险输入的权威来源；运行模式不得静默回退到回测钱包。"""
+
+    BACKTEST = "backtest"
+    RISK_SNAPSHOT = "risk_snapshot"
+
+
 @dataclass(frozen=True, slots=True)
 class PositionSizeRequest:
     """一次仓位审批所需的完整、可重放输入。
@@ -43,6 +50,7 @@ class PositionSizeRequest:
     fee_buffer_per_unit: Decimal
     slippage_buffer_per_unit: Decimal
     gap_buffer_per_unit: Decimal
+    maximum_unit_loss: Decimal
     volatility_cap_quantity: Decimal
     symbol_exposure_limit_quote: Decimal
     current_symbol_exposure_quote: Decimal
@@ -51,9 +59,20 @@ class PositionSizeRequest:
     current_directional_exposure_quote: Decimal
     pending_directional_entry_exposure_quote: Decimal
     available_balance_cap_quantity: Decimal
+    price_tick: Decimal
     quantity_step: Decimal
     minimum_quantity: Decimal
     minimum_notional: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class PositionSizeContext:
+    """版本化定仓上下文，统一 Backtest 与 Dry/Live 的纯函数入口。"""
+
+    schema_version: int
+    source: RiskContextSource
+    snapshot_id: str | None
+    request: PositionSizeRequest
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +86,22 @@ class PositionSizeDecision:
     @property
     def approved(self) -> bool:
         return self.rejection_reason is None and self.approved_quantity > ZERO
+
+
+def _validate_context(context: PositionSizeContext) -> None:
+    if type(context.schema_version) is not int or context.schema_version != 1:
+        raise ValueError("risk context schema_version must be 1")
+    if not isinstance(context.source, RiskContextSource):
+        raise TypeError("risk context source must be RiskContextSource")
+    if not isinstance(context.request, PositionSizeRequest):
+        raise TypeError("risk context request must be PositionSizeRequest")
+
+    if context.source is RiskContextSource.BACKTEST:
+        if context.snapshot_id is not None:
+            raise ValueError("backtest risk context must not use a RiskSnapshot id")
+    elif not isinstance(context.snapshot_id, str) or not context.snapshot_id.strip():
+        # Dry/Live 只能使用已验证快照；缺失 id 时禁止伪装成模拟钱包上下文。
+        raise ValueError("risk_snapshot context requires a non-empty snapshot_id")
 
 
 def _validate_request(request: PositionSizeRequest) -> None:
@@ -87,8 +122,16 @@ def _validate_request(request: PositionSizeRequest) -> None:
         raise ValueError("long position stop_price must be below entry_price")
     if request.minimum_stop_distance <= ZERO:
         raise ValueError("minimum_stop_distance must be positive")
+    if request.maximum_unit_loss <= ZERO:
+        raise ValueError("maximum_unit_loss must be positive")
+    if request.price_tick <= ZERO:
+        raise ValueError("price_tick must be positive")
     if request.quantity_step <= ZERO:
         raise ValueError("quantity_step must be positive")
+    if request.entry_price % request.price_tick != ZERO:
+        raise ValueError("entry_price must align to price_tick")
+    if request.stop_price % request.price_tick != ZERO:
+        raise ValueError("stop_price must align to price_tick")
 
     non_negative_fields = (
         "fee_buffer_per_unit",
@@ -115,9 +158,11 @@ def _floor_to_step(quantity: Decimal, step: Decimal) -> Decimal:
     return steps * step
 
 
-def calculate_position_size(request: PositionSizeRequest) -> PositionSizeDecision:
+def calculate_position_size(context: PositionSizeContext) -> PositionSizeDecision:
     """按风险预算与暴露上限计算可批准的 base asset 数量。"""
 
+    _validate_context(context)
+    request = context.request
     _validate_request(request)
 
     stop_distance = request.entry_price - request.stop_price
@@ -131,6 +176,9 @@ def calculate_position_size(request: PositionSizeRequest) -> PositionSizeDecisio
         + request.slippage_buffer_per_unit
         + request.gap_buffer_per_unit
     )
+    if estimated_unit_loss > request.maximum_unit_loss:
+        # 极端成本假设必须由调用方提供显式上界；越界时拒绝而不是生成极小伪安全仓位。
+        raise ValueError("estimated_unit_loss exceeds maximum_unit_loss")
     quantity_by_risk = risk_cash / estimated_unit_loss
 
     # 跨标的暴露统一以 quote currency 计量，禁止直接相加 BTC、ETH 等不同 base 数量。

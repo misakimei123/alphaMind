@@ -9,9 +9,11 @@ from alphamind.risk.account_loss import (
 )
 from alphamind.risk.position_sizing import (
     LimitingCap,
+    PositionSizeContext,
     PositionSizeDecision,
     PositionSizeRequest,
     RejectionReason,
+    RiskContextSource,
     calculate_position_size,
 )
 
@@ -21,9 +23,11 @@ __all__ = [
     "AbsoluteLossReason",
     "AccountPnlObservation",
     "LimitingCap",
+    "PositionSizeContext",
     "PositionSizeDecision",
     "PositionSizeRequest",
     "RejectionReason",
+    "RiskContextSource",
     "calculate_position_size",
     "evaluate_absolute_loss",
 ]
