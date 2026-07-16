@@ -1,0 +1,106 @@
+{
+  "interval_start": "2022-01-01T00:00:00Z",
+  "interval_end_exclusive": "2022-01-01T12:00:00Z",
+  "timeframe": "4h",
+  "base_rows": [
+    {
+      "date": "2022-01-01T00:00:00Z",
+      "open": 100.0,
+      "high": 110.0,
+      "low": 90.0,
+      "close": 105.0,
+      "volume": 10.0
+    },
+    {
+      "date": "2022-01-01T04:00:00Z",
+      "open": 105.0,
+      "high": 115.0,
+      "low": 100.0,
+      "close": 110.0,
+      "volume": 11.0
+    },
+    {
+      "date": "2022-01-01T08:00:00Z",
+      "open": 110.0,
+      "high": 120.0,
+      "low": 105.0,
+      "close": 115.0,
+      "volume": 12.0
+    }
+  ],
+  "cases": [
+    {"id": "valid", "expected_status": "ACCEPTED", "expected_codes": []},
+    {
+      "id": "missing",
+      "drop_indices": [1],
+      "expected_status": "REJECTED",
+      "expected_codes": ["missing_candle_interval"]
+    },
+    {
+      "id": "duplicate",
+      "append_indices": [1],
+      "expected_status": "REJECTED",
+      "expected_codes": ["duplicate_timestamp", "non_increasing_timestamp"]
+    },
+    {
+      "id": "out_of_order",
+      "order": [1, 0, 2],
+      "expected_status": "REJECTED",
+      "expected_codes": ["non_increasing_timestamp"]
+    },
+    {
+      "id": "off_grid",
+      "updates": {"1": {"date": "2022-01-01T05:00:00Z"}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["timestamp_off_grid", "missing_candle_interval"]
+    },
+    {
+      "id": "out_of_range",
+      "updates": {"2": {"date": "2022-01-01T12:00:00Z"}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["timestamp_out_of_development_range", "missing_candle_interval"]
+    },
+    {
+      "id": "timestamp_not_utc",
+      "updates": {"0": {"date": "2022-01-01T00:00:00"}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["timestamp_not_utc", "missing_candle_interval"]
+    },
+    {
+      "id": "non_finite",
+      "updates": {"1": {"close": "NaN"}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["non_finite_value"]
+    },
+    {
+      "id": "nonpositive_price",
+      "updates": {"1": {"low": 0.0}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["nonpositive_price"]
+    },
+    {
+      "id": "invalid_ohlc",
+      "updates": {"1": {"high": 108.0}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["invalid_ohlc_relation"]
+    },
+    {
+      "id": "negative_volume",
+      "updates": {"1": {"volume": -1.0}},
+      "expected_status": "REJECTED",
+      "expected_codes": ["negative_volume"]
+    },
+    {
+      "id": "zero_volume",
+      "updates": {"1": {"volume": 0.0}},
+      "expected_status": "ACCEPTED_WITH_WARNINGS",
+      "expected_codes": ["zero_volume"]
+    },
+    {
+      "id": "abnormal_jump",
+      "updates": {"1": {"high": 145.0, "close": 140.0}},
+      "expected_status": "ACCEPTED_WITH_WARNINGS",
+      "expected_codes": ["abnormal_close_jump"]
+    }
+  ]
+}

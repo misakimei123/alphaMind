@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P1-03 DONE、P1-04 IN_PROGRESS |
+| 最近进度更新 | 2026-07-16 / P1-03 DONE、P1-04 READY_FOR_APPROVAL |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03 均为 DONE；项目所有人已批准 `main@7301894` 的 P1-03 不可变 snapshot 与严格 holdout 降级证据，P1-04 数据质量流水线进入 IN_PROGRESS。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01、P1-02、P1-03 均为 DONE；项目所有人已批准 `main@7301894` 的 P1-03 不可变 snapshot 与严格 holdout 降级证据。P1-04 已完成实现、本地门禁、真实 clean 构建和独立报告复核，进入 READY_FOR_APPROVAL，等待 GitHub Actions 与项目所有人批准。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -613,7 +613,7 @@ Strategy Card 必须固定：
 
 ### P1-04 数据质量流水线
 
-当前状态（2026-07-16）：`IN_PROGRESS`；项目所有人已批准进入本任务，开始实现仅限开发池、无静默修复、ERROR 阻断下游的确定性质量流水线。
+当前状态（2026-07-16）：`READY_FOR_APPROVAL`；仅限开发数据、无静默修复、ERROR 阻断下游的确定性质量流水线已完成实现和真实数据验证，等待 GitHub Actions 与项目所有人批准后转为 DONE。
 
 实现：
 
@@ -623,6 +623,7 @@ Strategy Card 必须固定：
 - 预期 4h/1d 网格检查；
 - 缺失和异常只报告，不静默修复；
 - 输出机器可读 JSON 与人可读 Markdown 报告。
+- 异常 close 跳变固定为诊断 WARN：4h 绝对相邻收益达到 20%，1d 达到 30%；不删除 candle，也不作为 ERROR 阻止 clean 发布。
 
 验收：
 
@@ -630,6 +631,17 @@ Strategy Card 必须固定：
 - 相同输入生成相同报告和 hash；
 - ERROR 级数据问题阻止下游实验；
 - WARN 的接受理由进入 manifest。
+
+开发进度（2026-07-16）：
+
+- 已实现纯函数质量规则，覆盖 UTC、严格递增、重复、缺口、乱序、网格、非有限值、非正价格、OHLC 关系、负/零成交量和固定阈值 close 跳变；
+- Arrow Dataset scanner 在读取 OHLC/volume 时先应用当前开发数据边界；`SEALED_UNREAD` 只读取原开发池，`DEGRADED_TO_DEVELOPMENT` 按已批准的严格降级读取 `[2022-01-01, 2026-07-01)`，完整 source 只做 P1-03 字节与时间戳复核；
+- clean 输出使用新 dataset ID 和 staging 目录，ERROR 时不发布，WARN 时保留原观测值；source 不填补、不去重、不插值、不重排；
+- JSON 报告、Markdown 报告、逐文件 SHA-256、clean snapshot hash 和独立 `--verify-report` 复核入口均为确定性证据；
+- 固定异常 fixtures 位于既有测试目录，断言追加到现有测试文件，没有新增独立测试脚本；
+- 本地门禁已通过：repository scan 检查 82 个文件，mypy 检查 15 个 source/script 文件，聚焦测试 11 个、全量 pytest 66 个，Ruff check/format 检查 24 个 Python 文件，`uv lock --check`、Compose config 与 `git diff --check` 均通过；
+- 真实数据报告 `bybit-spot-development-ef232b839406-p1-04-v1` 为 `ACCEPTED`，四个分区均为 0 ERROR、0 WARN；4h 各 9,852 根、1d 各 1,642 根，仅排除请求右边界后的 91/15 根附带 candle；
+- clean snapshot SHA-256 为 `75ba42c33919b1acc6a6f032d67326960ab4b2dda3d84b28dde0d4410bb8f07a`，report content SHA-256 为 `06cb68e83a5cdccc5bafdffead91cfe22531d586d06848eb5d68fc7e9c7ae33c`；独立 `--verify-report` 返回 source/report/clean 均 verified，并允许下游实验使用该 clean 数据。
 
 ### P1-05 基准与统一绩效指标
 
@@ -1246,7 +1258,7 @@ git diff --check
 | 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
 | 10 | P1-02 Freqtrade 固定环境 | DONE | 固定镜像、Compose、隔离配置和容器验证完成；`2860b48` 的 GitHub Actions 通过并由项目所有人批准 |
 | 11 | P1-03 数据下载与不可变清单 | DONE | snapshot、hash 与严格 holdout 降级处置均已验证，项目所有人批准 `main@7301894` |
-| 12 | P1-04 数据质量流水线 | IN_PROGRESS | 仅处理开发池，输出确定性 JSON/Markdown 报告并以 ERROR 阻断 clean 发布 |
+| 12 | P1-04 数据质量流水线 | READY_FOR_APPROVAL | 实现、真实 clean 构建和独立复核均通过；等待 GitHub Actions 与项目所有人批准 |
 | 13 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 14 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 

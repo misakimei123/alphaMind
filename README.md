@@ -53,3 +53,23 @@ docker compose --profile data run --rm data-snapshot /workspace/scripts/create_s
   --project-root /workspace `
   --verify-manifest /workspace/data/manifests/source/<snapshot_id>.manifest.json
 ```
+
+P1-04 使用无网络容器，只将当前可用开发数据的 OHLCV 载入质量流水线。holdout 仍密封时截止
+`2025-07-01`；本项目原 holdout 已严格降级为开发数据，因此当前报告覆盖
+`[2022-01-01, 2026-07-01)`：
+
+```powershell
+docker compose --profile data run --rm data-quality
+```
+
+流水线不填补、不去重、不插值、不重排 source。任何 ERROR 都拒绝发布 `data/clean/`；
+零成交量和固定阈值的 close 跳变作为 WARN 原样保留。JSON/Markdown 证据写入
+`data/manifests/quality/`，实际 clean Feather 继续由 Git 忽略。
+
+生成后使用同一无网络容器独立复核报告与 clean 文件：
+
+```powershell
+docker compose --profile data run --rm data-quality /workspace/scripts/build_clean_dataset.py `
+  --project-root /workspace `
+  --verify-report /workspace/data/manifests/quality/<dataset_id>/report.json
+```

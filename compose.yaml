@@ -89,4 +89,23 @@ services:
       - ./:/workspace:ro
       - ./data:/workspace/data
 
+  data-quality:
+    <<: *freqtrade-base
+    profiles: [data]
+    entrypoint: [python]
+    # 脚本入口同时依赖 src package 与 scripts package，容器必须显式加载两个目录。
+    environment:
+      PYTHONPATH: /workspace/src:/workspace
+    command:
+      - /workspace/scripts/build_clean_dataset.py
+      - --project-root
+      - /workspace
+      - --source-manifest
+      - /workspace/data/manifests/source/bybit-spot-ohlcv-20260716T070451Z-ef232b839406.manifest.json
+    working_dir: /workspace
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+      - ./data:/workspace/data
+
 # live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。
