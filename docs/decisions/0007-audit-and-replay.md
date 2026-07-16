@@ -2,9 +2,12 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | READY_TO_VERIFY |
+| 状态 | DONE |
 | 任务 | P0-07 |
 | 制定日期 | 2026-07-16 |
+| 独立评审 | 项目所有人 misakimei123，2026-07-16 |
+| 评审基线 | `main@f36e6ba` |
+| 评审结论 | 作为 P0-08 Scope Frozen 批准的一部分，无修改接受 |
 | 前置决策 | ADR-0003、ADR-0005、ADR-0006 |
 | 审计事件合同 | `data/schemas/audit-event.schema.yaml` |
 | 实验合同 | `data/schemas/experiment.schema.yaml` |
@@ -135,5 +138,5 @@ Canary 证明；Dry-run 和 Replay 不得冒充这些证据。
 - P3-05：partial fill、submit unknown、重复事件、进程重启和无生产凭据 Replay；
 - P4/P5：真实 dry-run、Paper、可选 contract 与 Live 证据分层。
 
-当前状态为 `READY_TO_VERIFY`，等待项目所有人独立复核；实现者不自行将 P0-07 标记为
-`DONE`，也不因此进入 P0-08 或 Phase 1 门禁。
+项目所有人于 2026-07-16 在 P0-08 Scope Frozen 批准中接受本合同，P0-07 状态更新为
+`DONE`。后续实质修改数据库所有权、outbox、writer 或 Replay 权限边界时必须重新评审。

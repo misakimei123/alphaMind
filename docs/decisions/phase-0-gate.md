@@ -2,22 +2,23 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | BLOCKED |
+| 状态 | DONE |
 | 任务 | P0-08 |
 | 审查日期 | 2026-07-16 |
-| 审查基线 | `main@f36e6ba` |
+| 审查基线 | `main@5fe2555` |
 | 实施审查 | Codex（只核对证据，不具备独立门禁批准权） |
-| 独立评审人 | 项目所有人（待确认） |
+| 独立评审人 | 项目所有人 misakimei123 |
+| 批准日期 | 2026-07-16 |
+| 批准结论 | P0-05～P0-07 与 Scope Frozen 无修改接受 |
 
 ## 1. 结论
 
 Phase 0 的计划产物、G-01 至 G-10 设计缺口、capability matrix、Final Holdout 和 trial
-初始合同已经具备可评审证据，但 Scope Frozen gate **尚未通过**。
+初始合同已经完成证据审查。项目所有人于 2026-07-16 明确批准 P0-08 为完成，并接受
+ADR-0005 `7a9d124`、ADR-0006 `52f1ae8`、ADR-0007 `f36e6ba` 与 gate 审查 `5fe2555`。
 
-阻塞原因不是测试失败，而是 P0-05、P0-06、P0-07 均由 Codex 实施且仍为
-`READY_TO_VERIFY`，仓库中没有项目所有人的独立复核记录。按照责任矩阵和开发计划，Codex
-不能批准自己的交付物，也不能以本次自查替代独立评审。因此 P0-08 状态为 `BLOCKED`，在解除
-下述阻塞前不得进入认证交易所接入、Freqtrade adapter、Paper 或 Live。
+Scope Frozen gate **已通过**，P0-01 至 P0-08 状态均为 `DONE`。本批准只关闭 Phase 0 的设计
+与范围门禁，不替代 P1～P5 的容器、数据、Backtest、Paper、Testnet 或 Live 验证。
 
 ## 2. P0 产物清单
 
@@ -27,10 +28,10 @@ Phase 0 的计划产物、G-01 至 G-10 设计缺口、capability matrix、Final
 | P0-02 | DONE | `0002-exchange-selection.md`、`exchange-capabilities.yaml` | Bybit spot 与关键能力已分类 |
 | P0-03 | DONE | `0003-runtime-version-lock.md`、`runtime-versions.toml` | 版本/digest 已锁定；容器实测明确迁移至 P1-02 |
 | P0-04 | DONE | `0004-first-strategy.md`、Strategy Card | 策略、14 次 trial 预算和证伪条件已冻结 |
-| P0-05 | READY_TO_VERIFY | `0005-data-and-holdout.md`、数据 schema、regime manifest | 产物和测试存在，缺独立复核 |
-| P0-06 | READY_TO_VERIFY | `0006-risk-accounting.md`、RiskSnapshot schema、Kill runbook | 产物和测试存在，缺独立复核 |
-| P0-07 | READY_TO_VERIFY | `0007-audit-and-replay.md`、AuditEvent/Experiment schema | 产物和测试存在，缺独立复核 |
-| P0-08 | BLOCKED | 本文 | 等待项目所有人完成 P0-05～P0-07 与本 gate 的独立复核 |
+| P0-05 | DONE | `0005-data-and-holdout.md`、数据 schema、regime manifest | 项目所有人接受 `7a9d124` 合同基线 |
+| P0-06 | DONE | `0006-risk-accounting.md`、RiskSnapshot schema、Kill runbook | 项目所有人接受 `52f1ae8` 风险基线 |
+| P0-07 | DONE | `0007-audit-and-replay.md`、AuditEvent/Experiment schema | 项目所有人接受 `f36e6ba` 合同基线 |
+| P0-08 | DONE | 本文 | 项目所有人接受 `5fe2555` gate 审查并确认 Scope Frozen |
 
 P0-03 的 Docker 实测、P0-05 的实际数据 hash/质量报告、P0-06 的 watchdog 运行测试和 P0-07
 的 outbox/recovery 演练均已绑定后续任务和禁止越过的门禁。这些是明确延期的实现证据，不是
@@ -110,13 +111,14 @@ Trial 初始状态：
 
 ### 7.1 “所有文档和测试都存在，因此 gate 可以通过”
 
-不成立。文档完整性是必要条件，不是独立评审。P0-05～P0-07 的作者与本 gate 自查者均为
-Codex，违反“实现者不能自行批准”的职责约束。
+单凭文档完整性仍不足以通过 gate。当前结论成立的新增证据是项目所有人的明确批准，而不是
+Codex 的实现或自查；因此“实现者不能自行批准”的职责约束仍然有效。
 
 ### 7.2 “后续已有验证任务，因此当前没有 blocker”
 
 只部分成立。Docker、数据下载、watchdog、outbox 和 Testnet 实测可以按计划延期，因为任务、
-失败动作和后续门禁已明确；独立评审不能延期到进入 Phase 1 之后，否则 Scope Frozen 失去意义。
+失败动作和后续门禁已明确；Phase 0 独立评审已经由项目所有人完成，后续任务不得把延期验证
+误报为已完成。
 
 ### 7.3 仍需关注但不属于当前设计未知
 
@@ -126,27 +128,25 @@ Codex，违反“实现者不能自行批准”的职责约束。
 - 任何 review 后修改风险、holdout、strategy 或 Runtime/Audit 所有权的意见都会使相关产物重新
   回到 `IN_PROGRESS`，不能直接批准旧版本。
 
-## 8. 阻塞事实与解除条件
+## 8. 阻塞解除记录
 
-| ID | 阻塞事实 | 解除条件 | 解除后记录 |
+| ID | 原阻塞事实 | 解除证据 | 当前状态 |
 |---|---|---|---|
-| B-01 | P0-05 无独立复核记录 | 项目所有人逐项确认数据区间、split、regime 与 holdout 合同，或提出修改 | 在 ADR-0005 记录 reviewer、日期、commit 和结论 |
-| B-02 | P0-06 无独立复核记录 | 项目所有人确认 NAV/mark、阈值、三态、TTL 与 Kill runbook，或提出修改 | 在 ADR-0006 记录 reviewer、日期、commit 和结论 |
-| B-03 | P0-07 无独立复核记录 | 项目所有人确认 DB 所有权、outbox 阈值、writer/replay 边界，或提出修改 | 在 ADR-0007 记录 reviewer、日期、commit 和结论 |
-| B-04 | Phase 0 总门禁无独立结论 | B-01～B-03 解除后，项目所有人确认本文没有扩大 MVP 范围 | 本文更新为 DONE，记录 reviewer、日期和审查 commit |
+| B-01 | P0-05 无独立复核记录 | 项目所有人于 2026-07-16 接受 ADR-0005 `7a9d124` | RESOLVED |
+| B-02 | P0-06 无独立复核记录 | 项目所有人于 2026-07-16 接受 ADR-0006 `52f1ae8` 与 Kill runbook | RESOLVED |
+| B-03 | P0-07 无独立复核记录 | 项目所有人于 2026-07-16 接受 ADR-0007 `f36e6ba` | RESOLVED |
+| B-04 | Phase 0 总门禁无独立结论 | 项目所有人于 2026-07-16 明确批准 P0-08，并接受 gate `5fe2555` | RESOLVED |
 
-解除必须是针对固定 commit 的明确结论。“继续开发”或普通提交授权不自动等于批准风险、数据、
-Audit 或 Scope Frozen 门禁。任一评审意见要求实质修改时，先修改对应 ADR/schema、重新测试并
-再次评审。
+本次解除是针对上述固定 commit 的明确结论。后续任一实质修改若影响风险、数据、Audit、
+Runtime 所有权或 Scope Frozen 范围，必须修改对应 ADR/schema、重新测试并再次评审。
 
 ## 9. 当前允许与禁止事项
 
-允许继续已有授权范围内的无密钥、无网络、无交易写权限的确定性核心与文档/测试工作。
+Phase 0 已通过，允许按开发计划进入 Phase 1，并继续 P2-01/P2-03 的离线确定性核心工作。
 
-P0-08 解除前禁止：
+仍然禁止越过后续任务与阶段门禁：
 
-- 把 P0-05、P0-06、P0-07 或 P0-08 标记为 DONE；
-- 启动认证交易所接入、创建真实/Testnet key 或保存 secret；
-- 实现可执行 Freqtrade adapter、Paper/Live 配置或第二交易写路径；
-- 下载/读取 Final Holdout，或运行未登记参数 trial；
-- 用本次自查声称 Phase 0 已独立评审通过。
+- 在 P1-02/P3 对应验证前启动认证交易所接入、创建真实/Testnet key 或保存 secret；
+- 在 P2-02/P3/P4/P5 对应门禁前启动 Paper/Live 或创建第二交易写路径；
+- 在 P2-07 一次性门禁前下载/读取 Final Holdout，或运行未登记参数 trial；
+- 用 Phase 0 的设计批准声称容器、真实数据、交易写路径或生产风险控制已经实测。

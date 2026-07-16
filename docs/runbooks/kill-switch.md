@@ -2,7 +2,7 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | READY_TO_VERIFY |
+| 状态 | DONE |
 | 任务 | P0-06 |
 | 风险合同 | `docs/decisions/0006-risk-accounting.md` |
 | 适用范围 | Freqtrade MVP，Bybit spot，BTC/USDT 与 ETH/USDT |

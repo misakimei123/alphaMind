@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-16 / P0-08 BLOCKED |
+| 最近进度更新 | 2026-07-16 / P0-08、P1-01 DONE |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：P0-08 BLOCKED，Phase 0 gate 证据审查已完成，但 P0-05、P0-06、P0-07 缺少项目所有人的独立复核记录，Codex 不能自行批准；解除条件见 `docs/decisions/phase-0-gate.md`。P1-01、P2-01、P2-03 的无密钥、无网络、无交易写权限离线确定性核心可在既有授权范围内继续；认证交易所接入、Freqtrade adapter、Paper 和 Live 仍受门禁约束
+> 当前阶段：Phase 0 gate 已由项目所有人批准，P0-01 至 P0-08 均为 DONE；P1-01 的 Windows 本地门禁与提交 `e56d21a` 对应 Linux CI 均已通过并标记 DONE。下一条研究底座关键路径为 P1-02；P2-01、P2-03 的离线确定性核心继续并行。认证交易所接入、Freqtrade adapter、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -408,7 +408,7 @@ Strategy Card 必须固定：
 
 实际进度（2026-07-15）：
 
-- 状态：`READY_TO_VERIFY`；四项计划产物均已创建，等待项目所有人独立复核；
+- 状态：`DONE`；四项计划产物和本地验证已完成，项目所有人于 2026-07-16 在 P0-08 总门禁批准中接受 `main@7a9d124` 的合同基线；
 - 数据合同：Bybit spot、BTC/USDT 与 ETH/USDT、4h/1d、`[2022-01-01, 2026-07-01)` UTC；
 - 开发验证：expanding train + 6 个月 validation，共 3 个 fold；
 - Final Holdout：`[2025-07-01, 2026-07-01)`，状态 `SEALED_UNREAD`；
@@ -450,7 +450,7 @@ Strategy Card 必须固定：
 
 实际进度（2026-07-16）：
 
-- 状态：`READY_TO_VERIFY`；三项计划产物均已创建，等待项目所有人独立复核；
+- 状态：`DONE`；三项计划产物和本地验证已完成，项目所有人于 2026-07-16 在 P0-08 总门禁批准中接受 `main@52f1ae8` 的风险合同基线；
 - 会计合同：USDT 会计币种、保守退出 mark、手续费/负债、外部现金流、UTC 日/周、现金流调整高水位与项目绝对损失公式已冻结；
 - 状态合同：`ENTRY_ALLOWED`、`CLOSE_ONLY`、`KILLED_MANUAL_REVIEW` 的确定输入、输出、优先级、撤销入场和安全退出动作已冻结；
 - 快照合同：15 秒目标发布、60 秒 TTL、30 秒源新鲜度、5 秒未来时钟容差、schema v1、原子替换和 missing/stale/corrupt/unsupported fail-closed 已冻结；
@@ -485,7 +485,7 @@ Strategy Card 必须固定：
 
 实际进度（2026-07-16）：
 
-- 状态：`READY_TO_VERIFY`；ADR、AuditEvent schema 和 Experiment schema 三项产物已创建，等待项目所有人独立复核；
+- 状态：`DONE`；ADR、AuditEvent schema 和 Experiment schema 三项产物及本地验证已完成，项目所有人于 2026-07-16 在 P0-08 总门禁批准中接受 `main@f36e6ba` 的合同基线；
 - 数据库合同：Freqtrade 是 Runtime DB 唯一写入/migration 所有者；本地/dry-run 使用隔离 SQLite 只读路径，Paper/Live 候选使用 PostgreSQL SELECT-only 角色；恢复顺序与 `RPO <= 5 分钟`、`RTO <= 60 分钟` 目标已冻结；
 - Outbox 合同：独立 SQLite WAL、50 ms callback 上限、16 KiB 单事件、10,000 pending/256 MiB 硬容量、5,000/2 分钟/128 MiB 预警和 8,000/5 分钟/192 MiB 入场停止阈值已冻结；
 - Writer 合同：at-least-once、event ID + content hash 幂等、100 条 batch、60 秒 lease、1–60 秒退避、20 次后 dead-letter 和 7 天已交付保留已冻结；
@@ -510,13 +510,13 @@ Strategy Card 必须固定：
 
 实际进度（2026-07-16）：
 
-- 状态：`BLOCKED`；`docs/decisions/phase-0-gate.md` 已完成逐项证据审查；
+- 状态：`DONE`；`docs/decisions/phase-0-gate.md` 已完成逐项证据审查，项目所有人于 2026-07-16 明确批准 P0-08；
 - 设计缺口：G-01 至 G-10 均已有明确决策，G-09 由既有部署方向、运行时锁和 key 安全基线整合关闭；
 - capability：下单、查询、partial fill、幂等、权限与 stoploss 关键项均已分类；动态市场规则和真实写路径仍由 P1-02/P3-06/Live preflight 验证；
 - 冻结证据：Final Holdout 保持 `SEALED_UNREAD`、`access_count=0`；trial 初始预算为 14、禁止 Cartesian product、当前结果数为 0；
 - 项目验证：`uv run pytest` 为 55 passed；`ruff check .`、新增 gate 测试的 `ruff format --check`、`uv lock --check` 与 `git diff --check` 通过；全仓 format check 仍受 14 个未触碰历史文件的换行/格式基线影响，未在本任务中批量改写；
-- 阻塞事实：P0-05、P0-06、P0-07 均由 Codex 实施且没有项目所有人针对固定 commit 的独立复核记录；
-- 解除条件：项目所有人分别复核 ADR-0005、ADR-0006、ADR-0007，再确认 Phase 0 gate 没有扩大 MVP 范围；实质修改必须重新测试和复核，不能直接批准旧版本。
+- 复核结论：项目所有人的 P0-08 明确批准同时覆盖 ADR-0005 `7a9d124`、ADR-0006 `52f1ae8`、ADR-0007 `f36e6ba` 和 gate 审查 `5fe2555`，原 B-01 至 B-04 阻塞全部解除；
+- 变更边界：后续若实质修改数据/holdout、风险阈值、Runtime/Audit 所有权或 MVP 范围，相关任务必须重新进入评审，当前批准不能自动覆盖新版本。
 
 ## 7. Phase 1：研究底座
 
@@ -539,14 +539,15 @@ Strategy Card 必须固定：
 
 实际进度（2026-07-16）：
 
-- 状态：`IN_PROGRESS`；本地工程骨架和确定性质量门禁已完成，等待本提交触发的 Linux CI 结果；
+- 状态：`DONE`；Windows 本地工程骨架和确定性质量门禁已完成，提交 `e56d21a` 触发的 GitHub Linux workflow 已成功；
 - 工具链：`pyproject.toml`、`uv.lock`、Python 3.12 package、pytest、Ruff 和 strict mypy 已配置；
 - 仓库门禁：`scripts/check_repository.py` 检查已跟踪及未忽略新文件的 Markdown 本地链接、敏感文件名、高置信度 secret 和可疑凭据赋值，且不回显疑似 secret；
 - CI：`.github/workflows/ci.yml` 使用只读 `contents: read`、`actions/checkout@v7`、固定 SHA 的 `setup-uv v8.1.0`、锁定 uv/Python，并执行 repository scan、mypy、Ruff、pytest、lock 与 whitespace 检查；工作流不引用 GitHub secrets；
 - 测试分层：`tests/unit` 已运行，`tests/contract`、`tests/integration`、`tests/replay` 已建立边界说明；后两类认证/Freqtrade 集成仍受 P0/P1-02/P3 门禁约束；
 - 换行基线：新增 `.gitattributes` 固定 Python/TOML/YAML 为 LF，并以全仓 Ruff format/check 验证 18 个 Python 文件；Windows checkout 显示的 14 个换行假阳性不纳入提交内容；
 - 本地验证：repository scan 检查 55 个文件无发现；mypy 检查 10 个 source/script 文件通过；`uv run pytest` 为 60 passed；`ruff check .`、`ruff format --check .`、`uv lock --check` 与 `git diff --check` 通过；
-- 延期边界：P1-01 只有在 GitHub Linux workflow 对本提交实际通过后才能转为 `READY_TO_VERIFY`；Docker Compose、固定镜像拉取和 Freqtrade CLI 属于 P1-02，P0-08 未解除前不启动认证交易所或 Paper/Live。
+- CI 证据：项目所有人于 2026-07-16 提供 GitHub Actions 截图，显示 `deterministic-quality #1` 在 `main` 的 commit `e56d21a` 上成功完成，耗时 14 秒；
+- 延期边界：Docker Compose、固定镜像拉取和 Freqtrade CLI 属于 P1-02；认证交易所、Paper/Live 仍受 P1-02、P3、P4、P5 对应门禁约束。
 
 ### P1-02 Freqtrade 固定环境
 
@@ -1208,15 +1209,15 @@ git diff --check
 | 2 | P0-02 交易所 Capability Matrix | DONE | 已固定 Bybit 国际版、BTC/USDT 与 ETH/USDT，并记录 Freqtrade/API/Testnet/stoploss 边界 |
 | 3 | P0-03 运行环境和版本锁定 | DONE | 已锁定 Python、Freqtrade 2026.6、CCXT 4.5.61 和镜像 digest；容器实测迁移至 P1-02 强制验收 |
 | 4 | P0-04 第一策略与 Strategy Card | DONE | 已冻结 4h Donchian 20/10、ATR(20) × 2 stop、试验预算和证伪条件 |
-| 5 | P0-05 数据与验证合同 | READY_TO_VERIFY | 合同、schema、regime manifest 和本地验证已完成，等待项目所有人独立复核 |
-| 6 | P0-06 风险会计与 Kill Switch | READY_TO_VERIFY | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核 |
-| 7 | P0-07 Audit、Replay 与数据库边界 | READY_TO_VERIFY | ADR、AuditEvent/Experiment schema 与本地验证已完成，等待项目所有人独立复核 |
-| 8 | P0-08 Scope Frozen 评审 | BLOCKED | Gate 审查已完成；等待项目所有人独立复核 P0-05～P0-07 并确认 Scope Frozen |
-| 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 本地质量门禁和 Linux CI workflow 已完成，等待远端 CI 证据；Docker Compose/固定镜像归 P1-02 |
+| 5 | P0-05 数据与验证合同 | DONE | 合同、schema、regime manifest 和本地验证已完成，并由项目所有人在 P0-08 批准中接受 |
+| 6 | P0-06 风险会计与 Kill Switch | DONE | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，并由项目所有人在 P0-08 批准中接受 |
+| 7 | P0-07 Audit、Replay 与数据库边界 | DONE | ADR、AuditEvent/Experiment schema 与本地验证已完成，并由项目所有人在 P0-08 批准中接受 |
+| 8 | P0-08 Scope Frozen 评审 | DONE | 项目所有人于 2026-07-16 批准 Scope Frozen，原 B-01 至 B-04 阻塞已解除 |
+| 9 | P1-01 工程骨架与质量门禁 | DONE | Windows 本地门禁通过；GitHub `deterministic-quality #1` 在 `e56d21a` 上成功 |
 | 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 11 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
-代码启动边界于 2026-07-15 经项目所有人明确调整：可以并行实现离线确定性核心，但这不代表 P0-05 至 P0-08 已通过，也不允许跨越 Backtest、Paper 或 Live Canary 门禁。Freqtrade callback、认证 API、真实账户数据与交易写入必须等待对应前置任务完成。
+代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
 ## 18. 官方文档核对基线
 

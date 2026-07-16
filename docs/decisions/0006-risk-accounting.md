@@ -2,9 +2,12 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | READY_TO_VERIFY |
+| 状态 | DONE |
 | 任务 | P0-06 |
 | 制定日期 | 2026-07-16 |
+| 独立评审 | 项目所有人 misakimei123，2026-07-16 |
+| 评审基线 | `main@52f1ae8` |
+| 评审结论 | 作为 P0-08 Scope Frozen 批准的一部分，无修改接受 |
 | 前置决策 | ADR-0001、ADR-0002、ADR-0003、ADR-0005 |
 | 配置基线 | `configs/common/risk-limits.toml` |
 | 机器可读合同 | `data/schemas/risk-snapshot.schema.yaml` |
@@ -155,5 +158,5 @@ P0-06 不实现运行服务。以下验证迁移但继续阻止对应门禁：
 - P3-05：Kill、时钟漂移、资金差异和恢复演练；
 - P4-01/P4-05：Paper 启动与恢复审批证据。
 
-当前状态为 `READY_TO_VERIFY`，等待项目所有人独立复核风险口径和 runbook；实现者不自行将
-本任务标记为 `DONE`。
+项目所有人于 2026-07-16 在 P0-08 Scope Frozen 批准中接受本风险口径和 runbook，P0-06
+状态更新为 `DONE`。后续实质修改风险阈值、会计口径或恢复动作时必须重新评审。

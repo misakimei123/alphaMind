@@ -2,9 +2,12 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | READY_TO_VERIFY |
+| 状态 | DONE |
 | 任务 | P0-05 |
 | 制定日期 | 2026-07-15 |
+| 独立评审 | 项目所有人 misakimei123，2026-07-16 |
+| 评审基线 | `main@7a9d124` |
+| 评审结论 | 作为 P0-08 Scope Frozen 批准的一部分，无修改接受 |
 | 前置决策 | ADR-0002、ADR-0003、ADR-0004 |
 | Regime Manifest | `data/manifests/regime-manifest.yaml` |
 | 冻结时点 | 下载目标数据、运行候选回测或查看收益结果之前 |
