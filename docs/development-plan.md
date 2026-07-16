@@ -524,7 +524,7 @@ Strategy Card 必须固定：
 
 实现：
 
-- 创建 `pyproject.toml`、依赖锁、Docker Compose 和最小 package；
+- 创建 `pyproject.toml`、依赖锁和最小 package；Docker Compose 与固定 Freqtrade 镜像统一由 P1-02 创建和验证；
 - 配置 formatter、linter、type check 和 pytest；
 - 配置 Markdown 链接检查、secret scan 和 `git diff --check`；
 - 建立 unit、contract、integration、replay 测试分层；
@@ -536,6 +536,17 @@ Strategy Card 必须固定：
 - 任一依赖版本可由锁文件追溯；
 - 测试不需要真实交易 key；
 - 敏感配置不会进入 Git。
+
+实际进度（2026-07-16）：
+
+- 状态：`IN_PROGRESS`；本地工程骨架和确定性质量门禁已完成，等待本提交触发的 Linux CI 结果；
+- 工具链：`pyproject.toml`、`uv.lock`、Python 3.12 package、pytest、Ruff 和 strict mypy 已配置；
+- 仓库门禁：`scripts/check_repository.py` 检查已跟踪及未忽略新文件的 Markdown 本地链接、敏感文件名、高置信度 secret 和可疑凭据赋值，且不回显疑似 secret；
+- CI：`.github/workflows/ci.yml` 使用只读 `contents: read`、`actions/checkout@v7`、固定 SHA 的 `setup-uv v8.1.0`、锁定 uv/Python，并执行 repository scan、mypy、Ruff、pytest、lock 与 whitespace 检查；工作流不引用 GitHub secrets；
+- 测试分层：`tests/unit` 已运行，`tests/contract`、`tests/integration`、`tests/replay` 已建立边界说明；后两类认证/Freqtrade 集成仍受 P0/P1-02/P3 门禁约束；
+- 换行基线：新增 `.gitattributes` 固定 Python/TOML/YAML 为 LF，并以全仓 Ruff format/check 验证 18 个 Python 文件；Windows checkout 显示的 14 个换行假阳性不纳入提交内容；
+- 本地验证：repository scan 检查 55 个文件无发现；mypy 检查 10 个 source/script 文件通过；`uv run pytest` 为 60 passed；`ruff check .`、`ruff format --check .`、`uv lock --check` 与 `git diff --check` 通过；
+- 延期边界：P1-01 只有在 GitHub Linux workflow 对本提交实际通过后才能转为 `READY_TO_VERIFY`；Docker Compose、固定镜像拉取和 Freqtrade CLI 属于 P1-02，P0-08 未解除前不启动认证交易所或 Paper/Live。
 
 ### P1-02 Freqtrade 固定环境
 
@@ -1201,7 +1212,7 @@ git diff --check
 | 6 | P0-06 风险会计与 Kill Switch | READY_TO_VERIFY | ADR、RiskSnapshot schema 与 Kill Switch runbook 已完成，等待项目所有人独立复核 |
 | 7 | P0-07 Audit、Replay 与数据库边界 | READY_TO_VERIFY | ADR、AuditEvent/Experiment schema 与本地验证已完成，等待项目所有人独立复核 |
 | 8 | P0-08 Scope Frozen 评审 | BLOCKED | Gate 审查已完成；等待项目所有人独立复核 P0-05～P0-07 并确认 Scope Frozen |
-| 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 先建立 Python 3.12、pytest、ruff 与无密钥测试骨架 |
+| 9 | P1-01 工程骨架与质量门禁 | IN_PROGRESS | 本地质量门禁和 Linux CI workflow 已完成，等待远端 CI 证据；Docker Compose/固定镜像归 P1-02 |
 | 10 | P2-01 纯 Donchian 信号逻辑 | IN_PROGRESS | 仅实现 point-in-time 纯函数，不接 Freqtrade 或交易所 |
 | 11 | P2-03 风险定仓纯函数 | IN_PROGRESS | 仅实现确定性数量计算，不读取账户或提交订单 |
 
