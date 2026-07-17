@@ -80,16 +80,19 @@ def test_mode_configs_are_isolated_and_live_template_has_no_credentials() -> Non
 
 def test_locked_callback_contract_covers_strategy_and_risk_adapter_hooks() -> None:
     assert tuple(EXPECTED_CALLBACK_PARAMETERS) == (
+        "bot_start",
+        "bot_loop_start",
         "populate_indicators",
         "populate_entry_trend",
         "populate_exit_trend",
         "custom_stake_amount",
         "custom_stoploss",
         "confirm_trade_entry",
+        "order_filled",
     )
 
 
-def test_p2_02_has_one_fail_closed_freqtrade_strategy() -> None:
+def test_p3_02_has_one_fail_closed_freqtrade_strategy() -> None:
     strategy_files = list(STRATEGY_ROOT.glob("*.py"))
     assert [path.name for path in strategy_files] == ["DonchianTrendStrategy.py"]
 
@@ -112,32 +115,36 @@ def test_p2_02_has_one_fail_closed_freqtrade_strategy() -> None:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
     assert {
+        "bot_loop_start",
+        "bot_start",
         "confirm_trade_entry",
+        "custom_stake_amount",
+        "custom_stoploss",
+        "order_filled",
         "populate_entry_trend",
         "populate_exit_trend",
         "populate_indicators",
         "version",
     } <= methods.keys()
-    confirm_returns = [
-        node for node in ast.walk(methods["confirm_trade_entry"]) if isinstance(node, ast.Return)
-    ]
-    assert len(confirm_returns) == 1
-    assert isinstance(confirm_returns[0].value, ast.Constant)
-    assert confirm_returns[0].value.value is False
 
-    # 静态门禁不导入 Freqtrade，也能在 CI 阻止未来数据访问和 P3-02 前意外放开交易。
+    # dataframe 主路径继续禁止绝对/未来访问；callback 只消费 tail(1) 的已分析结果。
     assert ".rolling(" in source
     assert ".shift(1)" in source
     assert ".iloc[" not in source
     assert "shift(-" not in source
+    assert "requests." not in source
+    assert "urlopen(" not in source
+    assert "sqlite" not in source.lower()
+    assert "return 0.0" in source
 
 
-def test_p2_02_config_selects_the_only_strategy_and_disables_position_adjustment() -> None:
+def test_p3_02_config_selects_risk_sized_strategy_and_disables_position_adjustment() -> None:
     common = load_json("common.json")
     assert common["strategy"] == "DonchianTrendStrategy"
     assert common["timeframe"] == "4h"
     assert common["trading_mode"] == "spot"
     assert common["position_adjustment_enable"] is False
+    assert common["stake_amount"] == "unlimited"
     assert common["use_exit_signal"] is True
     assert common["exit_profit_only"] is False
     assert common["ignore_roi_if_entry_signal"] is False

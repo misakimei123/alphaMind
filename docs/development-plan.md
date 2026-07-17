@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-17 / P3-01 READY_TO_VERIFY，P2-07/P2-08 继续 BLOCKED |
+| 最近进度更新 | 2026-07-17 / P3-02 DONE，下一可执行任务 P3-03；P2-07/P2-08 继续 BLOCKED |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-06 均为 DONE；P3-01 Risk Watchdog 与 RiskSnapshot 的离线确定性核心、原子发布、严格读取和本地门禁已完成，当前为 READY_TO_VERIFY，等待远端 CI 与项目所有人复核。参数选择仍被独立评审阻止；原 Final Holdout 已降级，P1-07/P2-07/P2-08 在新未见区间预注册和独立评审前保持阻塞。认证交易所接入、Freqtrade callback、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-06、P3-01/P3-02 均为 DONE；Freqtrade adapter 已完成本地 RiskSnapshot 缓存、P2-03 同源定仓、常数时间入场确认、固定 ATR stop 和锁定版本合同验证，下一可执行工程任务为 P3-03 Audit Outbox 与 Writer。参数选择仍被独立评审阻止；原 Final Holdout 已降级，P1-07/P2-07/P2-08 在新未见区间预注册、候选冻结和独立评审前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -902,7 +902,7 @@ Strategy Card 必须固定：
 
 ### P2-07 一次性 Final Holdout
 
-当前状态（2026-07-17）：`BLOCKED`；原 Final Holdout 已降级为已见数据，必须先预注册新的未见时间区间并取得独立评审批准，禁止复用旧区间或直接读取一次性结果。
+当前状态（2026-07-17）：`BLOCKED`；原 Final Holdout 已降级为已见数据，13 个 trial 的 `review_result` 仍为 `PENDING` 且 `parameter_selection=null`。解除条件是完成独立评审并冻结唯一候选、预注册新的未见时间区间，再由独立评审者批准一次性执行；禁止复用旧区间或直接读取一次性结果。
 
 入口：
 
@@ -937,7 +937,7 @@ Strategy Card 必须固定：
 
 ### P3-01 Risk Watchdog 与 RiskSnapshot
 
-当前状态（2026-07-17）：`READY_TO_VERIFY`；离线可注入只读观测、风险会计、三状态决策、schema v1 快照、原子发布、严格读取和本地门禁均已完成，等待远端 CI 与项目所有人复核。
+当前状态（2026-07-17）：`DONE`；`main@99066ed` 的离线可注入只读观测、风险会计、三状态决策、schema v1 快照、原子发布、严格读取、本地门禁和 GitHub Actions 均已通过，项目所有人已批准。
 
 实现：
 
@@ -964,9 +964,12 @@ Strategy Card 必须固定：
 - schema v1 补齐既有 P3-01 人工 Kill 测试所需的 `manual_kill_switch` reason code；风险阈值、NAV 公式、状态优先级和恢复合同未改变；
 - 快照固定 15 秒目标发布周期和 60 秒 TTL；发布使用同目录临时文件、flush/fsync、close 与 atomic replace，失败清理临时文件且不破坏前一完整快照；读取端严格复核字段、Decimal、时间、NAV/PnL/HWM/mark/exposure/阈值和状态公式，missing/stale/corrupt/unsupported/consumer clock skew 均本地 fail-closed 且不伪造资金级 Kill；
 - 聚焦测试 39 项、全仓 pytest 164 项通过；repository scan 检查 238 个文件，strict mypy 检查 27 个 source/script 文件，Ruff check/format 覆盖 47 个 Python 文件；`uv lock --check` 与 `git diff --check` 通过；
+- 功能提交 `main@99066ed` 的 GitHub Actions `deterministic-quality #23` 全部通过；项目所有人于 2026-07-17 提供成功证据并明确批准将 P3-01 标记为 DONE；
 - 延期边界：认证交易所账户读取和生产 Runtime DB 权限由 P3-04 实测，Freqtrade 快照 callback 与逐笔仓位映射由 P3-02 验证，连续运行 cadence、故障恢复与 Paper 证据分别受 P3-05/P4 门禁约束；本任务不解除 P2-07/P2-08、Paper 或 Live 阻塞。
 
 ### P3-02 Freqtrade 风险 callback 映射
+
+当前状态（2026-07-17）：`DONE`；RiskSnapshot 缓存、同源定仓、常数时间最终确认、固定 ATR stop、配置上限和锁定 Freqtrade 2026.6 callback 合同均已实现并通过本地验证。
 
 实现：
 
@@ -984,6 +987,16 @@ Strategy Card 必须固定：
 - close-only 状态仍可退出；
 - 使用相同固定输入时，Backtest risk context 与 Dry/Live RiskSnapshot context 的批准数量一致；
 - callback 单元与集成测试覆盖锁定版本签名。
+
+实际进度（2026-07-17）：
+
+- `src/alphamind/risk/freqtrade_adapter.py` 与 `configs/common/freqtrade-risk-adapter.toml` 将 Strategy Card、P2-03/P2-05 风险上限、P2-04 基础成本和锁定 Bybit market precision 映射为版本化运行输入；所有金额继续使用 `Decimal`，账户级 pending exposure 同时保守计入 symbol 和 directional capacity；
+- `bot_loop_start` 只在非关键位置加载 P3-01 原子快照并在 snapshot id/state 改变时清除旧批准；`custom_stake_amount` 复用唯一 `calculate_position_size`，任何异常显式返回 `0`，避免 Freqtrade 默认回退 proposed stake；`confirm_trade_entry` 只对内存批准执行 pair/side/tag/expiry/snapshot/rate/quantity 常数时间判断，不能扩大批准数量；
+- strategy adapter 升级为 `0.2.0`，使用 Wilder ATR(20)、实际平均 entry fill 减 `2 x signal ATR` 的固定绝对 stop、Freqtrade Trade custom data 持久化与 `custom_stoploss` 恢复；缺失/损坏 stop data 或价格穿透时收紧为紧急 stop，最大持仓时间继续禁用，DCA/position adjustment/short/leverage 继续禁用；
+- Freqtrade 配置使用 `stake_amount=unlimited` 让风险公式决定初始 stake，同时保留 `max_open_trades=2`、wallet/max stake、40% symbol、70% directional、交易规则上限和一根 candle cooldown；snapshot/cache 不进入 Git，Compose 只读挂载 config/source，当前仍无 Live service 或凭据；
+- 聚焦测试 32 项、全仓 pytest 168 项通过；repository scan 检查 242 个文件，strict mypy 检查 28 个 source/script 文件，Ruff check/format 覆盖 49 个 Python 文件；`uv lock --check`、Compose config 与 `git diff --check` 通过；
+- 无网络锁定镜像 `contract-check` 实测全部 Freqtrade 2026.6 callback 签名、Wilder ATR、有效原子快照加载、runtime/backtest 同源批准、超量拒绝、fill 后 `95.00` 固定 stop、安全退出和异常 fail-closed；P2-06 旧 `anti-cheat-verify` 仍严格绑定 `main@cb86fc9` 的历史 source hash，当前 adapter 变更后在该 hash 门禁失败属预期，旧 append-only 报告未被覆盖，当前信号等价性由新版 contract-check 复核；
+- 延期边界：callback 审批审计、outbox 容量/背压、writer 幂等与 dead-letter 由 P3-03 实现；认证账户/Runtime DB 权限、连续运行和故障恢复分别由 P3-04/P3-05 验证。本任务不解除 P2-07/P2-08、Paper 或 Live 阻塞。
 
 ### P3-03 Audit Outbox 与 Writer
 
@@ -1383,11 +1396,13 @@ git diff --check
 | 16 | P2-02 Freqtrade Strategy Adapter | DONE | `main@03e6884` 的唯一 strategy、纯函数逐行对账、锁定容器 resolver/backtest、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 17 | P2-03 风险定仓纯函数 | DONE | `main@f9ae212` 的单一公式、版本化 context、精度/极端损失拒绝、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 18 | P2-04 成本、成交与压力模型 | DONE | `main@53ebabd` 的 fill/cost 纯函数、11 项压力矩阵、可复现报告、锁定容器合同、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
-| 19 | P2-05 Walk-Forward 与 trial registry | DONE | `main@7338dfa` 的 13 个 OAT trial、三个 expanding fold、bootstrap/DSR、集中度报告、append-only artifacts、119 项全仓测试、锁定容器复算和 GitHub Actions 均通过，项目所有人已批准；selection 继续被独立评审与 P2-06 阻止 |
+| 19 | P2-05 Walk-Forward 与 trial registry | DONE | `main@7338dfa` 的 13 个 OAT trial、三个 expanding fold、bootstrap/DSR、集中度报告、append-only artifacts、119 项全仓测试、锁定容器复算和 GitHub Actions 均通过，项目所有人已批准；P2-06 已完成，selection 继续被独立评审阻止 |
 | 20 | P2-06 自动反作弊检查 | DONE | `main@cb86fc9` 的 Freqtrade lookahead/recursive、27,880 项跨所逐列比较、1,397 笔 next-candle 交易、13 个登记 trial、133 项全仓测试、断网锁定容器复核和 GitHub Actions 均通过，项目所有人已批准 |
-| 21 | P2-07 一次性 Final Holdout | BLOCKED | 原 Final Holdout 已降级；解除条件是预注册新的未见时间区间、冻结候选并取得独立评审批准，禁止复用旧区间 |
+| 21 | P2-07 一次性 Final Holdout | BLOCKED | 原 Final Holdout 已降级，13 个 trial 仍为 `PENDING` 且未选择参数；解除条件是独立评审并冻结候选、预注册新的未见时间区间，再批准一次性执行，禁止复用旧区间 |
 | 22 | P2-08 Backtest Qualified 门禁 | BLOCKED | 等待 P2-07 和独立复核，P2-05/P2-06 的开发证据不能替代最终门禁 |
-| 23 | P3-01 Risk Watchdog 与 RiskSnapshot | READY_TO_VERIFY | 离线只读观测、Decimal 风险会计、三状态决策、schema v1、原子发布/严格读取、39 项聚焦测试与 164 项全仓测试均通过；等待远端 CI 与项目所有人复核，不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
+| 23 | P3-01 Risk Watchdog 与 RiskSnapshot | DONE | `main@99066ed` 的离线只读观测、Decimal 风险会计、三状态决策、schema v1、原子发布/严格读取、39 项聚焦测试、164 项全仓测试和 GitHub Actions `#23` 均通过，项目所有人已批准；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
+| 24 | P3-02 Freqtrade 风险 callback 映射 | DONE | 本地 RiskSnapshot 缓存、P2-03 同源定仓、常数时间入场确认、Wilder ATR 固定 stop、wallet/exposure/DCA 配置、32 项聚焦测试、168 项全仓测试和锁定 Freqtrade 2026.6 contract-check 均通过；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
+| 25 | P3-03 Audit Outbox 与 Writer | NOT_STARTED | 下一可执行工程任务；实现有界 SQLite WAL outbox、幂等 writer、背压、重试和 dead-letter，不得反向修改 Runtime DB |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

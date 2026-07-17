@@ -7,12 +7,15 @@ import importlib.util
 import inspect
 import json
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 EXPECTED_CALLBACK_PARAMETERS = {
+    "bot_start": ("self", "kwargs"),
+    "bot_loop_start": ("self", "current_time", "kwargs"),
     "populate_indicators": ("self", "dataframe", "metadata"),
     "populate_entry_trend": ("self", "dataframe", "metadata"),
     "populate_exit_trend": ("self", "dataframe", "metadata"),
@@ -51,9 +54,12 @@ EXPECTED_CALLBACK_PARAMETERS = {
         "side",
         "kwargs",
     ),
+    "order_filled": ("self", "pair", "trade", "order", "current_time", "kwargs"),
 }
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STRATEGY_PATH = PROJECT_ROOT / "user_data/strategies/DonchianTrendStrategy.py"
+if str(PROJECT_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
 def verify_callback_parameters(strategy_type: Any) -> dict[str, list[str]]:
@@ -138,12 +144,23 @@ def verify_strategy_adapter(strategy_type: Any) -> dict[str, object]:
         "exit_profit_only": False,
         "ignore_roi_if_entry_signal": False,
         "minimal_roi": {},
+        "order_types": {
+            "entry": "market",
+            "exit": "market",
+            "emergency_exit": "market",
+            "force_entry": "market",
+            "force_exit": "market",
+            "stoploss": "market",
+            "stoploss_on_exchange": False,
+        },
         "position_adjustment_enable": False,
+        "protections": [{"method": "CooldownPeriod", "stop_duration_candles": 1}],
         "process_only_new_candles": True,
         "startup_candle_count": 120,
         "stoploss": -0.99,
         "timeframe": "4h",
         "trailing_stop": False,
+        "use_custom_stoploss": True,
         "use_exit_signal": True,
     }
     actual_settings = {name: getattr(strategy_type, name) for name in expected_settings}
@@ -185,6 +202,8 @@ def verify_strategy_adapter(strategy_type: Any) -> dict[str, object]:
         raise RuntimeError("Freqtrade dataframe signals differ from P2-01 pure function")
     if analyzed.at[20, "donchian_entry_high"] != 110:
         raise RuntimeError("signal candle leaked into the entry threshold")
+    if abs(float(analyzed.at[20, "donchian_signal_atr"]) - 20.05) > 1e-12:
+        raise RuntimeError("Wilder ATR differs from the frozen P2-05 recurrence")
     if analyzed.at[20, "enter_tag"] != "entry_breakout":
         raise RuntimeError("entry tag mismatch")
     if analyzed.at[24, "exit_tag"] != "exit_breakout":
@@ -235,13 +254,187 @@ def verify_strategy_adapter(strategy_type: Any) -> dict[str, object]:
         "entry_breakout",
         "long",
     ):
-        raise RuntimeError("P2-02 must reject execution before P3-02 risk callbacks")
+        raise RuntimeError("P3-02 must reject execution without a cached risk approval")
     return {
         "entry_signal_rows": [index for index, value in enumerate(actual_entry) if value],
         "exit_signal_rows": [index for index, value in enumerate(actual_exit) if value],
-        "execution_enabled": False,
+        "execution_requires_cached_risk_approval": True,
         "settings": actual_settings,
         "strategy_version": strategy.version(),
+    }
+
+
+def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
+    """在锁定镜像中执行定仓、最终确认、fill 持久化与固定止损 callback。"""
+
+    risk = importlib.import_module("alphamind.risk")
+    risk_limits = importlib.import_module("alphamind.config.risk_limits")
+    pandas = importlib.import_module("pandas")
+    strategy = strategy_type({})
+    adapter_config = risk.load_freqtrade_risk_config(
+        PROJECT_ROOT / "configs/common/freqtrade-risk-adapter.toml"
+    )
+    snapshot_path = Path("/tmp/alphamind-contract-risk-snapshot.json")
+    generated_at = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    observation = risk.WatchdogObservation(
+        generated_at_utc=generated_at,
+        market_observed_at_utc=generated_at - timedelta(seconds=2),
+        market_complete=True,
+        account=risk.AccountRuntimeObservation(
+            account_id="contract-paper",
+            accounting_currency="USDT",
+            observed_at_utc=generated_at - timedelta(seconds=3),
+            quote_cash=Decimal("500"),
+            available_balance_quote=Decimal("500"),
+            positions=(),
+            accrued_fees=Decimal("0"),
+            known_liabilities=Decimal("0"),
+            unexplained_balance_difference=Decimal("0"),
+            pending_entry_exposure_quote=Decimal("0"),
+            account_complete=True,
+            runtime_reconciled=True,
+        ),
+        accounting_state=risk.RiskAccountingState(
+            approved_capital_baseline=Decimal("500"),
+            cumulative_external_cash_flow_before=Decimal("0"),
+            daily_external_cash_flow_before=Decimal("0"),
+            weekly_external_cash_flow_before=Decimal("0"),
+            cashflow_adjusted_high_water_mark_before=Decimal("500"),
+            daily_boundary=risk.PeriodBoundary(
+                observed_at_utc=generated_at.replace(hour=0), opening_nav=Decimal("500")
+            ),
+            weekly_boundary=risk.PeriodBoundary(
+                observed_at_utc=datetime(2026, 7, 13, tzinfo=UTC),
+                opening_nav=Decimal("500"),
+            ),
+            external_cash_flow_review_pending=False,
+        ),
+    )
+    limits_path = PROJECT_ROOT / "configs/common/risk-limits.toml"
+    payload = risk.build_risk_snapshot(
+        observation,
+        risk_limits.load_risk_limits(limits_path),
+        risk_config_sha256=risk.risk_config_sha256(limits_path),
+        producer_version="0.2.0",
+    )
+    risk.atomic_publish_snapshot(payload, snapshot_path)
+    strategy._risk_config = replace(adapter_config, snapshot_path=snapshot_path)
+    current_time = generated_at + timedelta(seconds=10)
+    strategy.bot_loop_start(current_time=current_time)
+    if strategy._risk_snapshot is None or not strategy._risk_snapshot.entry_allowed:
+        raise RuntimeError("bot_loop_start did not load the valid atomic RiskSnapshot")
+
+    class FakeDataProvider:
+        def get_analyzed_dataframe(self, *, pair: str, timeframe: str) -> tuple[Any, None]:
+            if pair != "ETH/USDT" or timeframe != "4h":
+                raise RuntimeError("unexpected callback market context")
+            return (
+                pandas.DataFrame(
+                    [
+                        {
+                            "donchian_data_valid": True,
+                            "donchian_signal_atr": 2.5,
+                            "enter_long": 1,
+                            "enter_tag": strategy.ENTRY_TAG,
+                        }
+                    ]
+                ),
+                None,
+            )
+
+    strategy.dp = FakeDataProvider()
+    stake = strategy.custom_stake_amount(
+        "ETH/USDT",
+        current_time,
+        100.0,
+        300.0,
+        5.0,
+        300.0,
+        1.0,
+        strategy.ENTRY_TAG,
+        "long",
+    )
+    approval = strategy._entry_approvals.get("ETH/USDT")
+    if approval is None or stake != float(approval.approved_stake):
+        raise RuntimeError("runtime risk sizing did not create the expected cached approval")
+    if not strategy.confirm_trade_entry(
+        "ETH/USDT",
+        "market",
+        float(approval.approved_quantity),
+        100.0,
+        "GTC",
+        current_time,
+        strategy.ENTRY_TAG,
+        "long",
+    ):
+        raise RuntimeError("cached risk approval was rejected")
+    if strategy.confirm_trade_entry(
+        "ETH/USDT",
+        "market",
+        float(approval.approved_quantity + Decimal("0.00001")),
+        100.0,
+        "GTC",
+        current_time,
+        strategy.ENTRY_TAG,
+        "long",
+    ):
+        raise RuntimeError("confirm_trade_entry enlarged the approved quantity")
+
+    class FakeTrade:
+        pair = "ETH/USDT"
+        entry_side = "buy"
+        exit_side = "sell"
+        is_short = False
+        open_rate = 100.0
+
+        def __init__(self) -> None:
+            self.data: dict[str, object] = {}
+
+        def set_custom_data(self, key: str, value: object) -> None:
+            self.data[key] = value
+
+        def get_custom_data(self, key: str) -> object:
+            return self.data.get(key)
+
+    trade = FakeTrade()
+    order = type("FakeOrder", (), {"ft_order_side": "buy"})()
+    strategy.order_filled("ETH/USDT", trade, order, current_time)
+    if trade.data.get(strategy.INITIAL_STOP_CUSTOM_DATA_KEY) != "95.00":
+        raise RuntimeError("entry fill did not persist the ATR initial stop")
+    stoploss = strategy.custom_stoploss("ETH/USDT", trade, current_time, 100.0, 0.0, True)
+    if stoploss is None or abs(stoploss - 0.05) > 1e-12:
+        raise RuntimeError("custom_stoploss did not preserve the fixed absolute stop")
+    if not strategy.confirm_trade_exit(
+        "ETH/USDT",
+        trade,
+        "market",
+        1.0,
+        100.0,
+        "GTC",
+        "exit_signal",
+        current_time,
+    ):
+        raise RuntimeError("risk snapshot state must not block safe exits")
+
+    strategy.dp = object()
+    failed_closed_stake = strategy.custom_stake_amount(
+        "BTC/USDT",
+        current_time,
+        100.0,
+        250.0,
+        5.0,
+        300.0,
+        1.0,
+        strategy.ENTRY_TAG,
+        "long",
+    )
+    if failed_closed_stake != 0.0:
+        raise RuntimeError("callback error must return zero instead of proposed stake")
+    return {
+        "approved_quantity": str(approval.approved_quantity),
+        "approved_stake": str(approval.approved_stake),
+        "initial_stop": trade.data[strategy.INITIAL_STOP_CUSTOM_DATA_KEY],
+        "safe_exit_allowed": True,
     }
 
 
@@ -271,12 +464,14 @@ def main() -> int:
     fill_contract = verify_backtest_fill_contract(backtesting)
     strategy_type = _load_strategy_type(STRATEGY_PATH)
     strategy = verify_strategy_adapter(strategy_type)
+    risk_callbacks = verify_risk_callbacks(strategy_type)
     print(
         json.dumps(
             {
                 "status": "ok",
                 "backtest_fill_contract": fill_contract,
                 "callbacks": actual,
+                "risk_callbacks": risk_callbacks,
                 "strategy": strategy,
             },
             sort_keys=True,

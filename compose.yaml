@@ -12,8 +12,12 @@ x-freqtrade-base: &freqtrade-base
     - no-new-privileges:true
   tmpfs:
     - /tmp
+  environment:
+    PYTHONPATH: /freqtrade/src
   volumes:
     - ./configs/freqtrade:/freqtrade/configs:ro
+    - ./configs/common:/freqtrade/common:ro
+    - ./src:/freqtrade/src:ro
     - ./user_data:/freqtrade/user_data
 
 services:

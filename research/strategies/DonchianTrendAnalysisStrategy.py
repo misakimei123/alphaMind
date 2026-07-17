@@ -24,9 +24,35 @@ class DonchianTrendAnalysisStrategy(DonchianTrendStrategy):
         "stoploss": "market",
         "stoploss_on_exchange": False,
     }
+    # P2-06 冻结证据只验证信号反作弊，不消费运行时快照或 P3-02 stop callback。
+    use_custom_stoploss = False
 
     def version(self) -> str:
         return f"{super().version()}-p2-06-analysis"
+
+    def bot_start(self, **kwargs: Any) -> None:
+        """研究命令不加载运行时风险配置或账户快照。"""
+
+        del kwargs
+
+    def custom_stake_amount(
+        self,
+        pair: str,
+        current_time: datetime,
+        current_rate: float,
+        proposed_stake: float,
+        min_stake: float | None,
+        max_stake: float,
+        leverage: float,
+        entry_tag: str | None,
+        side: str,
+        **kwargs: Any,
+    ) -> float:
+        """隔离的历史分析继续使用 Freqtrade proposed stake，不伪装运行时风险审批。"""
+
+        del pair, current_time, current_rate, min_stake, max_stake
+        del leverage, entry_tag, side, kwargs
+        return proposed_stake
 
     def confirm_trade_entry(
         self,

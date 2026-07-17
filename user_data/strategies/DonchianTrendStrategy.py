@@ -1,14 +1,30 @@
-"""P2-02 Freqtrade 2026.6 Donchian 信号 adapter。"""
+"""P3-02 Freqtrade 2026.6 Donchian 信号与风险 callback adapter。"""
 
 from __future__ import annotations
 
+import logging
+import os
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any, ClassVar
 
 import numpy as np
 import pandas as pd
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame, Series
+
+from alphamind.risk.freqtrade_adapter import (
+    FreqtradeRiskConfig,
+    RuntimeEntryApproval,
+    calculate_initial_stop_price,
+    calculate_runtime_entry_approval,
+    fixed_stoploss_ratio,
+    load_freqtrade_risk_config,
+)
+from alphamind.risk.watchdog import SnapshotReadResult, load_risk_snapshot
+
+logger = logging.getLogger(__name__)
+ZERO = Decimal("0")
 
 
 class DonchianTrendStrategy(IStrategy):
@@ -23,19 +39,97 @@ class DonchianTrendStrategy(IStrategy):
     minimal_roi: ClassVar[dict[str, float]] = {}
     stoploss = -0.99
     trailing_stop = False
+    use_custom_stoploss = True
     position_adjustment_enable = False
     use_exit_signal = True
     exit_profit_only = False
     ignore_roi_if_entry_signal = False
+    order_types: ClassVar[dict[str, str | bool]] = {
+        "entry": "market",
+        "exit": "market",
+        "emergency_exit": "market",
+        "force_entry": "market",
+        "force_exit": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": False,
+    }
+    # Freqtrade 本身会在退出后锁定一根 candle；显式 protection 固化同一冷却语义。
+    protections: ClassVar[list[dict[str, str | int]]] = [
+        {"method": "CooldownPeriod", "stop_duration_candles": 1}
+    ]
 
     ENTRY_WINDOW = 20
     EXIT_WINDOW = 10
+    ATR_PERIOD = 20
     ACTIVE_WINDOW = max(ENTRY_WINDOW, EXIT_WINDOW)
     ENTRY_TAG = "entry_breakout"
     EXIT_TAG = "exit_breakout"
+    RISK_ADAPTER_CONFIG_PATH = "/freqtrade/common/freqtrade-risk-adapter.toml"
+    INITIAL_STOP_CUSTOM_DATA_KEY = "alphamind_initial_stop"
+    SIGNAL_ATR_CUSTOM_DATA_KEY = "alphamind_signal_atr"
+    SNAPSHOT_ID_CUSTOM_DATA_KEY = "alphamind_risk_snapshot_id"
+    EMERGENCY_STOPLOSS_RATIO = Decimal("0.001")
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__(config)
+        self._risk_config: FreqtradeRiskConfig | None = None
+        self._risk_snapshot: SnapshotReadResult | None = None
+        self._entry_approvals: dict[str, RuntimeEntryApproval] = {}
 
     def version(self) -> str:
-        return "0.1.0"
+        return "0.2.0"
+
+    def bot_start(self, **kwargs: Any) -> None:
+        """启动时一次性加载适配配置；配置错误必须阻止 bot 进入可交易状态。"""
+
+        del kwargs
+        config_path = os.environ.get(
+            "ALPHAMIND_RISK_ADAPTER_CONFIG_PATH", self.RISK_ADAPTER_CONFIG_PATH
+        )
+        self._risk_config = load_freqtrade_risk_config(config_path)
+        self._risk_snapshot = None
+        self._entry_approvals.clear()
+
+    def bot_loop_start(self, current_time: datetime, **kwargs: Any) -> None:
+        """在非下单关键位置读取并严格验证原子 RiskSnapshot。"""
+
+        del kwargs
+        if self._risk_config is None:
+            self._risk_snapshot = None
+            self._entry_approvals.clear()
+            return
+        previous_id = None
+        if self._risk_snapshot is not None and self._risk_snapshot.snapshot is not None:
+            previous_id = self._risk_snapshot.snapshot.get("snapshot_id")
+        snapshot = load_risk_snapshot(self._risk_config.snapshot_path, now_utc=current_time)
+        current_id = snapshot.snapshot.get("snapshot_id") if snapshot.snapshot is not None else None
+        if current_id != previous_id or not snapshot.entry_allowed:
+            # 新快照必须重新定仓；旧批准不能跨 snapshot 或 fail-closed 状态复用。
+            self._entry_approvals.clear()
+        self._risk_snapshot = snapshot
+
+    @classmethod
+    def _wilder_atr(cls, true_range: Series, row_valid: Series) -> Series:
+        """使用简单均值种子和 Wilder 递推，遇到无效输入后重新预热。"""
+
+        values = np.full(len(true_range), np.nan, dtype=float)
+        seed: list[float] = []
+        atr: float | None = None
+        for index, (raw_range, valid) in enumerate(zip(true_range, row_valid, strict=True)):
+            if not bool(valid) or not np.isfinite(raw_range):
+                seed.clear()
+                atr = None
+                continue
+            current_range = float(raw_range)
+            if atr is None:
+                seed.append(current_range)
+                if len(seed) == cls.ATR_PERIOD:
+                    atr = float(np.mean(seed))
+                    values[index] = atr
+                continue
+            atr = (atr * (cls.ATR_PERIOD - 1) + current_range) / cls.ATR_PERIOD
+            values[index] = atr
+        return Series(values, index=true_range.index, dtype=float)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict[str, Any]) -> DataFrame:
         """计算严格滞后一根的 channel，并冻结 active window 数据健康状态。"""
@@ -58,6 +152,19 @@ class DonchianTrendStrategy(IStrategy):
             # Freqtrade populate_* 只提供已完成 candle；测试 fixture 可显式传 is_closed。
             closed = Series(True, index=dataframe.index, dtype=bool)
         row_valid = finite & price_valid & volume_valid & high_valid & low_valid & closed
+
+        previous_close = numeric["close"].shift(1)
+        true_range = pd.concat(
+            (
+                numeric["high"] - numeric["low"],
+                (numeric["high"] - previous_close).abs(),
+                (numeric["low"] - previous_close).abs(),
+            ),
+            axis=1,
+        ).max(axis=1)
+        # ATR 的首行允许 high-low；其余行要求当前与前一行都有效，避免跨数据缺口递推。
+        atr_input_valid = row_valid & row_valid.shift(1, fill_value=True)
+        dataframe["donchian_signal_atr"] = self._wilder_atr(true_range, atr_input_valid)
 
         dates = pd.to_datetime(dataframe["date"], errors="coerce", utc=True)
         interval_valid = dates.diff().eq(pd.Timedelta(self.timeframe))
@@ -104,6 +211,75 @@ class DonchianTrendStrategy(IStrategy):
         dataframe.loc[exit_signal, ["exit_long", "exit_tag"]] = (1, self.EXIT_TAG)
         return dataframe
 
+    def _latest_signal_atr(self, pair: str, entry_tag: str | None) -> Decimal | None:
+        """只读取 Freqtrade 已分析的最新已完成 candle，不在关键路径重新计算指标。"""
+
+        if entry_tag != self.ENTRY_TAG or not hasattr(self, "dp"):
+            return None
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        latest = dataframe.tail(1)
+        if latest.empty:
+            return None
+        row = latest.squeeze(axis=0)
+        if (
+            not bool(row.get("donchian_data_valid", False))
+            or int(row.get("enter_long", 0)) != 1
+            or row.get("enter_tag") != self.ENTRY_TAG
+        ):
+            return None
+        try:
+            atr = Decimal(str(row["donchian_signal_atr"]))
+        except (InvalidOperation, KeyError):
+            return None
+        return atr if atr.is_finite() and atr > 0 else None
+
+    def custom_stake_amount(
+        self,
+        pair: str,
+        current_time: datetime,
+        current_rate: float,
+        proposed_stake: float,
+        min_stake: float | None,
+        max_stake: float,
+        leverage: float,
+        entry_tag: str | None,
+        side: str,
+        **kwargs: Any,
+    ) -> float:
+        """用 P2-03 同源纯函数计算 quote stake；任何异常都显式返回 0。"""
+
+        del current_time, proposed_stake, kwargs
+        try:
+            if (
+                self._risk_config is None
+                or self._risk_snapshot is None
+                or side != "long"
+                or leverage != 1.0
+            ):
+                return 0.0
+            signal_atr = self._latest_signal_atr(pair, entry_tag)
+            if signal_atr is None:
+                return 0.0
+            approval = calculate_runtime_entry_approval(
+                self._risk_snapshot,
+                self._risk_config,
+                pair=pair,
+                current_rate=Decimal(str(current_rate)),
+                signal_atr=signal_atr,
+                min_stake=Decimal(str(min_stake)) if min_stake is not None else None,
+                max_stake=Decimal(str(max_stake)),
+            )
+            if approval is None:
+                self._entry_approvals.pop(pair, None)
+                return 0.0
+            self._entry_approvals[pair] = approval
+            return float(approval.approved_stake)
+        except Exception:
+            # Freqtrade 会在 callback 抛错时回退 proposed stake；风险边界必须主动吞错并拒绝。
+            logger.exception("Risk sizing failed closed for %s", pair)
+            self._entry_approvals.pop(pair, None)
+            return 0.0
+
     def confirm_trade_entry(
         self,
         pair: str,
@@ -116,7 +292,93 @@ class DonchianTrendStrategy(IStrategy):
         side: str,
         **kwargs: Any,
     ) -> bool:
-        """P3-02 风险快照接入前固定拒绝执行，P2-02 只验证信号映射。"""
+        """常数时间复核已缓存批准；该 callback 不读文件、网络或数据库。"""
 
-        del pair, order_type, amount, rate, time_in_force, current_time, entry_tag, side, kwargs
-        return False
+        del time_in_force, kwargs
+        approval = self._entry_approvals.get(pair)
+        snapshot = self._risk_snapshot
+        if (
+            approval is None
+            or snapshot is None
+            or not snapshot.entry_allowed
+            or snapshot.snapshot is None
+            or side != "long"
+            or entry_tag != self.ENTRY_TAG
+            or order_type != self.order_types["entry"]
+            or current_time >= approval.expires_at_utc
+            or snapshot.snapshot.get("snapshot_id") != approval.snapshot_id
+        ):
+            return False
+        try:
+            requested_amount = Decimal(str(amount))
+            requested_rate = Decimal(str(rate))
+        except InvalidOperation:
+            return False
+        return (
+            requested_amount.is_finite()
+            and requested_rate.is_finite()
+            and ZERO < requested_amount <= approval.approved_quantity
+            and requested_rate == approval.reference_rate
+        )
+
+    def order_filled(
+        self,
+        pair: str,
+        trade: Any,
+        order: Any,
+        current_time: datetime,
+        **kwargs: Any,
+    ) -> None:
+        """entry fill 后持久化固定绝对止损，供重启后的 custom_stoploss 恢复。"""
+
+        del current_time, kwargs
+        approval = self._entry_approvals.get(pair)
+        if (
+            approval is None
+            or self._risk_config is None
+            or getattr(order, "ft_order_side", None) != getattr(trade, "entry_side", None)
+        ):
+            return
+        try:
+            average_entry_rate = Decimal(str(trade.open_rate))
+        except (AttributeError, InvalidOperation):
+            return
+        initial_stop = calculate_initial_stop_price(
+            self._risk_config,
+            pair=pair,
+            average_entry_rate=average_entry_rate,
+            signal_atr=approval.signal_atr,
+        )
+        if initial_stop is None:
+            return
+        # Trade custom data 由 Freqtrade Runtime DB 持久化，不创建第二订单或持仓真相。
+        trade.set_custom_data(self.INITIAL_STOP_CUSTOM_DATA_KEY, str(initial_stop))
+        trade.set_custom_data(self.SIGNAL_ATR_CUSTOM_DATA_KEY, str(approval.signal_atr))
+        trade.set_custom_data(self.SNAPSHOT_ID_CUSTOM_DATA_KEY, approval.snapshot_id)
+        self._entry_approvals.pop(pair, None)
+
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Any,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        after_fill: bool,
+        **kwargs: Any,
+    ) -> float | None:
+        """维持实际平均成交价减 2 ATR 的固定 bot-managed stoploss。"""
+
+        del current_time, current_profit, after_fill, kwargs
+        if pair != getattr(trade, "pair", pair) or bool(getattr(trade, "is_short", False)):
+            return float(self.EMERGENCY_STOPLOSS_RATIO)
+        try:
+            initial_stop = Decimal(str(trade.get_custom_data(self.INITIAL_STOP_CUSTOM_DATA_KEY)))
+            current = Decimal(str(current_rate))
+        except (AttributeError, InvalidOperation):
+            return float(self.EMERGENCY_STOPLOSS_RATIO)
+        ratio = fixed_stoploss_ratio(initial_stop_price=initial_stop, current_rate=current)
+        if ratio is None or ratio <= ZERO:
+            # 缺失/损坏持久化数据或价格已穿透 stop 时收紧到当前价附近，禁止保留 -99%。
+            return float(self.EMERGENCY_STOPLOSS_RATIO)
+        return float(ratio)

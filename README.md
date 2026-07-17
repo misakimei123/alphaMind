@@ -2,10 +2,11 @@
 
 alphaMind 是面向现货 long/flat 策略研究与受控运行的个人量化交易项目。首个工程基线是 BTC/USDT、ETH/USDT 的 4h Donchian 20/10 趋势策略。
 
-当前实现只包含无密钥、无网络、无交易写权限的确定性核心：
+仓库不包含凭据，也没有可启动 Live 的 Compose service；当前实现包括：
 
 - point-in-time Donchian 信号；
-- P3-02 前固定拒绝入场的 Freqtrade 2026.6 strategy adapter；
+- Freqtrade 2026.6 strategy adapter：本地 RiskSnapshot 缓存、P2-03 同源定仓、常数时间入场确认、
+  ATR(20) x 2 固定 bot-managed stoploss 与 fail-closed；
 - 现金、BTC/ETH Buy-and-Hold、50/50 与 SMA(200) 工程基准及统一绩效指标；
 - maker/taker fee、spread、slippage、next-candle fill 与压力场景模型；
 - 三个 expanding validation fold、13 个 OAT trial、bootstrap 与 Deflated Sharpe 报告；
@@ -125,11 +126,14 @@ docker compose --profile research run --rm walk-forward-report `
 
 P2-06 已使用锁定 Freqtrade 2026.6 运行官方 `lookahead-analysis`、`recursive-analysis`，并在
 Bybit/OKX 的同标 4h 数据上逐列执行 prefix-invariance 扫描。构建会联网读取公开市场 metadata
-和首次下载 OKX snapshot，但不会挂载凭据；已发布证据可在无网络、全只读容器中复核：
+和首次下载 OKX snapshot，但不会挂载凭据。报告及 manifest 永久绑定生成时的 strategy source hash；
+只有在 `main@cb86fc9` 对应 checkout 中，以下无网络、全只读复核才会原样通过：
 
 ```powershell
 docker compose --profile research run --rm anti-cheat-verify
 ```
 
 报告位于 `research/reports/anti-cheat/p2-06-v1/`。P2-06 PASS 只解除自动反作弊阻塞；所有参数
-仍保持未选择，必须等待独立评审，且本报告不构成 Backtest Gate、Paper 或 Live 晋升。
+仍保持未选择，必须等待独立评审，且本报告不构成 Backtest Gate、Paper 或 Live 晋升。P3-02
+修改当前 adapter 后，旧 verifier 在当前 checkout 报 strategy hash mismatch 是预期的历史证据边界；当前
+entry/exit 信号与 P2-01 纯函数的一致性由锁定镜像 `contract-check` 重新验证。
