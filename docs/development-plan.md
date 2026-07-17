@@ -1029,6 +1029,8 @@ Strategy Card 必须固定：
 
 ### P3-04 Runtime DB 隔离与恢复
 
+当前状态（2026-07-17）：`DONE`；五环境数据库 identity、Freqtrade-only migration、锁定 schema 指纹、SQLite 只读检查与整库 backup/restore、恢复顺序、Live PostgreSQL 权限模板和异常退出恢复合同均已实现并通过验证。
+
 实现：
 
 - backtest、dry-run、replay、contract 和 live 使用独立 DB/用户/schema；
@@ -1042,6 +1044,16 @@ Strategy Card 必须固定：
 - open trade、open order 和已成交事件恢复；
 - Audit DB 离线时 Freqtrade 的安全行为；
 - Runtime DB 不一致时禁止新入场并告警。
+
+实际进度（2026-07-17）：
+
+- `configs/common/runtime-db-contract.toml` 冻结 backtest、dry-run、replay、testnet-contract 和 live-canary 五个独立 identity；前四层分别使用独立 SQLite 文件，Live 使用独立 PostgreSQL database/schema/Freqtrade owner/watchdog role，DSN 只允许由 `FREQTRADE__DB_URL` secret 注入；Live template 的不可连接 PostgreSQL 占位值避免环境变量缺失时回退创建默认 SQLite；
+- `configs/common/freqtrade-runtime-schema-2026.6.json` 由锁定 `Freqtrade 2026.6@b604e2f` model metadata 固定六张 Runtime 表及完整列集合；`src/alphamind/runtime_db/` 使用 SQLite `mode=ro`、`PRAGMA query_only=ON`、`quick_check` 和登记 SELECT allowlist 检查 schema、open trade/order 与 filled order，缺失、损坏或 schema 漂移均返回 fail-closed reason code，不执行 Runtime 表写入；
+- Runtime recovery decision 固定 `Exchange facts -> Runtime DB -> Freqtrade reconcile -> safe disposition -> Audit backfill`；Exchange/Runtime/对账/安全处置未完成时禁止新入场并要求告警，对账阶段仍允许安全退出，Audit DB 离线不反向恢复或阻止安全退出，是否停止新增风险继续由 P3-03 outbox 背压独立决定；
+- `scripts/manage_runtime_db.py` 只复制完整 Freqtrade SQLite DB：online backup 后验证 schema/integrity/hash，restore 必须显式确认 Freqtrade 已停止、目标无 WAL/SHM sidecar，并先生成现库 rollback backup 后再同目录原子替换；禁止手写 migration、Trade/Order 修补或以 Audit DB 恢复 Runtime；
+- `configs/postgres/live-runtime-roles.sql` 为 Freqtrade owner 保留 schema/migration 权限，只给 watchdog `CONNECT + USAGE + SELECT` 并强制 `default_transaction_read_only=on`；`docs/runbooks/runtime-db-recovery.md` 固定环境隔离、SQLite backup/restore/rollback、PostgreSQL 17 base backup/WAL/PITR、升级回退和证据记录流程；
+- 新增 8 项 Runtime DB 聚焦测试，覆盖五环境唯一性、Live 无凭据/fail-closed DSN、只读检查不改文件、schema 漂移/缺失/损坏、完整 backup/restore/rollback、60 秒 RTO 门禁、恢复顺序、Audit 离线和 PostgreSQL watchdog 权限；全仓 pytest 184 项通过，repository scan 检查 263 个文件，strict mypy 检查 39 个 source/script 文件，Ruff check/format 覆盖 63 个 Python 文件，`uv lock --check`、Compose config 与 `git diff --check` 通过；
+- 无网络锁定镜像 `contract-check` 使用真实 Freqtrade model/schema：子进程 durable commit 后直接异常退出，新 persistence session 恢复 1 个 open trade、1 个 partially-filled open order 和 2 个含成交事实的 orders；随后完成整库 backup/restore，当前小型 fixture 恢复约 3 ms、已提交事实丢失 0。该结果不能外推生产存储，PostgreSQL 真实规模 `RPO <= 300 秒`、`RTO <= 60 秒` 仍须在 P4 Paper 环境按 runbook 实测；P5 前仍禁止 Live service、凭据和在线安装 PostgreSQL driver。本任务不解除 P2-07/P2-08、Paper 或 Live 阻塞。
 
 ### P3-05 Replay 与故障注入
 
@@ -1415,7 +1427,8 @@ git diff --check
 | 23 | P3-01 Risk Watchdog 与 RiskSnapshot | DONE | `main@99066ed` 的离线只读观测、Decimal 风险会计、三状态决策、schema v1、原子发布/严格读取、39 项聚焦测试、164 项全仓测试和 GitHub Actions `#23` 均通过，项目所有人已批准；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
 | 24 | P3-02 Freqtrade 风险 callback 映射 | DONE | 本地 RiskSnapshot 缓存、P2-03 同源定仓、常数时间入场确认、Wilder ATR 固定 stop、wallet/exposure/DCA 配置、32 项聚焦测试、168 项全仓测试和锁定 Freqtrade 2026.6 contract-check 均通过；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
 | 25 | P3-03 Audit Outbox 与 Writer | DONE | 有界 SQLite WAL outbox、schema/hash、风险批准先审计、异步幂等 writer、冻结背压、lease/retry/dead-letter、8 项聚焦测试、176 项全仓测试和锁定 Freqtrade contract-check 均通过；Audit DB 无 Runtime DB/Trade/Order 写路径 |
-| 26 | P3-04 Runtime DB 隔离与恢复 | NOT_STARTED | 下一可执行工程任务；落实各环境 DB/权限隔离、Freqtrade migration 所有权、备份恢复与异常重启演练 |
+| 26 | P3-04 Runtime DB 隔离与恢复 | DONE | 五环境 DB identity、Freqtrade-only migration、锁定 schema 只读检查、整库 backup/restore/rollback、PostgreSQL 只读角色/runbook、8 项聚焦测试、184 项全仓测试和真实 Freqtrade 异常退出恢复合同均通过；生产 PostgreSQL 规模 RPO/RTO 仍由 P4 实测 |
+| 27 | P3-05 Replay 与故障注入 | NOT_STARTED | 下一可执行工程任务；覆盖 snapshot/outbox、重复事件、submit unknown、partial fill、cancel reject、进程重启、外部现金流、clock skew 和数据缺口矩阵 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

@@ -1,0 +1,42 @@
+schema_version = 1
+freqtrade_version = "2026.6"
+schema_manifest_path = "configs/common/freqtrade-runtime-schema-2026.6.json"
+migration_owner = "freqtrade"
+rpo_seconds = 300
+rto_seconds = 60
+recovery_order = [
+  "exchange_facts",
+  "runtime_db",
+  "freqtrade_reconcile",
+  "safe_disposition",
+  "audit_backfill",
+]
+
+[environments.backtest]
+backend = "sqlite"
+db_url = "sqlite:////freqtrade/user_data/db/backtest.sqlite"
+identity = "backtest"
+
+[environments.dry_run]
+backend = "sqlite"
+db_url = "sqlite:////freqtrade/user_data/db/dry-run.sqlite"
+identity = "dry-run"
+
+[environments.replay]
+backend = "sqlite"
+db_url = "sqlite:////freqtrade/user_data/db/replay.sqlite"
+identity = "replay"
+
+[environments.testnet_contract]
+backend = "sqlite"
+db_url = "sqlite:////freqtrade/user_data/db/contract.sqlite"
+identity = "testnet-contract"
+
+[environments.live_canary]
+backend = "postgresql"
+db_url_env = "FREQTRADE__DB_URL"
+database = "alphamind_live"
+schema = "freqtrade_live"
+owner_role = "freqtrade_live_owner"
+watchdog_role = "freqtrade_live_watchdog"
+identity = "live-canary"

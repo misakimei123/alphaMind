@@ -5,5 +5,5 @@
   ],
   "dry_run": false,
   "bot_name": "alphamind-live-template",
-  "db_url": "sqlite:////freqtrade/user_data/db/live-template.sqlite"
+  "db_url": "postgresql+psycopg://<set-at-runtime>"
 }

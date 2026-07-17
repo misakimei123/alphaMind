@@ -6,7 +6,10 @@ import importlib
 import importlib.util
 import inspect
 import json
+import os
+import subprocess
 import sys
+import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -499,6 +502,166 @@ def verify_backtest_fill_contract(backtesting_module: Any) -> dict[str, bool]:
     }
 
 
+def _write_runtime_recovery_fixture(database_path: Path) -> None:
+    """子进程提交真实 Freqtrade 状态后直接退出，模拟未执行 shutdown hook。"""
+
+    persistence = importlib.import_module("freqtrade.persistence")
+    persistence.init_db(f"sqlite:///{database_path}")
+    now = datetime.now(UTC)
+    trade = persistence.Trade(
+        exchange="bybit",
+        pair="BTC/USDT",
+        base_currency="BTC",
+        stake_currency="USDT",
+        is_open=True,
+        is_short=False,
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100.0,
+        stake_amount=100.0,
+        amount=1.0,
+        amount_requested=1.0,
+        open_date=now,
+        strategy="DonchianTrendStrategy",
+        timeframe=240,
+        trading_mode="spot",
+        leverage=1.0,
+    )
+    persistence.Trade.session.add(trade)
+    persistence.Trade.session.flush()
+    orders = (
+        persistence.Order(
+            ft_trade_id=trade.id,
+            order_id="entry-filled-1",
+            status="closed",
+            symbol="BTC/USDT",
+            order_type="market",
+            side="buy",
+            price=100.0,
+            average=100.0,
+            amount=1.0,
+            filled=1.0,
+            remaining=0.0,
+            cost=100.0,
+            ft_order_side="buy",
+            ft_pair="BTC/USDT",
+            ft_is_open=False,
+            ft_amount=1.0,
+            ft_price=100.0,
+            order_date=now,
+            order_filled_date=now,
+        ),
+        persistence.Order(
+            ft_trade_id=trade.id,
+            order_id="exit-partial-open-1",
+            status="open",
+            symbol="BTC/USDT",
+            order_type="limit",
+            side="sell",
+            price=110.0,
+            average=110.0,
+            amount=1.0,
+            filled=0.25,
+            remaining=0.75,
+            cost=27.5,
+            ft_order_side="sell",
+            ft_pair="BTC/USDT",
+            ft_is_open=True,
+            ft_amount=1.0,
+            ft_price=110.0,
+            order_date=now,
+            order_filled_date=now,
+        ),
+    )
+    persistence.Trade.session.add_all(orders)
+    persistence.Trade.session.commit()
+    # 事务已经 durable commit；跳过 session.remove()/engine.dispose 模拟进程异常终止。
+    os._exit(0)
+
+
+def verify_runtime_database_recovery() -> dict[str, object]:
+    """用锁定 Freqtrade model 实测异常退出、重启、整库 backup 与 restore。"""
+
+    runtime_db = importlib.import_module("alphamind.runtime_db")
+    runtime_path = Path("/tmp/alphamind-p3-04-runtime.sqlite")
+    backup_path = Path("/tmp/alphamind-p3-04-backup.sqlite")
+    restored_path = Path("/tmp/alphamind-p3-04-restored.sqlite")
+    rollback_path = Path("/tmp/alphamind-p3-04-rollback.sqlite")
+    for path in (runtime_path, backup_path, restored_path, rollback_path):
+        for suffix in ("", "-wal", "-shm"):
+            Path(f"{path}{suffix}").unlink(missing_ok=True)
+
+    subprocess.run(
+        [sys.executable, str(Path(__file__)), "--write-runtime-fixture", str(runtime_path)],
+        check=True,
+        timeout=30,
+    )
+    persistence = importlib.import_module("freqtrade.persistence")
+    persistence.init_db(f"sqlite:///{runtime_path}")
+    trade = persistence.Trade.session.query(persistence.Trade).one()
+    orders = persistence.Trade.session.query(persistence.Order).all()
+    order_by_id = {order.order_id: order for order in orders}
+    if not trade.is_open or set(order_by_id) != {"entry-filled-1", "exit-partial-open-1"}:
+        raise RuntimeError("Freqtrade restart did not recover the committed Trade/Order facts")
+    if order_by_id["entry-filled-1"].filled != 1.0:
+        raise RuntimeError("Freqtrade restart lost the filled order fact")
+    partial = order_by_id["exit-partial-open-1"]
+    if not partial.ft_is_open or partial.filled != 0.25 or partial.remaining != 0.75:
+        raise RuntimeError("Freqtrade restart lost the partially-filled open order")
+    persistence.Trade.session.remove()
+
+    manifest = runtime_db.load_runtime_schema_manifest(
+        PROJECT_ROOT / "configs/common/freqtrade-runtime-schema-2026.6.json"
+    )
+    inspection = runtime_db.inspect_sqlite_runtime_database(runtime_path, manifest)
+    if not inspection.healthy or (
+        inspection.open_trades,
+        inspection.open_orders,
+        inspection.filled_orders,
+    ) != (1, 1, 2):
+        raise RuntimeError("read-only Runtime DB inspection disagrees with Freqtrade persistence")
+
+    started = time.perf_counter()
+    backup = runtime_db.backup_sqlite_runtime_database(runtime_path, backup_path, manifest)
+    restored = runtime_db.restore_sqlite_runtime_database(
+        backup_path,
+        restored_path,
+        rollback_path,
+        manifest,
+        freqtrade_stopped=True,
+    )
+    recovery_seconds = time.perf_counter() - started
+    if recovery_seconds >= 60 or not backup.inspection.healthy or not restored.inspection.healthy:
+        raise RuntimeError("SQLite Runtime DB restore exceeded RTO or failed verification")
+
+    persistence.init_db(f"sqlite:///{restored_path}")
+    restored_trade = persistence.Trade.session.query(persistence.Trade).one()
+    restored_orders = persistence.Trade.session.query(persistence.Order).all()
+    if not restored_trade.is_open or len(restored_orders) != 2:
+        raise RuntimeError("restored Runtime DB lost committed Freqtrade facts")
+    persistence.Trade.session.remove()
+
+    degraded = runtime_db.evaluate_recovery(
+        restored.inspection,
+        exchange_facts_available=True,
+        freqtrade_reconciled=True,
+        safe_disposition_complete=True,
+        audit_available=False,
+    )
+    if not degraded.safe_exit_allowed or degraded.audit_backfill_allowed:
+        raise RuntimeError("Audit outage incorrectly reversed Runtime DB recovery")
+    return {
+        "abnormal_exit_recovered": True,
+        "audit_db_not_required_for_safe_exit": True,
+        "filled_orders": restored.inspection.filled_orders,
+        "open_orders": restored.inspection.open_orders,
+        "open_trades": restored.inspection.open_trades,
+        "recovery_seconds": round(recovery_seconds, 6),
+        "rpo_committed_facts_lost": 0,
+        "schema_sha256": restored.inspection.schema_sha256,
+    }
+
+
 def main() -> int:
     interface = importlib.import_module("freqtrade.strategy.interface")
     actual = verify_callback_parameters(interface.IStrategy)
@@ -507,6 +670,7 @@ def main() -> int:
     strategy_type = _load_strategy_type(STRATEGY_PATH)
     strategy = verify_strategy_adapter(strategy_type)
     risk_callbacks = verify_risk_callbacks(strategy_type)
+    runtime_database = verify_runtime_database_recovery()
     print(
         json.dumps(
             {
@@ -514,6 +678,7 @@ def main() -> int:
                 "backtest_fill_contract": fill_contract,
                 "callbacks": actual,
                 "risk_callbacks": risk_callbacks,
+                "runtime_database": runtime_database,
                 "strategy": strategy,
             },
             sort_keys=True,
@@ -523,4 +688,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--write-runtime-fixture":
+        _write_runtime_recovery_fixture(Path(sys.argv[2]))
     raise SystemExit(main())

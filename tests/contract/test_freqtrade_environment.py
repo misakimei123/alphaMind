@@ -65,16 +65,26 @@ def test_mode_configs_are_isolated_and_live_template_has_no_credentials() -> Non
         "pair_blacklist": [],
     }
 
-    mode_files = ("backtest.json", "dry-run.json", "replay.json", "live.template.json")
+    mode_files = (
+        "backtest.json",
+        "dry-run.json",
+        "replay.json",
+        "contract.json",
+        "live.template.json",
+    )
     modes = {name: load_json(name) for name in mode_files}
     assert all(mode["add_config_files"] == ["common.json"] for mode in modes.values())
     assert modes["backtest.json"]["dry_run"] is True
     assert modes["dry-run.json"]["dry_run"] is True
     assert modes["replay.json"]["dry_run"] is True
+    assert modes["contract.json"]["dry_run"] is True
     assert modes["live.template.json"]["dry_run"] is False
 
-    database_urls = {mode["db_url"] for mode in modes.values()}
-    assert len(database_urls) == len(modes)
+    local_modes = {name: mode for name, mode in modes.items() if name != "live.template.json"}
+    database_urls = {mode["db_url"] for mode in local_modes.values()}
+    assert len(database_urls) == len(local_modes)
+    assert modes["live.template.json"]["db_url"] == "postgresql+psycopg://<set-at-runtime>"
+    assert "sqlite" not in modes["live.template.json"]["db_url"]
     assert "dry_run_wallet" not in modes["live.template.json"]
 
     serialized_live = json.dumps(modes["live.template.json"], sort_keys=True).lower()
