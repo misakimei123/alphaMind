@@ -14,6 +14,8 @@ x-freqtrade-base: &freqtrade-base
     - /tmp
   environment:
     PYTHONPATH: /freqtrade/src
+    # 实际部署 commit 缺失时 strategy bot_start fail-closed；不在镜像或仓库中伪造 provenance。
+    ALPHAMIND_PROJECT_COMMIT: ${ALPHAMIND_PROJECT_COMMIT:-}
   volumes:
     - ./configs/freqtrade:/freqtrade/configs:ro
     - ./configs/common:/freqtrade/common:ro
@@ -44,6 +46,23 @@ services:
     network_mode: none
     volumes:
       - ./:/workspace:ro
+
+  audit-writer:
+    <<: *freqtrade-base
+    profiles: [audit]
+    entrypoint: [python]
+    command:
+      - /workspace/scripts/run_audit_writer.py
+      - --config
+      - /freqtrade/common/audit-outbox.toml
+    working_dir: /workspace
+    network_mode: none
+    # sidecar 只读取 source/config/outbox，并写独立 Audit DB；不挂载 Runtime DB 或凭据。
+    volumes:
+      - ./:/workspace:ro
+      - ./configs/common:/freqtrade/common:ro
+      - ./src:/freqtrade/src:ro
+      - ./user_data/audit:/freqtrade/user_data/audit
 
   freqtrade-cli:
     <<: *freqtrade-base

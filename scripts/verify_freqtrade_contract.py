@@ -267,10 +267,33 @@ def verify_strategy_adapter(strategy_type: Any) -> dict[str, object]:
 def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
     """在锁定镜像中执行定仓、最终确认、fill 持久化与固定止损 callback。"""
 
+    audit = importlib.import_module("alphamind.audit")
     risk = importlib.import_module("alphamind.risk")
     risk_limits = importlib.import_module("alphamind.config.risk_limits")
     pandas = importlib.import_module("pandas")
     strategy = strategy_type({})
+    outbox_path = Path("/tmp/alphamind-contract-audit-outbox.sqlite")
+    for suffix in ("", "-wal", "-shm"):
+        Path(f"{outbox_path}{suffix}").unlink(missing_ok=True)
+    strategy._audit_config = audit.AuditRuntimeConfig(
+        audit.AuditStorageConfig(
+            outbox_path,
+            Path("/tmp/alphamind-contract-research-audit.sqlite"),
+            "freqtrade-contract",
+        ),
+        audit.AuditProvenance(
+            "1" * 40,
+            "donchian_trend",
+            strategy.version(),
+            "2" * 64,
+            "3" * 64,
+        ),
+    )
+    strategy._audit_outbox = audit.AuditOutbox(
+        outbox_path,
+        limits=audit.OutboxLimits(logical_capacity=2, entry_stop_pending=1),
+    )
+    strategy._audit_sequence = 0
     adapter_config = risk.load_freqtrade_risk_config(
         PROJECT_ROOT / "configs/common/freqtrade-risk-adapter.toml"
     )
@@ -357,6 +380,8 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
     approval = strategy._entry_approvals.get("ETH/USDT")
     if approval is None or stake != float(approval.approved_stake):
         raise RuntimeError("runtime risk sizing did not create the expected cached approval")
+    if strategy._audit_outbox.metrics(now=current_time).pending != 1:
+        raise RuntimeError("risk approval was not durably appended to the audit outbox")
     if not strategy.confirm_trade_entry(
         "ETH/USDT",
         "market",
@@ -416,6 +441,20 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
     ):
         raise RuntimeError("risk snapshot state must not block safe exits")
 
+    backpressure_stake = strategy.custom_stake_amount(
+        "ETH/USDT",
+        current_time,
+        100.0,
+        300.0,
+        5.0,
+        300.0,
+        1.0,
+        strategy.ENTRY_TAG,
+        "long",
+    )
+    if backpressure_stake != 0.0:
+        raise RuntimeError("audit backlog stop threshold must reject new entry risk")
+
     strategy.dp = object()
     failed_closed_stake = strategy.custom_stake_amount(
         "BTC/USDT",
@@ -430,11 +469,14 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
     )
     if failed_closed_stake != 0.0:
         raise RuntimeError("callback error must return zero instead of proposed stake")
+    strategy._audit_outbox.close()
     return {
         "approved_quantity": str(approval.approved_quantity),
         "approved_stake": str(approval.approved_stake),
         "initial_stop": trade.data[strategy.INITIAL_STOP_CUSTOM_DATA_KEY],
         "safe_exit_allowed": True,
+        "risk_approval_audited_before_entry": True,
+        "audit_backpressure_failed_closed": True,
     }
 
 

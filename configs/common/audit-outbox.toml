@@ -1,0 +1,9 @@
+schema_version = 1
+outbox_path = "/freqtrade/user_data/audit/outbox.sqlite"
+audit_db_path = "/freqtrade/user_data/audit/research-audit.sqlite"
+producer_instance_id = "freqtrade-primary"
+project_commit_env = "ALPHAMIND_PROJECT_COMMIT"
+strategy_id = "donchian_trend"
+strategy_version = "0.3.0"
+strategy_config_path = "/freqtrade/common/freqtrade-risk-adapter.toml"
+runtime_lock_path = "/freqtrade/common/runtime-versions.toml"

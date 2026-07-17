@@ -1000,6 +1000,8 @@ Strategy Card 必须固定：
 
 ### P3-03 Audit Outbox 与 Writer
 
+当前状态（2026-07-17）：`DONE`；有界 SQLite WAL outbox、AuditEvent hash、风险批准先审计、异步幂等 writer、冻结背压阈值、lease/retry/dead-letter、backlog 指标和独立 Audit DB 均已实现并通过本地与锁定容器验证。
+
 实现：
 
 - 定义 event id、schema version、timestamp、strategy/config hash、snapshot id、reason code；
@@ -1014,6 +1016,16 @@ Strategy Card 必须固定：
 - sidecar 重启后可以继续消费；
 - Runtime DB/Audit DB 不可用场景的恢复顺序符合合同；
 - Audit DB 永远不能反向修改 Trade/Order。
+
+实际进度（2026-07-17）：
+
+- `src/alphamind/audit/` 实现 schema v1 `risk_decision` envelope、UUID event id、producer sequence、UTC 时间、strategy/config/runtime/RiskSnapshot provenance、reason code、payload/content SHA-256 与 16 KiB 上限；部署 commit 必须由 `ALPHAMIND_PROJECT_COMMIT` 提供，缺失或不合法时 strategy 启动失败，禁止伪造 provenance；
+- 独立 outbox 固定使用 SQLite WAL、`synchronous=FULL`、50 ms busy timeout 和单事务 append；未确认事件上限 10,000 / 256 MiB，5,000 / 2 分钟 / 128 MiB 产生 warning，8,000 / 5 分钟 / 192 MiB 阻止新入场，最后 2,000 个逻辑槽位只允许安全事件；事件 ID+相同 hash 幂等，ID+不同 hash 显式失败；
+- Audit Writer 每批最多 100 条并按 producer/sequence 稳定 claim，lease 固定 60 秒；失败使用 1–60 秒带稳定 jitter 的指数退避，连续 20 次失败或 content hash 冲突进入 `DEAD_LETTER`，完整保留原事件和逐次 attempt；已交付本地记录至少保留 7 天并仅由 writer 清理；
+- `SQLiteAuditSink` 只创建和写入独立 `audit_event` 表，接口不接受 Runtime DB 路径、Trade/Order model 或交易凭据；相同 event ID 只有 content hash 一致才视为已交付。Compose `audit-writer` sidecar 无网络且不挂载 `user_data/db`，Audit DB 不具备反向修改 Freqtrade 事实的路径；
+- strategy adapter 升级为 `0.3.0`：`custom_stake_amount` 只有在有效 RiskSnapshot、outbox 健康且 `risk_decision` 已 durable append 后才返回非零 stake；任一 outbox/配置/hash/背压异常均返回 `0`，`confirm_trade_entry` 继续只做已审计内存批准的常数时间复核，安全退出路径不依赖 Audit DB；
+- 新增 8 项 outbox/config 聚焦测试，覆盖 schema/hash、WAL/FULL、幂等、逻辑容量/年龄背压与安全保留、writer 重启 lease 回收、Audit DB 离线恢复、content conflict、20 次失败 dead-letter 和 7 天清理；全仓 pytest 176 项通过，repository scan 检查 252 个文件，strict mypy 检查 34 个 source/script 文件，Ruff check/format 覆盖 57 个 Python 文件，`uv lock --check`、Compose config 与 `git diff --check` 通过；
+- 无网络锁定镜像 `contract-check` 实测 Freqtrade 2026.6 callback 签名、风险批准先写 outbox、backlog 停止阈值 fail-closed、固定 ATR stop 与安全退出；P3-04 仍负责真实 Runtime DB 隔离、备份与恢复演练，P3-05 仍负责长进程故障注入。本任务不解除 P2-07/P2-08、Paper 或 Live 阻塞。
 
 ### P3-04 Runtime DB 隔离与恢复
 
@@ -1402,7 +1414,8 @@ git diff --check
 | 22 | P2-08 Backtest Qualified 门禁 | BLOCKED | 等待 P2-07 和独立复核，P2-05/P2-06 的开发证据不能替代最终门禁 |
 | 23 | P3-01 Risk Watchdog 与 RiskSnapshot | DONE | `main@99066ed` 的离线只读观测、Decimal 风险会计、三状态决策、schema v1、原子发布/严格读取、39 项聚焦测试、164 项全仓测试和 GitHub Actions `#23` 均通过，项目所有人已批准；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
 | 24 | P3-02 Freqtrade 风险 callback 映射 | DONE | 本地 RiskSnapshot 缓存、P2-03 同源定仓、常数时间入场确认、Wilder ATR 固定 stop、wallet/exposure/DCA 配置、32 项聚焦测试、168 项全仓测试和锁定 Freqtrade 2026.6 contract-check 均通过；不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
-| 25 | P3-03 Audit Outbox 与 Writer | NOT_STARTED | 下一可执行工程任务；实现有界 SQLite WAL outbox、幂等 writer、背压、重试和 dead-letter，不得反向修改 Runtime DB |
+| 25 | P3-03 Audit Outbox 与 Writer | DONE | 有界 SQLite WAL outbox、schema/hash、风险批准先审计、异步幂等 writer、冻结背压、lease/retry/dead-letter、8 项聚焦测试、176 项全仓测试和锁定 Freqtrade contract-check 均通过；Audit DB 无 Runtime DB/Trade/Order 写路径 |
+| 26 | P3-04 Runtime DB 隔离与恢复 | NOT_STARTED | 下一可执行工程任务；落实各环境 DB/权限隔离、Freqtrade migration 所有权、备份恢复与异常重启演练 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 

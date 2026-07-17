@@ -37,6 +37,10 @@ def test_compose_uses_only_locked_linux_image_and_has_no_live_service() -> None:
     assert "--strategy-path" not in services["dry-run"]["command"]
     assert "--strategy-path" not in services["backtest"]["command"]
     assert services["replay"]["network_mode"] == "none"
+    assert services["audit-writer"]["profiles"] == ["audit"]
+    assert services["audit-writer"]["network_mode"] == "none"
+    assert "/workspace/scripts/run_audit_writer.py" in services["audit-writer"]["command"]
+    assert all("user_data/db" not in mount for mount in services["audit-writer"]["volumes"])
     assert services["data-snapshot"]["profiles"] == ["data"]
     assert "/workspace/scripts/create_source_snapshot.py" in services["data-snapshot"]["command"]
     assert services["data-quality"]["profiles"] == ["data"]

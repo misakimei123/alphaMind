@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+import uuid
+from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, ClassVar
 
@@ -13,6 +14,13 @@ import pandas as pd
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame, Series
 
+from alphamind.audit import (
+    AuditExecutionContext,
+    AuditOutbox,
+    AuditRuntimeConfig,
+    build_risk_decision_event,
+    load_audit_runtime_config,
+)
 from alphamind.risk.freqtrade_adapter import (
     FreqtradeRiskConfig,
     RuntimeEntryApproval,
@@ -65,6 +73,7 @@ class DonchianTrendStrategy(IStrategy):
     ENTRY_TAG = "entry_breakout"
     EXIT_TAG = "exit_breakout"
     RISK_ADAPTER_CONFIG_PATH = "/freqtrade/common/freqtrade-risk-adapter.toml"
+    AUDIT_CONFIG_PATH = "/freqtrade/common/audit-outbox.toml"
     INITIAL_STOP_CUSTOM_DATA_KEY = "alphamind_initial_stop"
     SIGNAL_ATR_CUSTOM_DATA_KEY = "alphamind_signal_atr"
     SNAPSHOT_ID_CUSTOM_DATA_KEY = "alphamind_risk_snapshot_id"
@@ -75,9 +84,32 @@ class DonchianTrendStrategy(IStrategy):
         self._risk_config: FreqtradeRiskConfig | None = None
         self._risk_snapshot: SnapshotReadResult | None = None
         self._entry_approvals: dict[str, RuntimeEntryApproval] = {}
+        self._audit_config: AuditRuntimeConfig | None = None
+        self._audit_outbox: AuditOutbox | None = None
+        self._audit_sequence = 0
 
     def version(self) -> str:
-        return "0.2.0"
+        return "0.3.0"
+
+    def _audit_execution_context(self) -> AuditExecutionContext:
+        """把锁定 Freqtrade runmode 映射为 schema v1 evidence layer。"""
+
+        runmode = self.config.get("runmode", "dry_run")
+        mode = str(getattr(runmode, "value", runmode))
+        contexts = {
+            "backtest": AuditExecutionContext(
+                "backtest", "historical_backtest", "none", False, False
+            ),
+            "dry_run": AuditExecutionContext(
+                "dry_run", "freqtrade_dry_run", "dry_run", False, False
+            ),
+            "live": AuditExecutionContext(
+                "live_canary", "live_canary", "production_trade", True, False
+            ),
+        }
+        if mode not in contexts:
+            raise ValueError(f"unsupported audit runmode: {mode}")
+        return contexts[mode]
 
     def bot_start(self, **kwargs: Any) -> None:
         """启动时一次性加载适配配置；配置错误必须阻止 bot 进入可交易状态。"""
@@ -86,7 +118,17 @@ class DonchianTrendStrategy(IStrategy):
         config_path = os.environ.get(
             "ALPHAMIND_RISK_ADAPTER_CONFIG_PATH", self.RISK_ADAPTER_CONFIG_PATH
         )
+        audit_config_path = os.environ.get("ALPHAMIND_AUDIT_CONFIG_PATH", self.AUDIT_CONFIG_PATH)
         self._risk_config = load_freqtrade_risk_config(config_path)
+        self._audit_config = load_audit_runtime_config(audit_config_path)
+        self._audit_execution_context()
+        if self._audit_outbox is not None:
+            self._audit_outbox.close()
+        self._audit_outbox = AuditOutbox(self._audit_config.storage.outbox_path)
+        self._audit_sequence = self._audit_outbox.next_sequence(
+            producer_component="freqtrade_strategy",
+            producer_instance_id=self._audit_config.storage.producer_instance_id,
+        )
         self._risk_snapshot = None
         self._entry_approvals.clear()
 
@@ -248,14 +290,20 @@ class DonchianTrendStrategy(IStrategy):
     ) -> float:
         """用 P2-03 同源纯函数计算 quote stake；任何异常都显式返回 0。"""
 
-        del current_time, proposed_stake, kwargs
+        del proposed_stake, kwargs
         try:
             if (
                 self._risk_config is None
                 or self._risk_snapshot is None
+                or self._audit_config is None
+                or self._audit_outbox is None
                 or side != "long"
                 or leverage != 1.0
             ):
+                return 0.0
+            # 先检查冻结背压阈值，避免在审计不可持续时继续增加新风险。
+            if self._audit_outbox.metrics(now=current_time).entry_backpressure:
+                self._entry_approvals.pop(pair, None)
                 return 0.0
             signal_atr = self._latest_signal_atr(pair, entry_tag)
             if signal_atr is None:
@@ -272,6 +320,25 @@ class DonchianTrendStrategy(IStrategy):
             if approval is None:
                 self._entry_approvals.pop(pair, None)
                 return 0.0
+            sequence = self._audit_sequence
+            self._audit_sequence += 1
+            event = build_risk_decision_event(
+                event_id=uuid.uuid4(),
+                producer_instance_id=self._audit_config.storage.producer_instance_id,
+                producer_sequence=sequence,
+                occurred_at=current_time,
+                recorded_at=datetime.now(UTC),
+                execution_context=self._audit_execution_context(),
+                provenance=self._audit_config.provenance,
+                risk_snapshot_id=approval.snapshot_id,
+                pair=pair,
+                approved_quantity=approval.approved_quantity,
+                approved_stake=approval.approved_stake,
+                reference_rate=approval.reference_rate,
+                limiting_cap=approval.position_decision.limiting_cap.value,
+            )
+            # 非零 stake 只能在风险批准事实已经 durable append 后返回。
+            self._audit_outbox.append(event, event_class="ENTRY", now=current_time)
             self._entry_approvals[pair] = approval
             return float(approval.approved_stake)
         except Exception:
@@ -292,7 +359,7 @@ class DonchianTrendStrategy(IStrategy):
         side: str,
         **kwargs: Any,
     ) -> bool:
-        """常数时间复核已缓存批准；该 callback 不读文件、网络或数据库。"""
+        """常数时间复核已审计的缓存批准；该 callback 不读文件、网络或数据库。"""
 
         del time_in_force, kwargs
         approval = self._entry_approvals.get(pair)
