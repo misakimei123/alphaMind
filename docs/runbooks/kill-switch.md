@@ -22,7 +22,7 @@ Freqtrade/交易所恢复流程完成并留痕。
 |---|---|---|---|
 | Fail-closed | `snapshot_missing`、`snapshot_stale`、`snapshot_corrupt`、`schema_version_unsupported` | 拒绝新入场，保持退出，告警并恢复快照发布 | 仅在新快照完整有效后 |
 | Close-only | `daily_loss_limit_reached`、`weekly_loss_limit_reached`、`external_cash_flow_pending_review` | 拒绝新入场，撤销未成交入场，保留退出 | 仅日亏可在下一 UTC 日有条件自动恢复 |
-| Kill | `drawdown_limit_reached`、`absolute_loss_limit_reached`、`unexplained_balance_difference`、`accounting_currency_mismatch` | 拒绝新入场，撤销未成交入场，停止自动恢复，人工决定持仓处置 | 否 |
+| Kill | `drawdown_limit_reached`、`absolute_loss_limit_reached`、`manual_kill_switch`、`unexplained_balance_difference`、`accounting_currency_mismatch` | 拒绝新入场，撤销未成交入场，停止自动恢复，人工决定持仓处置 | 否 |
 
 reason code 同时出现时按 Kill > Close-only > Fail-closed 处理。
 

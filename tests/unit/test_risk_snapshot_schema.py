@@ -92,6 +92,13 @@ def valid_snapshot() -> dict[str, object]:
             True,
             "absolute_loss_limit_reached",
         ),
+        (
+            "KILLED_MANUAL_REVIEW",
+            False,
+            True,
+            True,
+            "manual_kill_switch",
+        ),
     ],
 )
 def test_each_risk_state_has_a_valid_contract(

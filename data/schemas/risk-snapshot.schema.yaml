@@ -210,6 +210,7 @@ properties:
             - accounting_currency_mismatch
             - unknown_liability
             - unreconciled_order_or_position
+            - manual_kill_switch
             - account_source_incomplete
             - market_source_incomplete
             - mark_price_missing
@@ -290,6 +291,7 @@ properties:
                   - accounting_currency_mismatch
                   - unknown_liability
                   - unreconciled_order_or_position
+                  - manual_kill_switch
 allOf:
   - if:
       properties:

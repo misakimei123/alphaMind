@@ -105,7 +105,7 @@ RiskSnapshot 只发布三种状态，按下表从上到下取最高优先级：
 
 | 状态 | 输入条件 | 输出 | 必须动作 |
 |---|---|---|---|
-| `KILLED_MANUAL_REVIEW` | 回撤或项目绝对损失达界；未知资金差异；账户币种错误；未知负债；会计状态无法唯一恢复 | `entry_allowed=false`、`close_only=true`、`kill_switch=true` | 撤销未成交入场，保留止损/退出，按 runbook 人工决定持仓处置 |
+| `KILLED_MANUAL_REVIEW` | 回撤或项目绝对损失达界；人工 Kill；未知资金差异；账户币种错误；未知负债；会计状态无法唯一恢复 | `entry_allowed=false`、`close_only=true`、`kill_switch=true` | 撤销未成交入场，保留止损/退出，按 runbook 人工决定持仓处置 |
 | `CLOSE_ONLY` | 单日或单周亏损达界；已识别现金流待复核；数据不完整但尚未证明达到 Kill 边界 | `false / true / false` | 禁止新风险，撤销未成交入场，允许所有安全退出 |
 | `ENTRY_ALLOWED` | 快照完整、新鲜、阈值均未触发且无待复核事项 | `true / false / false` | 仍需逐笔通过仓位、暴露、余额、精度和最小名义金额检查 |
 

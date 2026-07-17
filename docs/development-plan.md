@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-17 / P2-01 至 P2-06 DONE，P2-07/P2-08 BLOCKED，下一可执行任务 P3-01 |
+| 最近进度更新 | 2026-07-17 / P3-01 READY_TO_VERIFY，P2-07/P2-08 继续 BLOCKED |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-06 均为 DONE；P2-06 自动反作弊检查已完成官方命令、跨所逐列扫描、断网复核、本地门禁和远端 CI。参数选择仍被独立评审阻止。原 Final Holdout 已降级，P1-07/P2-07/P2-08 在新未见区间预注册和独立评审前保持阻塞；下一可执行的离线工程任务为 P3-01 Risk Watchdog 与 RiskSnapshot。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-06 均为 DONE；P3-01 Risk Watchdog 与 RiskSnapshot 的离线确定性核心、原子发布、严格读取和本地门禁已完成，当前为 READY_TO_VERIFY，等待远端 CI 与项目所有人复核。参数选择仍被独立评审阻止；原 Final Holdout 已降级，P1-07/P2-07/P2-08 在新未见区间预注册和独立评审前保持阻塞。认证交易所接入、Freqtrade callback、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -937,6 +937,8 @@ Strategy Card 必须固定：
 
 ### P3-01 Risk Watchdog 与 RiskSnapshot
 
+当前状态（2026-07-17）：`READY_TO_VERIFY`；离线可注入只读观测、风险会计、三状态决策、schema v1 快照、原子发布、严格读取和本地门禁均已完成，等待远端 CI 与项目所有人复核。
+
 实现：
 
 - 读取经批准的账户、Runtime DB/Freqtrade 状态和 mark price；
@@ -953,6 +955,16 @@ Strategy Card 必须固定：
 - stale snapshot、clock skew、损坏文件和部分写入；
 - 日亏、周亏、回撤和人工 Kill Switch；
 - entry block 不影响安全退出。
+
+实际进度（2026-07-17）：
+
+- `src/alphamind/risk/watchdog.py` 定义账户/Runtime DB 对账观测、BTC/ETH 保守 mark、外部现金流、UTC 日周边界和上次风险状态的显式输入；该模块不持有交易凭据、不访问网络、不创建或取消订单；
+- NAV、未实现损益、已计费用、已知负债、日/周/累计现金流调整 PnL、高水位、回撤、绝对损失与 open/pending exposure 全部使用 `Decimal` 计算并以 canonical 十进制字符串落盘；充值、提币、返佣和奖励均排除出策略收益并保持 `CLOSE_ONLY` 至人工复核完成；
+- 风险决策按 Kill > Close-only > Entry-allowed 聚合全部 reason code；日/周亏损、回撤、项目绝对损失、币种/负债/对账异常、人工 Kill、源不完整、30 秒陈旧和 5 秒未来时钟偏移均覆盖，所有状态固定 `safe_exit_allowed=true`；
+- schema v1 补齐既有 P3-01 人工 Kill 测试所需的 `manual_kill_switch` reason code；风险阈值、NAV 公式、状态优先级和恢复合同未改变；
+- 快照固定 15 秒目标发布周期和 60 秒 TTL；发布使用同目录临时文件、flush/fsync、close 与 atomic replace，失败清理临时文件且不破坏前一完整快照；读取端严格复核字段、Decimal、时间、NAV/PnL/HWM/mark/exposure/阈值和状态公式，missing/stale/corrupt/unsupported/consumer clock skew 均本地 fail-closed 且不伪造资金级 Kill；
+- 聚焦测试 39 项、全仓 pytest 164 项通过；repository scan 检查 238 个文件，strict mypy 检查 27 个 source/script 文件，Ruff check/format 覆盖 47 个 Python 文件；`uv lock --check` 与 `git diff --check` 通过；
+- 延期边界：认证交易所账户读取和生产 Runtime DB 权限由 P3-04 实测，Freqtrade 快照 callback 与逐笔仓位映射由 P3-02 验证，连续运行 cadence、故障恢复与 Paper 证据分别受 P3-05/P4 门禁约束；本任务不解除 P2-07/P2-08、Paper 或 Live 阻塞。
 
 ### P3-02 Freqtrade 风险 callback 映射
 
@@ -1375,7 +1387,7 @@ git diff --check
 | 20 | P2-06 自动反作弊检查 | DONE | `main@cb86fc9` 的 Freqtrade lookahead/recursive、27,880 项跨所逐列比较、1,397 笔 next-candle 交易、13 个登记 trial、133 项全仓测试、断网锁定容器复核和 GitHub Actions 均通过，项目所有人已批准 |
 | 21 | P2-07 一次性 Final Holdout | BLOCKED | 原 Final Holdout 已降级；解除条件是预注册新的未见时间区间、冻结候选并取得独立评审批准，禁止复用旧区间 |
 | 22 | P2-08 Backtest Qualified 门禁 | BLOCKED | 等待 P2-07 和独立复核，P2-05/P2-06 的开发证据不能替代最终门禁 |
-| 23 | P3-01 Risk Watchdog 与 RiskSnapshot | NOT_STARTED | 下一可执行离线工程任务；可实现 fail-closed 风险快照，不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
+| 23 | P3-01 Risk Watchdog 与 RiskSnapshot | READY_TO_VERIFY | 离线只读观测、Decimal 风险会计、三状态决策、schema v1、原子发布/严格读取、39 项聚焦测试与 164 项全仓测试均通过；等待远端 CI 与项目所有人复核，不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
