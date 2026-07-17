@@ -5,9 +5,9 @@
 | 状态 | Normative / 后续开发执行基准 |
 | 设计基线 | `main@889132b` |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-17 / P2-01 至 P2-05 DONE，P2-06 READY_TO_VERIFY |
+| 最近进度更新 | 2026-07-17 / P2-01 至 P2-06 DONE，P2-07/P2-08 BLOCKED，下一可执行任务 P3-01 |
 | 适用范围 | 现货 long/flat、BTC/USDT 与 ETH/USDT、4h 趋势基线、Freqtrade MVP、Paper 与 Live Canary |
-> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-05 均为 DONE；P2-06 自动反作弊检查已完成官方命令、跨所逐列扫描、断网复核和本地门禁，当前为 READY_TO_VERIFY。参数选择仍被独立评审和 P2-06 远端验证阻止。原 Final Holdout 已降级，P1-07/P2-07 在新未见区间预注册前保持阻塞。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
+> 当前阶段：Phase 0 gate、P1-01 至 P1-06、P2-01 至 P2-06 均为 DONE；P2-06 自动反作弊检查已完成官方命令、跨所逐列扫描、断网复核、本地门禁和远端 CI。参数选择仍被独立评审阻止。原 Final Holdout 已降级，P1-07/P2-07/P2-08 在新未见区间预注册和独立评审前保持阻塞；下一可执行的离线工程任务为 P3-01 Risk Watchdog 与 RiskSnapshot。认证交易所接入、Paper 和 Live 仍须分别满足后续任务与阶段门禁
 
 ## 1. 计划目的与使用规则
 
@@ -869,7 +869,7 @@ Strategy Card 必须固定：
 
 ### P2-06 自动反作弊检查
 
-当前状态（2026-07-17）：`READY_TO_VERIFY`；官方 Freqtrade 检查、逐列未来信息扫描、数据边界、跨所复测、证据固化和本地门禁均已通过，等待远端 CI 与项目所有人批准。
+当前状态（2026-07-17）：`DONE`；官方 Freqtrade 检查、逐列未来信息扫描、数据边界、跨所复测、证据固化、本地门禁和远端 CI 均已通过，项目所有人已批准继续推进。
 
 至少运行：
 
@@ -897,9 +897,12 @@ Strategy Card 必须固定：
 - registry 与 P2-05 summary 的 13 个 experiment 完全一致，没有未登记 trial；所有 `review_result` 保持 `PENDING`、`parameter_selection=null`，P2-06 不新增或消耗 trial；
 - Development selection 在任何指标计算前固定裁为 `[2022-01-01, 2025-07-01)`；报告记录的 Final Holdout access 为 0。OKX snapshot、官方 command/stdout/stderr/exit code、lookahead CSV、runner/config/strategy/registry hash 均进入版本化 artifact；
 - 无网络、只读锁定容器重新验证 16 个 manifest 文件、OKX snapshot 和四个 pair/exchange prefix 扫描，返回 `status=verified`；P2-06 聚焦测试 14 个、全量 pytest 133 个通过；repository scan 检查 236 个文件，strict mypy 检查 26 个 source/script 文件，Ruff check/format 覆盖 45 个 Python 文件；`uv lock --check`、Compose config 和 `git diff --check` 均通过；
+- 功能提交 `main@cb86fc9` 的 GitHub Actions `deterministic-quality` run `29548774355` 全部通过；项目所有人于 2026-07-17 指示继续下一任务，P2-06 据此批准为 DONE；
 - 残余边界：官方 lookahead 只证伪已触发的 signal，本策略只有一类 entry/exit 且动态扫描覆盖全部 signal row，但仍不证明真实 order book、partial fill、API timeout 或生产成交；这些证据继续由 P3/P4/P5 提供。
 
 ### P2-07 一次性 Final Holdout
+
+当前状态（2026-07-17）：`BLOCKED`；原 Final Holdout 已降级为已见数据，必须先预注册新的未见时间区间并取得独立评审批准，禁止复用旧区间或直接读取一次性结果。
 
 入口：
 
@@ -919,6 +922,8 @@ Strategy Card 必须固定：
 - 未通过：当前候选被证伪；holdout 降级为已见数据，重新进入 P0-05/P2，不能重复使用该区间作为最终测试。
 
 ### P2-08 Backtest Qualified 门禁
+
+当前状态（2026-07-17）：`BLOCKED`；等待 P2-07 新 Final Holdout 和独立复核结论，当前 P2-05/P2-06 PASS 不能替代该门禁。
 
 必须同时满足策略规范中的 Backtest -> Paper 条件，并生成：
 
@@ -1367,7 +1372,10 @@ git diff --check
 | 17 | P2-03 风险定仓纯函数 | DONE | `main@f9ae212` 的单一公式、版本化 context、精度/极端损失拒绝、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 18 | P2-04 成本、成交与压力模型 | DONE | `main@53ebabd` 的 fill/cost 纯函数、11 项压力矩阵、可复现报告、锁定容器合同、本地门禁和 GitHub Actions 均通过，项目所有人已批准 |
 | 19 | P2-05 Walk-Forward 与 trial registry | DONE | `main@7338dfa` 的 13 个 OAT trial、三个 expanding fold、bootstrap/DSR、集中度报告、append-only artifacts、119 项全仓测试、锁定容器复算和 GitHub Actions 均通过，项目所有人已批准；selection 继续被独立评审与 P2-06 阻止 |
-| 20 | P2-06 自动反作弊检查 | READY_TO_VERIFY | Freqtrade lookahead/recursive、27,880 项跨所逐列比较、1,397 笔 next-candle 交易、13 个登记 trial、133 项全仓测试和断网锁定容器复核均通过；等待远端 CI 与项目所有人批准 |
+| 20 | P2-06 自动反作弊检查 | DONE | `main@cb86fc9` 的 Freqtrade lookahead/recursive、27,880 项跨所逐列比较、1,397 笔 next-candle 交易、13 个登记 trial、133 项全仓测试、断网锁定容器复核和 GitHub Actions 均通过，项目所有人已批准 |
+| 21 | P2-07 一次性 Final Holdout | BLOCKED | 原 Final Holdout 已降级；解除条件是预注册新的未见时间区间、冻结候选并取得独立评审批准，禁止复用旧区间 |
+| 22 | P2-08 Backtest Qualified 门禁 | BLOCKED | 等待 P2-07 和独立复核，P2-05/P2-06 的开发证据不能替代最终门禁 |
+| 23 | P3-01 Risk Watchdog 与 RiskSnapshot | NOT_STARTED | 下一可执行离线工程任务；可实现 fail-closed 风险快照，不解除 P2-07/P2-08、Paper 或 Live 阻塞 |
 
 代码启动边界于 2026-07-15 经项目所有人明确调整，允许在 Phase 0 复核期间并行实现离线确定性核心；项目所有人已于 2026-07-16 批准 P0-05 至 P0-08。该批准不等于 Backtest、Paper 或 Live Canary 门禁通过，Freqtrade callback、认证 API、真实账户数据与交易写入仍必须等待对应前置任务完成。
 
