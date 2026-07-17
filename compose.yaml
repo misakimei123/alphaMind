@@ -143,4 +143,39 @@ services:
       - ./data:/workspace/data:ro
       - ./research:/workspace/research
 
+  anti-cheat-report:
+    <<: *freqtrade-base
+    profiles: [research]
+    entrypoint: [python]
+    # P2-06 build 仅联网读取公开市场 metadata/OKX candle；不挂载密钥、DB 或 Live 配置。
+    environment:
+      PYTHONPATH: /workspace/src:/workspace
+    command:
+      - /workspace/scripts/build_anti_cheat_report.py
+      - --project-root
+      - /workspace
+      - --build
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:ro
+      - ./data:/workspace/data
+      - ./research:/workspace/research
+
+  anti-cheat-verify:
+    <<: *freqtrade-base
+    profiles: [research]
+    entrypoint: [python]
+    # 已发布证据必须可在无网络、全只读挂载中复核。
+    environment:
+      PYTHONPATH: /workspace/src:/workspace
+    command:
+      - /workspace/scripts/build_anti_cheat_report.py
+      - --project-root
+      - /workspace
+      - --verify
+    working_dir: /workspace
+    network_mode: none
+    volumes:
+      - ./:/workspace:ro
+
 # live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。

@@ -1,0 +1,55 @@
+{
+  "created_at_utc": "2026-07-17T01:45:02Z",
+  "download_command": [
+    "freqtrade",
+    "download-data",
+    "--exchange",
+    "okx",
+    "--trading-mode",
+    "spot",
+    "--pairs",
+    "BTC/USDT",
+    "ETH/USDT",
+    "--timeframes",
+    "4h",
+    "--timerange",
+    "20220101-20250701",
+    "--data-format-ohlcv",
+    "feather",
+    "--datadir",
+    "/workspace/data/source/okx_spot/.staging-p2-06-v1",
+    "--prepend",
+    "--no-color"
+  ],
+  "exchange": "okx",
+  "market_type": "spot",
+  "partitions": [
+    {
+      "byte_size": 258826,
+      "candle_count": 7662,
+      "file_sha256": "1b24bc03198a4e3fd3eca62237fbd6a97282bbd23b5dd4e4b00bc46ab8672e07",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2025-06-30T20:00:00Z",
+      "pair": "BTC/USDT",
+      "relative_path": "BTC_USDT-4h.feather",
+      "timeframe": "4h"
+    },
+    {
+      "byte_size": 244578,
+      "candle_count": 7662,
+      "file_sha256": "369894ae82b28619f7d8a292b1c4e8a601e854d56dabc332b0a618319d8761cb",
+      "first_candle_utc": "2022-01-01T00:00:00Z",
+      "last_candle_utc": "2025-06-30T20:00:00Z",
+      "pair": "ETH/USDT",
+      "relative_path": "ETH_USDT-4h.feather",
+      "timeframe": "4h"
+    }
+  ],
+  "performance_selection_allowed": false,
+  "role": "p2_06_cross_exchange_signal_robustness_only",
+  "schema_version": 1,
+  "snapshot_id": "okx-spot-cross-check-a1b40de2f2fe",
+  "snapshot_sha256": "a1b40de2f2fed0d84b6110b8c67e4237e8ad67270f36f3c39f63db451bf5af85",
+  "source_root": "data/source/okx_spot/okx-spot-cross-check-a1b40de2f2fe",
+  "timerange": "20220101-20250701"
+}

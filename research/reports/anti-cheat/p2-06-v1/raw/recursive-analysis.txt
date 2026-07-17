@@ -1,0 +1,117 @@
+$ freqtrade recursive-analysis --config /workspace/configs/freqtrade/anti-cheat.json --userdir /workspace/user_data --strategy DonchianTrendAnalysisStrategy --strategy-path /workspace/research/strategies --datadir /tmp/alphamind-p2-06-ld0pp9q8/bybit-data --timerange 20220101-20250701 --pairs BTC/USDT --startup-candle 21 41 81 119 199 --no-color
+[stdout]
+[stderr]
+2026-07-17 01:48:31,944 - freqtrade - INFO - freqtrade 2026.6
+2026-07-17 01:48:32,281 - numexpr.utils - INFO - Note: NumExpr detected 28 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-07-17 01:48:32,281 - numexpr.utils - INFO - NumExpr defaulting to 16 threads.
+2026-07-17 01:48:33,539 - freqtrade.configuration.load_config - INFO - Using config: /workspace/configs/freqtrade/anti-cheat.json ...
+2026-07-17 01:48:33,542 - freqtrade.configuration.load_config - INFO - Using config: common.json ...
+2026-07-17 01:48:33,544 - freqtrade.configuration.configuration - INFO - Parameter --no-color detected ...
+2026-07-17 01:48:33,545 - freqtrade.loggers - INFO - Logfile configured
+2026-07-17 01:48:33,545 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-07-17 01:48:33,546 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: /workspace/research/strategies
+2026-07-17 01:48:33,546 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20220101-20250701 ...
+sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
+sudo: If sudo is running in a container, you may need to adjust the container configuration to disable the flag.
+2026-07-17 01:48:33,548 - freqtrade.configuration.directory_operations - WARNING - Could not chown /workspace/user_data
+2026-07-17 01:48:33,554 - freqtrade.configuration.configuration - INFO - Using user-data directory: /workspace/user_data ...
+2026-07-17 01:48:33,555 - freqtrade.configuration.configuration - INFO - Using data directory: /tmp/alphamind-p2-06-ld0pp9q8/bybit-data ...
+2026-07-17 01:48:33,555 - freqtrade.configuration.configuration - INFO - Using pairs ['BTC/USDT']
+2026-07-17 01:48:33,555 - freqtrade.configuration.configuration - INFO - Filter trades by timerange: 20220101-20250701
+2026-07-17 01:48:33,555 - freqtrade.configuration.configuration - INFO - Startup candle to be used on recursive analysis: ['21', '41', '81', '119', '199']
+2026-07-17 01:48:33,556 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-07-17 01:48:33,559 - freqtrade.exchange.check_exchange - INFO - Exchange "bybit" is officially supported by the Freqtrade development team.
+2026-07-17 01:48:33,559 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-07-17 01:48:33,589 - freqtrade.optimize.analysis.recursive_helpers - INFO - Recursive test of DonchianTrendAnalysisStrategy.py started.
+2026-07-17 01:48:33,590 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-07-17 01:48:33,590 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.61
+2026-07-17 01:48:33,590 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'spot'}}
+2026-07-17 01:48:33,593 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'spot'}}
+2026-07-17 01:48:33,597 - freqtrade.exchange.exchange - INFO - Using Exchange "Bybit"
+2026-07-17 01:48:36,149 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Bybit'...
+2026-07-17 01:48:36,164 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy DonchianTrendAnalysisStrategy from '/workspace/research/strategies/DonchianTrendAnalysisStrategy.py'...
+2026-07-17 01:48:36,165 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 4h.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_types' with value from the configuration: {'entry': 'market', 'exit': 'market', 'emergency_exit': 
+'market', 'force_entry': 'market', 'force_exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: USDT.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 10.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'use_exit_signal' with value from the configuration: True.
+2026-07-17 01:48:36,166 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'exit_profit_only' with value from the configuration: False.
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'ignore_roi_if_entry_signal' with value from the configuration: False.
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'position_adjustment_enable' with value from the configuration: False.
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 2.
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {}
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 4h
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.99
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-07-17 01:48:36,167 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'market', 'exit': 'market', 'emergency_exit': 'market', 'force_entry': 'market', 
+'force_exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 10
+2026-07-17 01:48:36,168 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 120
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-07-17 01:48:36,169 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-07-17 01:48:36,170 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 2
+2026-07-17 01:48:36,170 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-07-17 01:48:36,172 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/freqtrade/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-07-17 01:48:36,174 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% - worst case fee from exchange (lowest tier).
+2026-07-17 01:48:36,174 - freqtrade.optimize.analysis.recursive - INFO - Using pair BTC/USDT only for recursive analysis. Replacing whitelist.
+2026-07-17 01:48:36,190 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:36,191 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,199 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2025-06-30 20:00:00 (1276 days).
+2026-07-17 01:48:36,199 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:36,246 - freqtrade.loggers.set_log_levels - INFO - Reducing verbosity for bias tester.
+2026-07-17 01:48:36,247 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators to test lookahead on indicators.
+2026-07-17 01:48:36,265 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:36,270 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-01-02 16:00:00 (1 days).
+2026-07-17 01:48:36,271 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:36,280 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 21.
+2026-07-17 01:48:36,297 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,303 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-06-27 08:00:00 up to 2025-06-30 20:00:00 (3 days).
+2026-07-17 01:48:36,309 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 41.
+2026-07-17 01:48:36,328 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,333 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-06-24 00:00:00 up to 2025-06-30 20:00:00 (6 days).
+2026-07-17 01:48:36,340 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 81.
+2026-07-17 01:48:36,357 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,363 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-06-17 08:00:00 up to 2025-06-30 20:00:00 (13 days).
+2026-07-17 01:48:36,370 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 119.
+2026-07-17 01:48:36,386 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,392 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-06-11 00:00:00 up to 2025-06-30 20:00:00 (19 days).
+2026-07-17 01:48:36,399 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 120.
+2026-07-17 01:48:36,414 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,420 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-06-10 20:00:00 up to 2025-06-30 20:00:00 (20 days).
+2026-07-17 01:48:36,427 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 199.
+2026-07-17 01:48:36,446 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:36,451 - freqtrade.optimize.backtesting - INFO - Loading data from 2025-05-28 16:00:00 up to 2025-06-30 20:00:00 (33 days).
+2026-07-17 01:48:36,459 - freqtrade.loggers.set_log_levels - INFO - Restoring log verbosity.
+2026-07-17 01:48:36,459 - freqtrade.optimize.analysis.recursive - INFO - Start checking for recursive bias
+2026-07-17 01:48:36,461 - freqtrade.optimize.analysis.recursive - INFO - No variance on indicator(s) found due to recursive formula.
+2026-07-17 01:48:36,461 - freqtrade.optimize.analysis.recursive - INFO - Start checking for lookahead bias on indicators only
+2026-07-17 01:48:36,461 - freqtrade.optimize.analysis.recursive - INFO - Check indicators at 2022-01-02T16:00:00
+2026-07-17 01:48:36,462 - freqtrade.optimize.analysis.recursive - INFO - No lookahead bias on indicators found.
+2026-07-17 01:48:36,463 - freqtrade.optimize.analysis.recursive_helpers - INFO - Checking recursive and indicator-only lookahead bias of indicators of DonchianTrendAnalysisStrategy.py took 3 seconds.
+Startup candle 199 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6/6 100% • 0:00:00 • 0:00:00
+2026-07-17 01:48:36,558 - ccxt.base.exchange - WARNING - bybit requires to release all resources with an explicit call to the .close() coroutine. If you are using the exchange instance with async 
+coroutines, add `await exchange.close()` to your code into a place when you're done with the exchange and don't need the exchange instance anymore (at the end of your async coroutine).
+2026-07-17 01:48:36,559 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7265f67994a0>, 69334.237078466), (<aiohttp.client_proto.ResponseHandler object at 0x7265f68a7070>, 69334.706492642), 
+(<aiohttp.client_proto.ResponseHandler object at 0x7265f67ac910>, 69334.805472729), (<aiohttp.client_proto.ResponseHandler object at 0x7265f67ace10>, 69334.931054231), 
+(<aiohttp.client_proto.ResponseHandler object at 0x7265f67b0d70>, 69335.015866788), (<aiohttp.client_proto.ResponseHandler object at 0x7265f68f2a00>, 69335.147024864), 
+(<aiohttp.client_proto.ResponseHandler object at 0x7265f6b2bdd0>, 69335.227401429), (<aiohttp.client_proto.ResponseHandler object at 0x7265f67b0980>, 69335.243040194), 
+(<aiohttp.client_proto.ResponseHandler object at 0x7265f68f2890>, 69335.282985148), (<aiohttp.client_proto.ResponseHandler object at 0x7265f67acb90>, 69335.299469506), 
+(<aiohttp.client_proto.ResponseHandler object at 0x7265f6b2bad0>, 69335.481455205)])']
+connector: <aiohttp.connector.TCPConnector object at 0x7265f678dd30>
+[exit_code]
+0

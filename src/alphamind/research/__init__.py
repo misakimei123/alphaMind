@@ -1,5 +1,13 @@
 """不依赖交易运行时的研究纯函数。"""
 
+from alphamind.research.anti_cheat import (
+    DatasetAccessGuard,
+    SourceFinding,
+    scan_strategy_source,
+    validate_registry_selection,
+    validate_signal_execution_separation,
+    validate_timestamp_boundary,
+)
 from alphamind.research.donchian import (
     Candle,
     DonchianDecision,
@@ -42,6 +50,7 @@ __all__ = [
     "BacktestSettings",
     "Candle",
     "CostAssumptions",
+    "DatasetAccessGuard",
     "DonchianDecision",
     "DonchianParameters",
     "DonchianReason",
@@ -57,6 +66,7 @@ __all__ = [
     "MarketConstraints",
     "OrderSide",
     "OrderType",
+    "SourceFinding",
     "StressScenario",
     "TradeRecord",
     "WalkForwardFold",
@@ -66,6 +76,10 @@ __all__ = [
     "evaluate_donchian",
     "profit_concentration",
     "run_portfolio_backtest",
+    "scan_strategy_source",
     "simulate_execution",
     "validate_expanding_folds",
+    "validate_registry_selection",
+    "validate_signal_execution_separation",
+    "validate_timestamp_boundary",
 ]

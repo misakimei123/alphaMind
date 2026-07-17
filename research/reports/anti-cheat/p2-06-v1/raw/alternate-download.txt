@@ -1,0 +1,1 @@
+Existing immutable alternate snapshot verified; download was not repeated.

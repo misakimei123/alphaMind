@@ -1,0 +1,708 @@
+$ freqtrade lookahead-analysis --config /workspace/configs/freqtrade/anti-cheat.json --userdir /workspace/user_data --strategy DonchianTrendAnalysisStrategy --strategy-path /workspace/research/strategies --datadir /tmp/alphamind-p2-06-ld0pp9q8/bybit-data --timerange 20220101-20250701 --pairs BTC/USDT ETH/USDT --no-color --minimum-trade-amount 20 --targeted-trade-amount 100 --lookahead-analysis-exportfilename /tmp/alphamind-p2-06-ld0pp9q8/lookahead.csv --export none --backtest-directory /tmp/alphamind-p2-06-ld0pp9q8/backtests
+[stdout]
+                                                                       Lookahead Analysis                                                                       
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃                         filename ┃                      strategy ┃ has_bias ┃ total_signals ┃ biased_entry_signals ┃ biased_exit_signals ┃ biased_indicators ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ DonchianTrendAnalysisStrategy.py │ DonchianTrendAnalysisStrategy │       No │           100 │                    0 │                   0 │                   │
+└──────────────────────────────────┴───────────────────────────────┴──────────┴───────────────┴──────────────────────┴─────────────────────┴───────────────────┘
+[stderr]
+2026-07-17 01:48:07,944 - freqtrade - INFO - freqtrade 2026.6
+2026-07-17 01:48:08,259 - numexpr.utils - INFO - Note: NumExpr detected 28 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2026-07-17 01:48:08,259 - numexpr.utils - INFO - NumExpr defaulting to 16 threads.
+2026-07-17 01:48:09,625 - freqtrade.configuration.load_config - INFO - Using config: /workspace/configs/freqtrade/anti-cheat.json ...
+2026-07-17 01:48:09,629 - freqtrade.configuration.load_config - INFO - Using config: common.json ...
+2026-07-17 01:48:09,631 - freqtrade.configuration.configuration - INFO - Parameter --no-color detected ...
+2026-07-17 01:48:09,632 - freqtrade.loggers - INFO - Logfile configured
+2026-07-17 01:48:09,632 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-07-17 01:48:09,632 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: /workspace/research/strategies
+2026-07-17 01:48:09,632 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20220101-20250701 ...
+sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
+sudo: If sudo is running in a container, you may need to adjust the container configuration to disable the flag.
+2026-07-17 01:48:09,635 - freqtrade.configuration.directory_operations - WARNING - Could not chown /workspace/user_data
+2026-07-17 01:48:09,640 - freqtrade.configuration.configuration - INFO - Using user-data directory: /workspace/user_data ...
+2026-07-17 01:48:09,640 - freqtrade.configuration.configuration - INFO - Using data directory: /tmp/alphamind-p2-06-ld0pp9q8/bybit-data ...
+2026-07-17 01:48:09,640 - freqtrade.configuration.configuration - INFO - Using /tmp/alphamind-p2-06-ld0pp9q8/backtests as backtest directory ...
+2026-07-17 01:48:09,640 - freqtrade.configuration.configuration - INFO - Parameter --export detected: none ...
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Saving lookahead analysis results into /tmp/alphamind-p2-06-ld0pp9q8/lookahead.csv ...
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Using pairs ['BTC/USDT', 'ETH/USDT']
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Filter trades by timerange: 20220101-20250701
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Targeted Trade amount: 100
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Minimum Trade amount: 20
+2026-07-17 01:48:09,641 - freqtrade.configuration.configuration - INFO - Path to store lookahead-analysis-results: /tmp/alphamind-p2-06-ld0pp9q8/lookahead.csv
+2026-07-17 01:48:09,642 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-07-17 01:48:09,645 - freqtrade.exchange.check_exchange - INFO - Exchange "bybit" is officially supported by the Freqtrade development team.
+2026-07-17 01:48:09,645 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-07-17 01:48:09,646 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Forced order_types to market orders.
+2026-07-17 01:48:09,647 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Forced max_open_trades to -1 (same amount as there are pairs)
+2026-07-17 01:48:09,647 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Dry run wallet was not set to 1 billion, pushing it up there just to avoid false positives
+2026-07-17 01:48:09,647 - freqtrade.optimize.analysis.lookahead_helpers - INFO - fixing stake_amount to 10k
+2026-07-17 01:48:09,678 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Bias test of DonchianTrendAnalysisStrategy.py started.
+2026-07-17 01:48:09,679 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-07-17 01:48:09,679 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.61
+2026-07-17 01:48:09,679 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'spot'}}
+2026-07-17 01:48:09,682 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'spot'}}
+2026-07-17 01:48:09,685 - freqtrade.exchange.exchange - INFO - Using Exchange "Bybit"
+2026-07-17 01:48:11,601 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Bybit'...
+2026-07-17 01:48:11,609 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy DonchianTrendAnalysisStrategy from '/workspace/research/strategies/DonchianTrendAnalysisStrategy.py'...
+2026-07-17 01:48:11,609 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 4h.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_types' with value from the configuration: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 
+'stoploss_on_exchange': False}.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: USDT.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 10000.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'use_exit_signal' with value from the configuration: True.
+2026-07-17 01:48:11,610 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'exit_profit_only' with value from the configuration: False.
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'ignore_roi_if_entry_signal' with value from the configuration: False.
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'position_adjustment_enable' with value from the configuration: False.
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: -1.
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {}
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 4h
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.99
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-07-17 01:48:11,611 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 10000
+2026-07-17 01:48:11,612 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 120
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-07-17 01:48:11,613 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-07-17 01:48:11,614 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: -1
+2026-07-17 01:48:11,614 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-07-17 01:48:11,616 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/freqtrade/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-07-17 01:48:11,619 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% - worst case fee from exchange (lowest tier).
+2026-07-17 01:48:11,637 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:11,637 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:11,649 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:11,650 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data ends at 2025-06-30 20:00:00
+2026-07-17 01:48:11,661 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2025-06-30 20:00:00 (1276 days).
+2026-07-17 01:48:11,661 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,105 - freqtrade.loggers.set_log_levels - INFO - Reducing verbosity for bias tester.
+2026-07-17 01:48:12,105 - freqtrade.optimize.analysis.lookahead - INFO - Found 212 trades, calculating 100 trades.
+2026-07-17 01:48:12,126 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,132 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-01-26 16:00:00 (25 days).
+2026-07-17 01:48:12,132 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,164 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,170 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-01-27 08:00:00 (26 days).
+2026-07-17 01:48:12,170 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,212 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,218 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-01-26 20:00:00 (25 days).
+2026-07-17 01:48:12,218 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,249 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,254 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-01-31 08:00:00 (30 days).
+2026-07-17 01:48:12,255 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,299 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,305 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-01 00:00:00 (31 days).
+2026-07-17 01:48:12,305 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,340 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,346 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-12 00:00:00 (42 days).
+2026-07-17 01:48:12,346 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,392 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,398 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-04 20:00:00 (34 days).
+2026-07-17 01:48:12,399 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,432 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,437 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-17 16:00:00 (47 days).
+2026-07-17 01:48:12,438 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,482 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,487 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-15 12:00:00 (45 days).
+2026-07-17 01:48:12,488 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,524 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,530 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-17 20:00:00 (47 days).
+2026-07-17 01:48:12,530 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,574 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,580 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-26 04:00:00 (56 days).
+2026-07-17 01:48:12,580 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,619 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,624 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-28 00:00:00 (58 days).
+2026-07-17 01:48:12,624 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,676 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,682 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-02-28 20:00:00 (58 days).
+2026-07-17 01:48:12,682 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,739 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,746 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-03 20:00:00 (61 days).
+2026-07-17 01:48:12,746 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,795 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,800 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-01 04:00:00 (59 days).
+2026-07-17 01:48:12,801 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,877 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,883 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-03 20:00:00 (61 days).
+2026-07-17 01:48:12,883 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,934 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,940 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-09 08:00:00 (67 days).
+2026-07-17 01:48:12,940 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:12,978 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:12,984 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-14 04:00:00 (72 days).
+2026-07-17 01:48:12,985 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,037 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,043 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-09 08:00:00 (67 days).
+2026-07-17 01:48:13,043 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,082 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,089 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-14 04:00:00 (72 days).
+2026-07-17 01:48:13,089 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,141 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,147 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-16 00:00:00 (74 days).
+2026-07-17 01:48:13,147 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,187 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,193 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-20 20:00:00 (78 days).
+2026-07-17 01:48:13,193 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,246 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,251 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-19 00:00:00 (77 days).
+2026-07-17 01:48:13,252 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,293 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,299 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-20 20:00:00 (78 days).
+2026-07-17 01:48:13,299 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,350 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,355 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-24 20:00:00 (82 days).
+2026-07-17 01:48:13,355 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,401 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,406 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-31 20:00:00 (89 days).
+2026-07-17 01:48:13,406 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,460 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,466 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-03-22 08:00:00 (80 days).
+2026-07-17 01:48:13,466 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,535 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,541 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-04-01 00:00:00 (90 days).
+2026-07-17 01:48:13,541 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,612 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,617 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-04-19 20:00:00 (108 days).
+2026-07-17 01:48:13,618 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,670 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,675 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-04-22 00:00:00 (111 days).
+2026-07-17 01:48:13,676 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,732 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,738 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-04-19 20:00:00 (108 days).
+2026-07-17 01:48:13,738 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,785 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,791 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-04-22 04:00:00 (111 days).
+2026-07-17 01:48:13,791 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,843 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,848 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-05 00:00:00 (124 days).
+2026-07-17 01:48:13,849 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,896 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,901 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-05 20:00:00 (124 days).
+2026-07-17 01:48:13,901 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:13,961 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:13,967 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-05 00:00:00 (124 days).
+2026-07-17 01:48:13,967 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,033 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,040 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-05 20:00:00 (124 days).
+2026-07-17 01:48:14,040 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,112 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,118 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-16 04:00:00 (135 days).
+2026-07-17 01:48:14,118 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,173 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,179 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-18 20:00:00 (137 days).
+2026-07-17 01:48:14,179 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,235 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,241 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-23 12:00:00 (142 days).
+2026-07-17 01:48:14,241 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,291 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,296 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-26 16:00:00 (145 days).
+2026-07-17 01:48:14,296 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,380 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,386 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-30 12:00:00 (149 days).
+2026-07-17 01:48:14,386 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,437 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,443 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-01 20:00:00 (151 days).
+2026-07-17 01:48:14,443 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,512 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,517 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-05-30 08:00:00 (149 days).
+2026-07-17 01:48:14,517 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,575 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,581 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-02 00:00:00 (152 days).
+2026-07-17 01:48:14,581 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,648 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,654 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-06 08:00:00 (156 days).
+2026-07-17 01:48:14,655 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,713 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,718 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-07 08:00:00 (157 days).
+2026-07-17 01:48:14,719 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,784 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,789 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-06 08:00:00 (156 days).
+2026-07-17 01:48:14,790 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,857 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,863 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-10 20:00:00 (160 days).
+2026-07-17 01:48:14,863 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,928 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,934 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-21 12:00:00 (171 days).
+2026-07-17 01:48:14,934 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:14,993 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:14,999 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-27 20:00:00 (177 days).
+2026-07-17 01:48:15,000 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,069 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,075 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-24 16:00:00 (174 days).
+2026-07-17 01:48:15,075 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,142 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,147 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-06-27 20:00:00 (177 days).
+2026-07-17 01:48:15,148 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,214 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,220 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-04 20:00:00 (184 days).
+2026-07-17 01:48:15,220 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,279 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,284 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-10 08:00:00 (190 days).
+2026-07-17 01:48:15,284 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,354 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,360 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-05 04:00:00 (185 days).
+2026-07-17 01:48:15,360 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,422 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,428 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-10 20:00:00 (190 days).
+2026-07-17 01:48:15,428 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,498 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,503 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-16 00:00:00 (196 days).
+2026-07-17 01:48:15,504 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,580 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,586 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-21 16:00:00 (201 days).
+2026-07-17 01:48:15,586 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,652 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,657 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-15 00:00:00 (195 days).
+2026-07-17 01:48:15,658 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,717 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,723 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-26 00:00:00 (206 days).
+2026-07-17 01:48:15,723 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,792 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,798 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-28 08:00:00 (208 days).
+2026-07-17 01:48:15,798 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,875 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,881 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-01 04:00:00 (212 days).
+2026-07-17 01:48:15,881 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:15,956 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:15,962 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-07-28 20:00:00 (208 days).
+2026-07-17 01:48:15,962 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,022 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,028 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-02 00:00:00 (213 days).
+2026-07-17 01:48:16,028 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,107 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,114 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-05 16:00:00 (216 days).
+2026-07-17 01:48:16,114 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,179 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,185 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-09 20:00:00 (220 days).
+2026-07-17 01:48:16,185 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,262 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,268 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-08 12:00:00 (219 days).
+2026-07-17 01:48:16,268 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,330 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,336 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-10 08:00:00 (221 days).
+2026-07-17 01:48:16,336 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,408 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,413 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-10 20:00:00 (221 days).
+2026-07-17 01:48:16,414 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,477 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,483 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-15 00:00:00 (226 days).
+2026-07-17 01:48:16,483 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,557 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,563 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-11 08:00:00 (222 days).
+2026-07-17 01:48:16,563 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,628 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,634 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-15 00:00:00 (226 days).
+2026-07-17 01:48:16,634 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,706 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,712 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-24 20:00:00 (235 days).
+2026-07-17 01:48:16,712 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,782 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,789 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-26 16:00:00 (237 days).
+2026-07-17 01:48:16,789 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,869 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,875 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-08-30 12:00:00 (241 days).
+2026-07-17 01:48:16,875 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:16,947 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:16,953 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-07 08:00:00 (249 days).
+2026-07-17 01:48:16,953 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,034 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,040 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-09 12:00:00 (251 days).
+2026-07-17 01:48:17,040 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,113 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,120 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-12 20:00:00 (254 days).
+2026-07-17 01:48:17,120 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,198 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,203 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-09 12:00:00 (251 days).
+2026-07-17 01:48:17,204 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,271 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,277 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-13 20:00:00 (255 days).
+2026-07-17 01:48:17,277 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,356 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,361 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-27 08:00:00 (269 days).
+2026-07-17 01:48:17,362 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,431 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,437 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-28 08:00:00 (270 days).
+2026-07-17 01:48:17,437 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,530 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,536 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-27 08:00:00 (269 days).
+2026-07-17 01:48:17,536 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,614 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,620 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-09-28 08:00:00 (270 days).
+2026-07-17 01:48:17,620 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,706 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,712 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-04 12:00:00 (276 days).
+2026-07-17 01:48:17,712 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,780 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,785 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-07 20:00:00 (279 days).
+2026-07-17 01:48:17,786 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,867 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,873 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-04 12:00:00 (276 days).
+2026-07-17 01:48:17,873 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:17,945 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:17,951 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-07 20:00:00 (279 days).
+2026-07-17 01:48:17,951 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,048 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,053 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-14 08:00:00 (286 days).
+2026-07-17 01:48:18,054 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,129 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,135 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-16 04:00:00 (288 days).
+2026-07-17 01:48:18,135 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,225 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,231 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-14 08:00:00 (286 days).
+2026-07-17 01:48:18,231 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,300 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,306 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-20 08:00:00 (292 days).
+2026-07-17 01:48:18,306 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,388 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,394 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-22 20:00:00 (294 days).
+2026-07-17 01:48:18,394 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,471 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,477 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-28 12:00:00 (300 days).
+2026-07-17 01:48:18,477 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,577 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,583 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-24 00:00:00 (296 days).
+2026-07-17 01:48:18,584 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,657 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,663 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-28 12:00:00 (300 days).
+2026-07-17 01:48:18,663 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,747 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,754 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-10-29 16:00:00 (301 days).
+2026-07-17 01:48:18,754 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,836 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,842 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-03 00:00:00 (306 days).
+2026-07-17 01:48:18,842 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:18,932 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:18,938 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-04 20:00:00 (307 days).
+2026-07-17 01:48:18,938 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,048 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,054 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-07 04:00:00 (310 days).
+2026-07-17 01:48:19,054 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,139 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,145 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-04 20:00:00 (307 days).
+2026-07-17 01:48:19,145 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,228 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,234 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-07 04:00:00 (310 days).
+2026-07-17 01:48:19,234 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,328 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,334 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-24 08:00:00 (327 days).
+2026-07-17 01:48:19,334 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,416 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,423 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-28 04:00:00 (331 days).
+2026-07-17 01:48:19,423 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,512 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,518 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-24 08:00:00 (327 days).
+2026-07-17 01:48:19,518 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,609 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,615 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-28 08:00:00 (331 days).
+2026-07-17 01:48:19,615 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,701 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,706 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-30 08:00:00 (333 days).
+2026-07-17 01:48:19,707 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,793 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,799 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-04 04:00:00 (337 days).
+2026-07-17 01:48:19,799 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,892 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,898 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-11-30 08:00:00 (333 days).
+2026-07-17 01:48:19,898 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:19,978 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:19,984 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-07 12:00:00 (340 days).
+2026-07-17 01:48:19,984 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,081 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,086 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-13 16:00:00 (346 days).
+2026-07-17 01:48:20,087 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,168 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,174 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-15 20:00:00 (348 days).
+2026-07-17 01:48:20,175 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,266 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,271 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-13 16:00:00 (346 days).
+2026-07-17 01:48:20,272 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,359 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,365 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-15 20:00:00 (348 days).
+2026-07-17 01:48:20,365 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,462 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,469 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-20 20:00:00 (353 days).
+2026-07-17 01:48:20,469 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,556 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,563 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2022-12-22 20:00:00 (355 days).
+2026-07-17 01:48:20,563 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,662 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,668 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-02 12:00:00 (366 days).
+2026-07-17 01:48:20,668 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,754 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,761 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-06 16:00:00 (370 days).
+2026-07-17 01:48:20,761 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,861 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,867 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-02 12:00:00 (366 days).
+2026-07-17 01:48:20,867 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:20,956 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:20,962 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-25 04:00:00 (389 days).
+2026-07-17 01:48:20,963 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,063 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,069 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-09 04:00:00 (373 days).
+2026-07-17 01:48:21,069 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,152 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,158 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-31 00:00:00 (395 days).
+2026-07-17 01:48:21,158 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,258 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,265 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-30 00:00:00 (394 days).
+2026-07-17 01:48:21,265 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,361 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,368 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-01-31 00:00:00 (395 days).
+2026-07-17 01:48:21,368 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,472 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,478 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-02 08:00:00 (397 days).
+2026-07-17 01:48:21,478 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,581 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,587 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-06 00:00:00 (401 days).
+2026-07-17 01:48:21,587 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,695 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,701 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-15 16:00:00 (410 days).
+2026-07-17 01:48:21,701 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,793 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,799 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-20 04:00:00 (415 days).
+2026-07-17 01:48:21,800 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:21,908 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:21,914 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-15 16:00:00 (410 days).
+2026-07-17 01:48:21,914 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,013 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,019 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-02-22 20:00:00 (417 days).
+2026-07-17 01:48:22,019 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,134 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,140 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-13 04:00:00 (436 days).
+2026-07-17 01:48:22,140 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,240 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,246 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-15 20:00:00 (438 days).
+2026-07-17 01:48:22,246 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,356 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,362 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-18 04:00:00 (441 days).
+2026-07-17 01:48:22,362 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,466 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,473 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-21 04:00:00 (444 days).
+2026-07-17 01:48:22,474 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,593 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,599 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-13 04:00:00 (436 days).
+2026-07-17 01:48:22,600 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,695 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,701 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-23 00:00:00 (446 days).
+2026-07-17 01:48:22,701 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,807 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,814 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-23 20:00:00 (446 days).
+2026-07-17 01:48:22,814 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:22,918 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:22,924 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-26 00:00:00 (449 days).
+2026-07-17 01:48:22,924 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,040 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,046 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-29 12:00:00 (452 days).
+2026-07-17 01:48:23,046 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,155 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,161 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-02 20:00:00 (456 days).
+2026-07-17 01:48:23,161 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,279 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,285 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-03-29 16:00:00 (452 days).
+2026-07-17 01:48:23,286 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,384 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,390 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-02 20:00:00 (456 days).
+2026-07-17 01:48:23,391 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,509 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,515 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-04 16:00:00 (458 days).
+2026-07-17 01:48:23,515 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,623 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,629 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-07 12:00:00 (461 days).
+2026-07-17 01:48:23,630 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,759 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,765 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-10 04:00:00 (464 days).
+2026-07-17 01:48:23,766 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,867 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,873 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-17 08:00:00 (471 days).
+2026-07-17 01:48:23,874 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:23,992 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:23,998 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-11 00:00:00 (465 days).
+2026-07-17 01:48:23,998 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,119 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,126 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-19 16:00:00 (473 days).
+2026-07-17 01:48:24,126 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,274 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,281 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-26 16:00:00 (480 days).
+2026-07-17 01:48:24,281 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,392 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,398 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-01 04:00:00 (485 days).
+2026-07-17 01:48:24,399 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,521 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,528 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-04-26 04:00:00 (480 days).
+2026-07-17 01:48:24,528 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,640 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,646 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-01 08:00:00 (485 days).
+2026-07-17 01:48:24,646 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,763 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,769 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-06 00:00:00 (490 days).
+2026-07-17 01:48:24,769 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,875 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:24,881 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-06 20:00:00 (490 days).
+2026-07-17 01:48:24,882 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:24,998 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,004 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-05 20:00:00 (489 days).
+2026-07-17 01:48:25,004 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,117 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,123 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-09 00:00:00 (493 days).
+2026-07-17 01:48:25,123 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,285 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,291 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-15 08:00:00 (499 days).
+2026-07-17 01:48:25,292 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,403 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,409 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-17 16:00:00 (501 days).
+2026-07-17 01:48:25,410 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,525 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,531 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-15 08:00:00 (499 days).
+2026-07-17 01:48:25,531 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,644 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,650 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-17 16:00:00 (501 days).
+2026-07-17 01:48:25,650 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,773 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,779 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-23 08:00:00 (507 days).
+2026-07-17 01:48:25,779 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:25,884 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:25,890 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-24 20:00:00 (508 days).
+2026-07-17 01:48:25,890 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,007 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,013 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-23 08:00:00 (507 days).
+2026-07-17 01:48:26,013 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,131 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,137 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-24 20:00:00 (508 days).
+2026-07-17 01:48:26,138 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,263 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,269 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-28 08:00:00 (512 days).
+2026-07-17 01:48:26,270 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,380 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,386 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-31 12:00:00 (515 days).
+2026-07-17 01:48:26,386 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,505 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,511 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-28 08:00:00 (512 days).
+2026-07-17 01:48:26,511 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,626 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,632 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-05-31 12:00:00 (515 days).
+2026-07-17 01:48:26,632 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,782 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,789 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-06-21 00:00:00 (536 days).
+2026-07-17 01:48:26,789 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:26,907 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:26,913 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-06-27 00:00:00 (542 days).
+2026-07-17 01:48:26,914 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,044 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,050 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-06-17 12:00:00 (532 days).
+2026-07-17 01:48:27,050 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,200 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,206 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-05 16:00:00 (550 days).
+2026-07-17 01:48:27,206 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,331 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,337 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-01 00:00:00 (546 days).
+2026-07-17 01:48:27,338 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,460 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,466 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-05 16:00:00 (550 days).
+2026-07-17 01:48:27,466 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,597 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,603 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-11 00:00:00 (556 days).
+2026-07-17 01:48:27,603 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,734 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,740 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-13 00:00:00 (558 days).
+2026-07-17 01:48:27,741 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,863 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,870 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-14 00:00:00 (559 days).
+2026-07-17 01:48:27,870 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:27,988 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:27,995 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-15 00:00:00 (560 days).
+2026-07-17 01:48:27,995 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,126 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,133 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-11 00:00:00 (556 days).
+2026-07-17 01:48:28,133 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,254 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,260 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-07-17 16:00:00 (562 days).
+2026-07-17 01:48:28,261 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,400 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,406 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-02 04:00:00 (578 days).
+2026-07-17 01:48:28,406 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,526 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,532 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-07 20:00:00 (583 days).
+2026-07-17 01:48:28,533 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,660 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,666 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-08 16:00:00 (584 days).
+2026-07-17 01:48:28,666 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,787 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,793 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-14 04:00:00 (590 days).
+2026-07-17 01:48:28,793 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:28,923 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:28,929 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-09 00:00:00 (585 days).
+2026-07-17 01:48:28,929 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,064 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,070 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-14 04:00:00 (590 days).
+2026-07-17 01:48:29,070 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,208 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,214 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-14 20:00:00 (590 days).
+2026-07-17 01:48:29,214 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,332 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,339 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-17 04:00:00 (593 days).
+2026-07-17 01:48:29,339 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,469 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,475 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-24 00:00:00 (600 days).
+2026-07-17 01:48:29,476 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,610 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,616 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-28 12:00:00 (604 days).
+2026-07-17 01:48:29,616 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,747 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,754 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-29 20:00:00 (605 days).
+2026-07-17 01:48:29,754 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:29,877 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:29,883 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-31 20:00:00 (607 days).
+2026-07-17 01:48:29,883 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,020 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,026 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-29 20:00:00 (605 days).
+2026-07-17 01:48:30,026 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,152 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,158 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-08-31 20:00:00 (607 days).
+2026-07-17 01:48:30,158 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,294 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,301 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-08 04:00:00 (615 days).
+2026-07-17 01:48:30,301 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,423 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,429 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-11 20:00:00 (618 days).
+2026-07-17 01:48:30,430 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,565 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,571 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-18 16:00:00 (625 days).
+2026-07-17 01:48:30,571 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,704 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,710 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-21 00:00:00 (628 days).
+2026-07-17 01:48:30,711 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,854 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,861 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-12 16:00:00 (619 days).
+2026-07-17 01:48:30,861 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:30,985 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BTC/USDT, spot, 4h, data starts at 2022-01-01 00:00:00
+2026-07-17 01:48:30,992 - freqtrade.optimize.backtesting - INFO - Loading data from 2022-01-01 00:00:00 up to 2023-09-21 16:00:00 (628 days).
+2026-07-17 01:48:30,992 - freqtrade.configuration.timerange - WARNING - Moving start-date by 120 candles to account for startup time.
+2026-07-17 01:48:31,115 - freqtrade.optimize.analysis.lookahead - INFO - Found targeted trade amount = 100 signals.
+2026-07-17 01:48:31,116 - freqtrade.loggers.set_log_levels - INFO - Restoring log verbosity.
+2026-07-17 01:48:31,116 - freqtrade.optimize.analysis.lookahead - INFO - DonchianTrendAnalysisStrategy: no bias detected
+2026-07-17 01:48:31,116 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Checking look ahead bias via backtests of DonchianTrendAnalysisStrategy.py took 21 seconds.
+Analyzing trades ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100/100 100% • 0:00:19 • 0:00:00
+2026-07-17 01:48:31,120 - freqtrade.optimize.analysis.lookahead_helpers - INFO - saving /tmp/alphamind-p2-06-ld0pp9q8/lookahead.csv
+2026-07-17 01:48:31,236 - ccxt.base.exchange - WARNING - bybit requires to release all resources with an explicit call to the .close() coroutine. If you are using the exchange instance with async 
+coroutines, add `await exchange.close()` to your code into a place when you're done with the exchange and don't need the exchange instance anymore (at the end of your async coroutine).
+2026-07-17 01:48:31,237 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x75e290743dd0>, 69310.160265876), (<aiohttp.client_proto.ResponseHandler object at 0x75e290743ad0>, 69310.350748263), 
+(<aiohttp.client_proto.ResponseHandler object at 0x75e29066af10>, 69310.384128543), (<aiohttp.client_proto.ResponseHandler object at 0x75e2903b4690>, 69310.672143624), 
+(<aiohttp.client_proto.ResponseHandler object at 0x75e2903b1310>, 69310.706791314), (<aiohttp.client_proto.ResponseHandler object at 0x75e29068ece0>, 69310.729159232), 
+(<aiohttp.client_proto.ResponseHandler object at 0x75e29068eb70>, 69310.815366018), (<aiohttp.client_proto.ResponseHandler object at 0x75e2903c0980>, 69310.856043641), 
+(<aiohttp.client_proto.ResponseHandler object at 0x75e2903c0d70>, 69310.921629357), (<aiohttp.client_proto.ResponseHandler object at 0x75e2903b4550>, 69310.958370297)])']
+connector: <aiohttp.connector.TCPConnector object at 0x75e2903a5d30>
+[exit_code]
+0

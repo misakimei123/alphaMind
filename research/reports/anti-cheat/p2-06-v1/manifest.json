@@ -1,0 +1,70 @@
+{
+  "files": [
+    {
+      "path": "configs/research/anti-cheat-v1.toml",
+      "sha256": "9fa22afa676e00da10f119d84b66e0e2506c5111a4a35920565c91cf4fe3fc2c"
+    },
+    {
+      "path": "scripts/build_anti_cheat_report.py",
+      "sha256": "73b6101fda953ca05e82adc55cbbe090c1ceb107436d20876cb623b0fc99e957"
+    },
+    {
+      "path": "src/alphamind/research/anti_cheat.py",
+      "sha256": "82b0df3188913415ff86e02cb2f48fa930f89d8b8b4de46c077306ded1e91802"
+    },
+    {
+      "path": "user_data/strategies/DonchianTrendStrategy.py",
+      "sha256": "02e3538c72caf6da91d10c0c4fbff1786847d7752475beae38d38d5c71f2275c"
+    },
+    {
+      "path": "research/strategies/DonchianTrendAnalysisStrategy.py",
+      "sha256": "fcff4efd249fc174aa372452e7d56700c6eb7a4a4f61ff6184d2e1ee69407afe"
+    },
+    {
+      "path": "configs/freqtrade/anti-cheat.json",
+      "sha256": "b4ea86cdc7c50e2f1718230125d65620863d6a0d5f1dd5dde135c0d5b579c238"
+    },
+    {
+      "path": "research/reports/walk-forward/p2-05-v1/summary.json",
+      "sha256": "0987afb3e8e5936e14cfc6a462550ec620a374a20bf3709d928a89a9f18a32a7"
+    },
+    {
+      "path": "research/experiments/trial-registry.json",
+      "sha256": "af12f3f6a1c9143f267d160fed3b76e6fbff2b0d9fa01ecdfe8d57ae90906ce4"
+    },
+    {
+      "path": "data/manifests/source/okx-spot-cross-check-p2-06-v1.json",
+      "sha256": "7b832d8024cd705811e9cfb56a0b55216494ff303a85a67452b96161bca3c1a3"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/report.json",
+      "sha256": "1a5bc054c6ae5545c5cb58841ef6d54745b021ef2b616ffc321f18595e953418"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/report.md",
+      "sha256": "83965b842a2f536f4bf8d387ac33f45414fb39e192ce89001206a6e9acda304e"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/raw/alternate-download.txt",
+      "sha256": "0f753375446b395fc8bf5900008b9efbd73f462e9d0ce1d2fdac259bd96a026f"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/raw/freqtrade-version.txt",
+      "sha256": "96e7ff1ad3f2d9120324fc02bd80f76a72055c5f4c5db85b3374bea61bc01987"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/raw/lookahead-analysis.csv",
+      "sha256": "c5812aa2ea84ff180ffe92b29246bac81f187700ad8d08f2194fe64b5947112a"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/raw/lookahead-analysis.txt",
+      "sha256": "b1fc669897ee5df9b0ac14d65e86d0dfbe015cd00a28d844d7f9c5efe70e2521"
+    },
+    {
+      "path": "research/reports/anti-cheat/p2-06-v1/raw/recursive-analysis.txt",
+      "sha256": "355f424ed517a67ac85b5afc59fa859526df7e751c61b06e0a7a5451360920ea"
+    }
+  ],
+  "model_version": "p2-06-v1",
+  "schema_version": 1
+}

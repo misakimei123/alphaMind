@@ -1,0 +1,154 @@
+{
+  "alternate_snapshot": {
+    "manifest_path": "data/manifests/source/okx-spot-cross-check-p2-06-v1.json",
+    "performance_selection_allowed": false,
+    "snapshot_id": "okx-spot-cross-check-a1b40de2f2fe"
+  },
+  "analysis_subclass": {
+    "analysis_execution_enabled": true,
+    "direct_subclass": true,
+    "production_execution_enabled": false,
+    "signal_method_override_count": 0
+  },
+  "assessment": "PASS",
+  "dataset_scans": {
+    "accessed_roots": [
+      "data/clean/bybit-spot-development-ef232b839406-p1-04-v1",
+      "data/source/okx_spot/okx-spot-cross-check-a1b40de2f2fe"
+    ],
+    "bybit": [
+      {
+        "candle_count": 7662,
+        "checkpoint_count": 878,
+        "column_check_counts": {
+          "donchian_close": 878,
+          "donchian_data_valid": 878,
+          "donchian_entry_high": 878,
+          "donchian_exit_low": 878,
+          "enter_long": 878,
+          "enter_tag": 878,
+          "exit_long": 878,
+          "exit_tag": 878
+        },
+        "entry_signal_count": 363,
+        "exit_signal_count": 466,
+        "mismatch_count": 0,
+        "pair": "BTC/USDT"
+      },
+      {
+        "candle_count": 7662,
+        "checkpoint_count": 881,
+        "column_check_counts": {
+          "donchian_close": 881,
+          "donchian_data_valid": 881,
+          "donchian_entry_high": 881,
+          "donchian_exit_low": 881,
+          "enter_long": 881,
+          "enter_tag": 881,
+          "exit_long": 881,
+          "exit_tag": 881
+        },
+        "entry_signal_count": 375,
+        "exit_signal_count": 458,
+        "mismatch_count": 0,
+        "pair": "ETH/USDT"
+      }
+    ],
+    "common_candles": {
+      "BTC/USDT": 7662,
+      "ETH/USDT": 7662
+    },
+    "final_holdout_access_count": 0,
+    "okx": [
+      {
+        "candle_count": 7662,
+        "checkpoint_count": 870,
+        "column_check_counts": {
+          "donchian_close": 870,
+          "donchian_data_valid": 870,
+          "donchian_entry_high": 870,
+          "donchian_exit_low": 870,
+          "enter_long": 870,
+          "enter_tag": 870,
+          "exit_long": 870,
+          "exit_tag": 870
+        },
+        "entry_signal_count": 357,
+        "exit_signal_count": 463,
+        "mismatch_count": 0,
+        "pair": "BTC/USDT"
+      },
+      {
+        "candle_count": 7662,
+        "checkpoint_count": 856,
+        "column_check_counts": {
+          "donchian_close": 856,
+          "donchian_data_valid": 856,
+          "donchian_entry_high": 856,
+          "donchian_exit_low": 856,
+          "enter_long": 856,
+          "enter_tag": 856,
+          "exit_long": 856,
+          "exit_tag": 856
+        },
+        "entry_signal_count": 363,
+        "exit_signal_count": 444,
+        "mismatch_count": 0,
+        "pair": "ETH/USDT"
+      }
+    ]
+  },
+  "evidence_boundary": {
+    "live_execution_tested": false,
+    "official_commands_require_public_exchange_market_metadata_network": true,
+    "verification_replays_committed_hashes_and_local_scans_without_network": true
+  },
+  "model_version": "p2-06-v1",
+  "official_analysis": {
+    "lookahead": {
+      "biased_entry_signals": 0,
+      "biased_exit_signals": 0,
+      "biased_indicators": "",
+      "has_bias": false,
+      "raw_row": {
+        "biased_entry_signals": "0",
+        "biased_exit_signals": "0",
+        "biased_indicators": "",
+        "filename": "DonchianTrendAnalysisStrategy.py",
+        "has_bias": "False",
+        "strategy": "DonchianTrendAnalysisStrategy",
+        "total_signals": "100"
+      },
+      "total_signals": 100
+    },
+    "recursive": {
+      "indicator_lookahead_bias": false,
+      "maximum_variance_percent": "0.0",
+      "zero_variance": true
+    }
+  },
+  "registry": {
+    "registered_trial_count": 13,
+    "reported_trial_count": 13,
+    "review_state": "PENDING"
+  },
+  "schema_version": 1,
+  "selection": {
+    "blocker": "independent_review_pending",
+    "parameter_selection": null
+  },
+  "signal_execution_separation": {
+    "checked_trade_count": 1397,
+    "timing_mismatch_count": 0
+  },
+  "static_source_scan": [
+    {
+      "findings": [],
+      "path": "user_data/strategies/DonchianTrendStrategy.py"
+    },
+    {
+      "findings": [],
+      "path": "research/strategies/DonchianTrendAnalysisStrategy.py"
+    }
+  ]
+}

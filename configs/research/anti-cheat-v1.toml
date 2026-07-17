@@ -1,0 +1,54 @@
+schema_version = 1
+model_version = "p2-06-v1"
+freqtrade_version = "2026.6"
+ccxt_version = "4.5.61"
+strategy = "DonchianTrendStrategy"
+analysis_strategy = "DonchianTrendAnalysisStrategy"
+timeframe = "4h"
+timerange = "20220101-20250701"
+selection_end_exclusive = "2025-07-01T00:00:00Z"
+pairs = ["BTC/USDT", "ETH/USDT"]
+
+[inputs]
+clean_root = "data/clean/bybit-spot-development-ef232b839406-p1-04-v1"
+walk_forward_manifest = "data/manifests/walk-forward-development-v1.yaml"
+walk_forward_summary = "research/reports/walk-forward/p2-05-v1/summary.json"
+trial_registry = "research/experiments/trial-registry.json"
+production_strategy = "user_data/strategies/DonchianTrendStrategy.py"
+analysis_strategy = "research/strategies/DonchianTrendAnalysisStrategy.py"
+freqtrade_config = "configs/freqtrade/anti-cheat.json"
+
+[official_analysis]
+minimum_trade_amount = 20
+targeted_trade_amount = 100
+recursive_pair = "BTC/USDT"
+startup_candles = [21, 41, 81, 119, 199]
+maximum_recursive_variance_percent = 0.0
+allow_limit_orders = false
+
+[prefix_invariance]
+regular_checkpoint_count = 64
+columns = [
+  "donchian_entry_high",
+  "donchian_exit_low",
+  "donchian_close",
+  "donchian_data_valid",
+  "enter_long",
+  "enter_tag",
+  "exit_long",
+  "exit_tag",
+]
+
+[alternate_exchange]
+exchange = "okx"
+market_type = "spot"
+timeframe = "4h"
+timerange = "20220101-20250701"
+pairs = ["BTC/USDT", "ETH/USDT"]
+source_parent = "data/source/okx_spot"
+manifest_path = "data/manifests/source/okx-spot-cross-check-p2-06-v1.json"
+minimum_common_candles_per_pair = 7000
+performance_selection_allowed = false
+
+[output]
+report_root = "research/reports/anti-cheat/p2-06-v1"

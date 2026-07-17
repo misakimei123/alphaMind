@@ -1,0 +1,10 @@
+$ freqtrade --version
+[stdout]
+Operating System:	Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41
+Python Version:		Python 3.14.6
+CCXT Version:		4.5.61
+
+Freqtrade Version:	freqtrade 2026.6
+[stderr]
+[exit_code]
+0

@@ -121,3 +121,14 @@ docker compose --profile research run --rm walk-forward-report `
 
 汇总产物位于 `research/reports/walk-forward/p2-05-v1/`。P2-05 统计检查通过不等于参数已获选择；
 13 个 experiment 的 `review_result` 均保持 `PENDING`，P2-06 和独立评审完成前 selection 固定为空。
+
+P2-06 已使用锁定 Freqtrade 2026.6 运行官方 `lookahead-analysis`、`recursive-analysis`，并在
+Bybit/OKX 的同标 4h 数据上逐列执行 prefix-invariance 扫描。构建会联网读取公开市场 metadata
+和首次下载 OKX snapshot，但不会挂载凭据；已发布证据可在无网络、全只读容器中复核：
+
+```powershell
+docker compose --profile research run --rm anti-cheat-verify
+```
+
+报告位于 `research/reports/anti-cheat/p2-06-v1/`。P2-06 PASS 只解除自动反作弊阻塞；所有参数
+仍保持未选择，必须等待独立评审，且本报告不构成 Backtest Gate、Paper 或 Live 晋升。

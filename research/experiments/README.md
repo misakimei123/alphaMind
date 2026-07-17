@@ -5,8 +5,9 @@
 固定报告和 artifact manifest。14 次预算当前消耗 13 次，不得删除失败结果、复用 index 或根据结果
 追加未预注册参数。
 
-P2-05 只得出统计层检查结果，没有完成独立评审或 P2-06 反作弊。所有 entry 的 `review_result` 均为
-`PENDING`，因此没有 experiment 能通过 `assert_selectable_experiment` 进入策略选择。
+P2-06 不新增或消耗 trial；自动反作弊命令及扫描证据保存在
+`research/reports/anti-cheat/p2-06-v1/`。所有 entry 的 `review_result` 仍为 `PENDING`，因此没有
+experiment 能通过 `assert_selectable_experiment` 进入策略选择。
 
 ## Lifecycle
 

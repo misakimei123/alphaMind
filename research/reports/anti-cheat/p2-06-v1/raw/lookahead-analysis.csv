@@ -1,0 +1,2 @@
+filename,strategy,has_bias,total_signals,biased_entry_signals,biased_exit_signals,biased_indicators
+DonchianTrendAnalysisStrategy.py,DonchianTrendAnalysisStrategy,False,100,0,0,

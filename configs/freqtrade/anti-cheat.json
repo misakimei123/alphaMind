@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.freqtrade.io/schema.json",
+  "add_config_files": [
+    "common.json"
+  ],
+  "dry_run": true,
+  "dry_run_wallet": 500,
+  "bot_name": "alphamind-anti-cheat",
+  "db_url": "sqlite:////tmp/alphamind-anti-cheat.sqlite",
+  "order_types": {
+    "entry": "market",
+    "exit": "market",
+    "emergency_exit": "market",
+    "force_entry": "market",
+    "force_exit": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": false
+  },
+  "entry_pricing": {
+    "price_side": "other",
+    "use_order_book": false,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  },
+  "exit_pricing": {
+    "price_side": "other",
+    "use_order_book": false,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  }
+}

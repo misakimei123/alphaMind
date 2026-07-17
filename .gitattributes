@@ -5,3 +5,4 @@
 *.toml text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+research/reports/**/raw/* text eol=lf whitespace=-trailing-space
