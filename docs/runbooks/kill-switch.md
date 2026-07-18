@@ -5,9 +5,11 @@
 | 状态 | DONE |
 | 任务 | P0-06 |
 | 风险合同 | `docs/decisions/0006-risk-accounting.md` |
-| 适用范围 | Freqtrade MVP，Bybit spot，BTC/USDT 与 ETH/USDT |
+| 适用范围 | Freqtrade AI MVP，Bybit Spot + USDT Linear Perpetual，Instrument Registry 配置标的 |
 
 ## 1. 目标与权限边界
+
+2026-07-18 修订：本手册同时适用于 Spot/Futures 双实例。AI 决策周期、新闻服务和 Telegram 审批故障不得阻止已有止损、安全减仓和 Kill Switch。RiskSnapshot v2 已能表达 mark/liq、保证金、funding 和保护挂单，但合约处置、reduce-only、position mode 与交易所托管保护单仍须完成 R5 Demo/Testnet 验证，不能仅凭只读快照宣称处置已验证。
 
 本手册用于风险快照异常、`CLOSE_ONLY` 或 `KILLED_MANUAL_REVIEW`。它不授权扩大风险、绕过
 Freqtrade 或由 watchdog 直接下单。只有 Freqtrade 是交易写入者；人工操作必须通过已批准的

@@ -1,0 +1,10 @@
+{
+  "exchange": {
+    "pair_whitelist": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "HYPE/USDT"
+    ]
+  }
+}

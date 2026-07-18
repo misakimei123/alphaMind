@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Press Releases</title>
+    <link>https://www.sec.gov/newsroom/press-releases</link>
+    <description>Official releases</description>
+    <item>
+      <guid isPermaLink="false">release-2026-67</guid>
+      <title>SEC announces digital asset market roundtable</title>
+      <link>https://www.sec.gov/newsroom/press-releases/2026-67?utm_campaign=rss</link>
+      <description><![CDATA[<p>The roundtable will discuss ETH and digital asset markets.</p>]]></description>
+      <category>Regulation</category>
+      <pubDate>Sat, 18 Jul 2026 12:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <guid isPermaLink="false">release-invalid</guid>
+      <title>Missing timestamp fixture</title>
+      <link>https://www.sec.gov/newsroom/press-releases/invalid</link>
+      <description>Rejected because pubDate is absent.</description>
+    </item>
+  </channel>
+</rss>

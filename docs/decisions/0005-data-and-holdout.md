@@ -1,5 +1,7 @@
 # ADR-0005：冻结首个策略的数据与 Final Holdout 合同
 
+> 2026-07-18 定位修订：本文只约束 Donchian v1 历史研究数据。Final Holdout 降级、独立评审和旧数据范围不再阻塞 AI、新闻、Telegram、配置化标的、dry-run 或 Demo/Testnet。R2 新闻是运行时 DecisionContext 数据，不受“Donchian 研究不引入新闻”限制。当前任务以 [完整开发计划](../development-plan.md) 为准。
+
 | 元数据 | 内容 |
 |---|---|
 | 状态 | DONE |

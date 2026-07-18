@@ -11,20 +11,22 @@ Freqtrade Runtime DB 是 `Trade`、`Order`、open position、filled/cancelled or
 - 原子切换已经通过完整性和 schema 验证的整库备份。
 
 禁止用 Audit DB、手写 `INSERT/UPDATE/DELETE`、SQLAlchemy model 副本或数据修补脚本恢复
-Runtime DB。Live 配置不保存 DSN 或口令；`FREQTRADE__DB_URL`、owner/watchdog 凭据必须由部署
-secret 注入。P5 批准前仍没有 Live Compose service。
+Runtime DB。Live 配置不保存 DSN 或口令；spot/futures 的 DSN、owner/watchdog 凭据必须由部署
+secret 分别注入，并在各自容器内映射为 `FREQTRADE__DB_URL`。R6 批准前仍没有 Live Compose service。
 
 ## 2. 环境隔离
 
-规范清单位于 `configs/common/runtime-db-contract.toml`：backtest、dry-run、replay 和
-testnet-contract 分别使用独立 SQLite 文件；Live Canary 使用独立 PostgreSQL database、schema、
-Freqtrade owner role 与 watchdog role。不得通过 `is_live` 复用数据库。
+规范清单位于 `configs/common/runtime-db-contract.toml`：backtest、spot-dry-run、futures-dry-run、
+replay 和 testnet-contract 分别使用独立 SQLite 文件；spot/futures Live Canary 也分别使用独立
+PostgreSQL database、schema、Freqtrade owner role 与 watchdog role。不得按市场或 `is_live` 复用数据库。
 
-Live template 内的 `postgresql+psycopg://<set-at-runtime>` 是故意不可连接的 fail-closed 值，避免
-环境变量缺失时回退创建默认 SQLite。部署必须将 SQLAlchemy DSN 注入 `FREQTRADE__DB_URL`，格式为
-`postgresql+psycopg://<runtime-owner>@<host>:5432/alphamind_live`。锁定 Freqtrade 基础镜像不内置
-PostgreSQL driver；P5 构建 Live 专用镜像时必须固定并复核 driver/hash，不能在容器启动时联网
-安装。角色由 DBA/secret manager 创建后，再用 `configs/postgres/live-runtime-roles.sql` 配置权限。
+Live template 内的 `<spot-set-at-runtime>` / `<futures-set-at-runtime>` 是故意不可连接的 fail-closed
+值，避免环境变量缺失时回退创建默认 SQLite。部署分别读取
+`ALPHAMIND_SPOT_FREQTRADE_DB_URL` / `ALPHAMIND_FUTURES_FREQTRADE_DB_URL`，再注入对应容器内的
+`FREQTRADE__DB_URL`；database 分别为 `alphamind_spot_live` / `alphamind_futures_live`。锁定
+Freqtrade 基础镜像不内置 PostgreSQL driver；R6 构建 Live 专用镜像时必须固定并复核 driver/hash，
+不能在容器启动时联网安装。角色由 DBA/secret manager 创建后，再对两个隔离 schema 分别应用
+`configs/postgres/live-runtime-roles.sql`。
 
 ## 3. 启动与恢复顺序
 
@@ -41,24 +43,25 @@ P3-03 的独立容量/年龄背压判断。
 
 ## 4. SQLite backup、restore 与 rollback
 
-本地/dry-run 使用仓库脚本；所有路径必须属于同一环境，禁止把 backtest backup 恢复到 dry-run：
+本地/dry-run 使用仓库脚本；所有路径必须属于同一实例，禁止跨 spot/futures 或把 backtest backup
+恢复到 dry-run。以下以 spot 实例为例：
 
 ```powershell
 uv run python scripts/manage_runtime_db.py backup `
-  --source user_data/db/dry-run.sqlite `
-  --destination backups/dry-run/20260717T120000Z.sqlite
+  --source user_data/db/spot.dry-run.sqlite `
+  --destination backups/spot-dry-run/20260717T120000Z.sqlite
 
 uv run python scripts/manage_runtime_db.py verify `
-  --database backups/dry-run/20260717T120000Z.sqlite
+  --database backups/spot-dry-run/20260717T120000Z.sqlite
 ```
 
 恢复前停止 Freqtrade，确认没有 `target-wal`/`target-shm`，再执行：
 
 ```powershell
 uv run python scripts/manage_runtime_db.py restore `
-  --backup backups/dry-run/20260717T120000Z.sqlite `
-  --target user_data/db/dry-run.sqlite `
-  --rollback-backup backups/dry-run/pre-restore.sqlite `
+  --backup backups/spot-dry-run/20260717T120000Z.sqlite `
+  --target user_data/db/spot.dry-run.sqlite `
+  --rollback-backup backups/spot-dry-run/pre-restore.sqlite `
   --confirm-freqtrade-stopped
 ```
 

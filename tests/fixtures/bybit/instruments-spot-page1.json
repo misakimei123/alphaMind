@@ -1,0 +1,25 @@
+{
+  "retCode": 0,
+  "retMsg": "OK",
+  "result": {
+    "category": "spot",
+    "list": [
+      {
+        "symbol": "BTCUSDT",
+        "status": "Trading",
+        "baseCoin": "BTC",
+        "quoteCoin": "USDT",
+        "priceFilter": {"tickSize": "0.1"},
+        "lotSizeFilter": {
+          "basePrecision": "0.000001",
+          "minOrderQty": "0.000001",
+          "minOrderAmt": "5",
+          "maxLimitOrderQty": "230",
+          "maxMarketOrderQty": "120"
+        }
+      }
+    ],
+    "nextPageCursor": ""
+  },
+  "time": 1784370000000
+}

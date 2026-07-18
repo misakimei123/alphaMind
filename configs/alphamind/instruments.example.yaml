@@ -1,0 +1,49 @@
+# Initial configurable universe. Runtime market discovery may disable one unavailable market only.
+schema_version: 1
+exchange: bybit
+quote_currency: USDT
+instruments:
+  - id: BTC
+    enabled: true
+    spot:
+      enabled: true
+      pair: BTC/USDT
+    futures:
+      enabled: true
+      pair: BTC/USDT:USDT
+      allow_long: true
+      allow_short: true
+      max_leverage: "2"
+  - id: ETH
+    enabled: true
+    spot:
+      enabled: true
+      pair: ETH/USDT
+    futures:
+      enabled: true
+      pair: ETH/USDT:USDT
+      allow_long: true
+      allow_short: true
+      max_leverage: "2"
+  - id: SOL
+    enabled: true
+    spot:
+      enabled: true
+      pair: SOL/USDT
+    futures:
+      enabled: true
+      pair: SOL/USDT:USDT
+      allow_long: true
+      allow_short: true
+      max_leverage: "2"
+  - id: HYPE
+    enabled: true
+    spot:
+      enabled: true
+      pair: HYPE/USDT
+    futures:
+      enabled: true
+      pair: HYPE/USDT:USDT
+      allow_long: true
+      allow_short: true
+      max_leverage: "1"

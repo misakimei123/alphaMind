@@ -221,6 +221,10 @@ user_data/logs/*
 !user_data/logs/README.md
 user_data/risk/*
 !user_data/risk/README.md
+user_data/state/*
+!user_data/state/README.md
+user_data/cycles/*
+!user_data/cycles/README.md
 user_data/audit/*
 !user_data/audit/README.md
 user_data/backtest_results/*

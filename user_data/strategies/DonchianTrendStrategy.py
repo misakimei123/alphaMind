@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, ClassVar
 
@@ -21,6 +21,8 @@ from alphamind.audit import (
     build_risk_decision_event,
     load_audit_runtime_config,
 )
+from alphamind.config import load_instrument_registry
+from alphamind.market import load_market_capability_snapshot
 from alphamind.risk.freqtrade_adapter import (
     FreqtradeRiskConfig,
     RuntimeEntryApproval,
@@ -73,6 +75,8 @@ class DonchianTrendStrategy(IStrategy):
     ENTRY_TAG = "entry_breakout"
     EXIT_TAG = "exit_breakout"
     RISK_ADAPTER_CONFIG_PATH = "/freqtrade/common/freqtrade-risk-adapter.toml"
+    INSTRUMENT_REGISTRY_CONFIG_PATH = "/freqtrade/alphamind/instruments.example.yaml"
+    MARKET_CAPABILITY_CONFIG_PATH = "/freqtrade/alphamind/market-capabilities.snapshot.json"
     AUDIT_CONFIG_PATH = "/freqtrade/common/audit-outbox.toml"
     INITIAL_STOP_CUSTOM_DATA_KEY = "alphamind_initial_stop"
     SIGNAL_ATR_CUSTOM_DATA_KEY = "alphamind_signal_atr"
@@ -118,8 +122,27 @@ class DonchianTrendStrategy(IStrategy):
         config_path = os.environ.get(
             "ALPHAMIND_RISK_ADAPTER_CONFIG_PATH", self.RISK_ADAPTER_CONFIG_PATH
         )
+        registry_path = os.environ.get(
+            "ALPHAMIND_INSTRUMENT_REGISTRY_PATH",
+            self.INSTRUMENT_REGISTRY_CONFIG_PATH,
+        )
+        capability_path = os.environ.get(
+            "ALPHAMIND_MARKET_CAPABILITY_PATH",
+            self.MARKET_CAPABILITY_CONFIG_PATH,
+        )
         audit_config_path = os.environ.get("ALPHAMIND_AUDIT_CONFIG_PATH", self.AUDIT_CONFIG_PATH)
-        self._risk_config = load_freqtrade_risk_config(config_path)
+        instrument_registry = load_instrument_registry(registry_path)
+        market_capabilities = load_market_capability_snapshot(
+            capability_path,
+            registry=instrument_registry,
+            now_utc=datetime.now(UTC),
+            maximum_age=timedelta(hours=24),
+        )
+        self._risk_config = load_freqtrade_risk_config(
+            config_path,
+            instrument_registry,
+            market_capabilities,
+        )
         self._audit_config = load_audit_runtime_config(audit_config_path)
         self._audit_execution_context()
         if self._audit_outbox is not None:
@@ -143,7 +166,15 @@ class DonchianTrendStrategy(IStrategy):
         previous_id = None
         if self._risk_snapshot is not None and self._risk_snapshot.snapshot is not None:
             previous_id = self._risk_snapshot.snapshot.get("snapshot_id")
-        snapshot = load_risk_snapshot(self._risk_config.snapshot_path, now_utc=current_time)
+        snapshot = load_risk_snapshot(
+            self._risk_config.snapshot_path,
+            now_utc=current_time,
+            allowed_pairs=self._risk_config.enabled_spot_pairs,
+            allowed_futures_pairs=self._risk_config.enabled_futures_pairs,
+            expected_registry_sha256=self._risk_config.instrument_registry_sha256,
+            expected_capability_sha256=(self._risk_config.market_capability_snapshot_sha256),
+            maximum_futures_leverage=self._risk_config.futures_max_leverage,
+        )
         current_id = snapshot.snapshot.get("snapshot_id") if snapshot.snapshot is not None else None
         if current_id != previous_id or not snapshot.entry_allowed:
             # 新快照必须重新定仓；旧批准不能跨 snapshot 或 fail-closed 状态复用。

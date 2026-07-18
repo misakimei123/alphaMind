@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import tomllib
 from datetime import datetime
 from pathlib import Path
 
@@ -47,6 +48,53 @@ def test_current_repository_has_no_broken_local_links_or_detected_secrets() -> N
     assert findings == []
 
 
+def test_infrastructure_reuses_mature_libraries() -> None:
+    project = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = {
+        requirement.split(">", 1)[0].split("<", 1)[0].split("[", 1)[0]
+        for requirement in project["project"]["dependencies"]
+    }
+    dev_dependencies = {
+        requirement.split(">", 1)[0].split("<", 1)[0].split("[", 1)[0]
+        for requirement in project["project"]["optional-dependencies"]["dev"]
+    }
+    assert {
+        "beautifulsoup4",
+        "feedparser",
+        "filelock",
+        "httpx",
+        "jsonschema",
+        "openai",
+        "pyyaml",
+    } <= dependencies
+    assert {"detect-secrets", "markdown-it-py"} <= dev_dependencies
+
+    forbidden_by_file = {
+        "src/alphamind/market/bybit.py": (
+            "urllib.request",
+            "urlopen(",
+            "Transport = Callable",
+        ),
+        "src/alphamind/news/http.py": (
+            "urllib.request",
+            "urlopen(",
+            "class NewsHttpResponse",
+        ),
+        "src/alphamind/news/adapters.py": ("xml.etree", "ElementTree"),
+        "src/alphamind/news/collector.py": ("HTMLParser",),
+        "src/alphamind/scheduler/core.py": ("import msvcrt", 'import_module("fcntl")'),
+        "src/alphamind/ai/provider.py": ("urllib.request", "urlopen("),
+        "scripts/check_repository.py": (
+            "MARKDOWN_LINK =",
+            "SENSITIVE_ASSIGNMENT =",
+            "HIGH_CONFIDENCE_SECRETS =",
+        ),
+    }
+    for relative_path, forbidden_values in forbidden_by_file.items():
+        source = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+        assert all(value not in source for value in forbidden_values), relative_path
+
+
 def test_markdown_link_checker_reports_missing_and_escaping_targets(tmp_path: Path) -> None:
     docs = tmp_path / "docs"
     docs.mkdir()
@@ -65,6 +113,22 @@ def test_markdown_link_checker_reports_missing_and_escaping_targets(tmp_path: Pa
     ]
 
 
+def test_markdown_link_checker_uses_commonmark_links_not_code_examples(tmp_path: Path) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    readme = docs / "README.md"
+    readme.write_text(
+        "`[not a link](missing-inline.md)`\n\n"
+        "```markdown\n[also not a link](missing-fence.md)\n```\n\n"
+        "[reference][target]\n\n[target]: missing-reference.md\n",
+        encoding="utf-8",
+    )
+
+    assert scan_markdown_links(tmp_path, [Path("docs/README.md")]) == [
+        "docs/README.md:7: missing local link target: missing-reference.md"
+    ]
+
+
 def test_secret_checker_rejects_credentials_without_echoing_value(tmp_path: Path) -> None:
     secret_file = tmp_path / "config.py"
     credential_name = "api_" + "key"
@@ -75,7 +139,7 @@ def test_secret_checker_rejects_credentials_without_echoing_value(tmp_path: Path
 
     findings = scan_secrets(tmp_path, [Path("config.py")])
 
-    assert findings == ["config.py:1: suspected sensitive assignment"]
+    assert findings == ["config.py:1: suspected secret (Secret Keyword)"]
     assert "realistic-secret-value" not in findings[0]
 
 

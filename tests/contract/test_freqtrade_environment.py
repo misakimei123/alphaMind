@@ -4,6 +4,12 @@ from pathlib import Path
 
 import yaml
 
+from alphamind.config import (
+    MarketKind,
+    load_effective_config,
+    load_freqtrade_config_chain,
+    load_instrument_registry,
+)
 from scripts.verify_freqtrade_contract import EXPECTED_CALLBACK_PARAMETERS
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -31,10 +37,28 @@ def test_compose_uses_only_locked_linux_image_and_has_no_live_service() -> None:
         assert service["platform"] == "linux/amd64"
         assert service["profiles"]
         assert service["restart"] == "no"
+        if "volumes" in service and service["image"] == LOCKED_IMAGE:
+            inherited_or_local = service["volumes"]
+            if service in (
+                services["backtest"],
+                services["spot-dry-run"],
+                services["futures-dry-run"],
+                services["replay"],
+            ):
+                assert "./configs/alphamind:/freqtrade/alphamind:ro" in inherited_or_local
 
-    assert services["dry-run"]["profiles"] == ["dry-run"]
-    assert "/freqtrade/configs/dry-run.json" in services["dry-run"]["command"]
-    assert "--strategy-path" not in services["dry-run"]["command"]
+    spot = services["spot-dry-run"]
+    futures = services["futures-dry-run"]
+    assert spot["profiles"] == ["dry-run", "spot-dry-run"]
+    assert futures["profiles"] == ["dry-run", "futures-dry-run"]
+    assert "/freqtrade/configs/spot.dry-run.json" in spot["command"]
+    assert "/freqtrade/configs/futures.dry-run.json" in futures["command"]
+    assert "ALPHAMIND_BYBIT_SPOT_API_KEY" in spot["environment"]["FREQTRADE__EXCHANGE__KEY"]
+    assert "ALPHAMIND_BYBIT_FUTURES_API_KEY" in futures["environment"]["FREQTRADE__EXCHANGE__KEY"]
+    assert "FUTURES" not in json.dumps(spot["environment"])
+    assert "SPOT" not in json.dumps(futures["environment"])
+    assert "--strategy-path" not in spot["command"]
+    assert "--strategy-path" not in futures["command"]
     assert "--strategy-path" not in services["backtest"]["command"]
     assert services["replay"]["network_mode"] == "none"
     assert services["audit-writer"]["profiles"] == ["audit"]
@@ -56,38 +80,75 @@ def test_compose_uses_only_locked_linux_image_and_has_no_live_service() -> None:
 def test_mode_configs_are_isolated_and_live_template_has_no_credentials() -> None:
     common = load_json("common.json")
     assert common["timeframe"] == "4h"
-    assert common["trading_mode"] == "spot"
+    assert "trading_mode" not in common
+    assert "margin_mode" not in common
     assert common["initial_state"] == "stopped"
     assert "api_server" not in common
     assert common["exchange"] == {
         "name": "bybit",
-        "pair_whitelist": ["BTC/USDT", "ETH/USDT"],
         "pair_blacklist": [],
+    }
+    generated_spot = load_json("spot-instruments.generated.json")
+    generated_futures = load_json("futures-instruments.generated.json")
+    registry = load_instrument_registry(
+        PROJECT_ROOT / "configs" / "alphamind" / "instruments.example.yaml"
+    )
+    assert generated_spot == {
+        "exchange": {"pair_whitelist": list(registry.enabled_pairs(MarketKind.SPOT))}
+    }
+    assert generated_futures == {
+        "exchange": {"pair_whitelist": list(registry.enabled_pairs(MarketKind.FUTURES))}
     }
 
     mode_files = (
         "backtest.json",
-        "dry-run.json",
+        "spot.dry-run.json",
+        "futures.dry-run.json",
         "replay.json",
         "contract.json",
-        "live.template.json",
+        "spot.live.template.json",
+        "futures.live.template.json",
     )
     modes = {name: load_json(name) for name in mode_files}
-    assert all(mode["add_config_files"] == ["common.json"] for mode in modes.values())
+    spot_files = (
+        "backtest.json",
+        "spot.dry-run.json",
+        "replay.json",
+        "contract.json",
+        "spot.live.template.json",
+    )
+    assert all(modes[name]["add_config_files"][1] == "spot.json" for name in spot_files)
+    assert all(
+        modes[name]["add_config_files"][2] == "spot-instruments.generated.json"
+        for name in spot_files
+    )
+    for name in ("futures.dry-run.json", "futures.live.template.json"):
+        assert modes[name]["add_config_files"] == [
+            "common.json",
+            "futures.json",
+            "futures-instruments.generated.json",
+        ]
     assert modes["backtest.json"]["dry_run"] is True
-    assert modes["dry-run.json"]["dry_run"] is True
+    assert modes["spot.dry-run.json"]["dry_run"] is True
+    assert modes["futures.dry-run.json"]["dry_run"] is True
     assert modes["replay.json"]["dry_run"] is True
     assert modes["contract.json"]["dry_run"] is True
-    assert modes["live.template.json"]["dry_run"] is False
+    assert modes["spot.live.template.json"]["dry_run"] is False
+    assert modes["futures.live.template.json"]["dry_run"] is False
 
-    local_modes = {name: mode for name, mode in modes.items() if name != "live.template.json"}
-    database_urls = {mode["db_url"] for mode in local_modes.values()}
-    assert len(database_urls) == len(local_modes)
-    assert modes["live.template.json"]["db_url"] == "postgresql+psycopg://<set-at-runtime>"
-    assert "sqlite" not in modes["live.template.json"]["db_url"]
-    assert "dry_run_wallet" not in modes["live.template.json"]
+    database_urls = {mode["db_url"] for mode in modes.values()}
+    bot_identities = {mode["bot_name"] for mode in modes.values()}
+    assert len(database_urls) == len(modes)
+    assert len(bot_identities) == len(modes)
+    for name in ("spot.live.template.json", "futures.live.template.json"):
+        assert modes[name]["db_url"].startswith("postgresql+psycopg://<")
+        assert "sqlite" not in modes[name]["db_url"]
+        assert "dry_run_wallet" not in modes[name]
 
-    serialized_live = json.dumps(modes["live.template.json"], sort_keys=True).lower()
+    serialized_live = json.dumps(
+        [modes["spot.live.template.json"], modes["futures.live.template.json"]],
+        sort_keys=True,
+    ).lower()
     for forbidden_key in ('"key"', '"secret"', '"password"', '"token"'):
         assert forbidden_key not in serialized_live
 
@@ -153,21 +214,45 @@ def test_p3_02_has_one_fail_closed_freqtrade_strategy() -> None:
 
 
 def test_p3_02_config_selects_risk_sized_strategy_and_disables_position_adjustment() -> None:
-    common = load_json("common.json")
-    assert common["strategy"] == "DonchianTrendStrategy"
-    assert common["timeframe"] == "4h"
-    assert common["trading_mode"] == "spot"
-    assert common["position_adjustment_enable"] is False
-    assert common["stake_amount"] == "unlimited"
-    assert common["use_exit_signal"] is True
-    assert common["exit_profit_only"] is False
-    assert common["ignore_roi_if_entry_signal"] is False
-    assert "telegram" not in common
+    spot = load_freqtrade_config_chain(
+        "spot.dry-run.json",
+        config_root=CONFIG_ROOT,
+        market=MarketKind.SPOT,
+    ).merged
+    futures = load_freqtrade_config_chain(
+        "futures.dry-run.json",
+        config_root=CONFIG_ROOT,
+        market=MarketKind.FUTURES,
+    ).merged
+    assert spot["strategy"] == "DonchianTrendStrategy"
+    assert spot["timeframe"] == "4h"
+    assert spot["trading_mode"] == "spot"
+    assert futures["trading_mode"] == "futures"
+    assert futures["margin_mode"] == "isolated"
+    assert spot["position_adjustment_enable"] is False
+    assert futures["position_adjustment_enable"] is False
+    assert spot["stake_amount"] == "unlimited"
+    assert spot["use_exit_signal"] is True
+    assert spot["exit_profit_only"] is False
+    assert spot["ignore_roi_if_entry_signal"] is False
+    assert "telegram" not in spot
+    assert "telegram" not in futures
     expected_pricing = {
         "price_side": "same",
         "use_order_book": True,
         "order_book_top": 1,
         "price_last_balance": 0.0,
     }
-    assert common["entry_pricing"] == expected_pricing
-    assert common["exit_pricing"] == expected_pricing
+    assert spot["entry_pricing"] == expected_pricing
+    assert spot["exit_pricing"] == expected_pricing
+
+
+def test_effective_config_validates_both_merged_runtime_instances() -> None:
+    effective = load_effective_config(PROJECT_ROOT, environ={})
+
+    assert effective.execution_ready is True
+    assert effective.warnings == ()
+    assert (
+        effective.source_sha256["freqtrade_spot_merged"]
+        != effective.source_sha256["freqtrade_futures_merged"]
+    )

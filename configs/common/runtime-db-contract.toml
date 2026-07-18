@@ -17,10 +17,15 @@ backend = "sqlite"
 db_url = "sqlite:////freqtrade/user_data/db/backtest.sqlite"
 identity = "backtest"
 
-[environments.dry_run]
+[environments.spot_dry_run]
 backend = "sqlite"
-db_url = "sqlite:////freqtrade/user_data/db/dry-run.sqlite"
-identity = "dry-run"
+db_url = "sqlite:////freqtrade/user_data/db/spot.dry-run.sqlite"
+identity = "spot-dry-run"
+
+[environments.futures_dry_run]
+backend = "sqlite"
+db_url = "sqlite:////freqtrade/user_data/db/futures.dry-run.sqlite"
+identity = "futures-dry-run"
 
 [environments.replay]
 backend = "sqlite"
@@ -32,11 +37,20 @@ backend = "sqlite"
 db_url = "sqlite:////freqtrade/user_data/db/contract.sqlite"
 identity = "testnet-contract"
 
-[environments.live_canary]
+[environments.spot_live_canary]
 backend = "postgresql"
-db_url_env = "FREQTRADE__DB_URL"
-database = "alphamind_live"
-schema = "freqtrade_live"
-owner_role = "freqtrade_live_owner"
-watchdog_role = "freqtrade_live_watchdog"
-identity = "live-canary"
+db_url_env = "ALPHAMIND_SPOT_FREQTRADE_DB_URL"
+database = "alphamind_spot_live"
+schema = "freqtrade_spot_live"
+owner_role = "freqtrade_spot_live_owner"
+watchdog_role = "freqtrade_spot_live_watchdog"
+identity = "spot-live-canary"
+
+[environments.futures_live_canary]
+backend = "postgresql"
+db_url_env = "ALPHAMIND_FUTURES_FREQTRADE_DB_URL"
+database = "alphamind_futures_live"
+schema = "freqtrade_futures_live"
+owner_role = "freqtrade_futures_live_owner"
+watchdog_role = "freqtrade_futures_live_watchdog"
+identity = "futures-live-canary"

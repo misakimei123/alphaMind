@@ -1,0 +1,222 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/news-source-registry.schema.yaml
+title: alphaMind NewsSourceRegistry v1
+description: Configurable, credential-free initial news source and normalization policy.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - registry_id
+  - checked_at_utc
+  - instrument_registry_path
+  - normalization
+  - availability_policy
+  - sources
+properties:
+  schema_version:
+    const: 1
+  registry_id:
+    type: string
+    pattern: "^[a-z][a-z0-9_-]{2,63}$"
+  checked_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  instrument_registry_path:
+    const: configs/alphamind/instruments.example.yaml
+  normalization:
+    type: object
+    additionalProperties: false
+    required:
+      - title_max_characters
+      - summary_max_characters
+      - item_text_max_characters
+      - cycle_text_max_characters
+      - future_clock_skew_seconds
+      - deduplication_keys
+      - strip_active_content
+    properties:
+      title_max_characters:
+        type: integer
+        minimum: 50
+        maximum: 300
+      summary_max_characters:
+        type: integer
+        minimum: 200
+        maximum: 2000
+      item_text_max_characters:
+        type: integer
+        minimum: 500
+        maximum: 10000
+      cycle_text_max_characters:
+        type: integer
+        minimum: 2000
+        maximum: 50000
+      future_clock_skew_seconds:
+        type: integer
+        minimum: 0
+        maximum: 300
+      deduplication_keys:
+        const: [canonical_url, title_sha256, content_sha256]
+      strip_active_content:
+        const: true
+  availability_policy:
+    type: object
+    additionalProperties: false
+    required:
+      - minimum_healthy_sources_for_risk_increase
+      - no_healthy_source_allowed_actions
+      - unknown_asset_mapping
+    properties:
+      minimum_healthy_sources_for_risk_increase:
+        type: integer
+        minimum: 1
+        maximum: 10
+      no_healthy_source_allowed_actions:
+        const: [HOLD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+      unknown_asset_mapping:
+        const: MARKET
+  sources:
+    type: array
+    minItems: 2
+    maxItems: 20
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/source"
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  source:
+    type: object
+    additionalProperties: false
+    required:
+      - source_id
+      - enabled
+      - priority
+      - display_name
+      - adapter
+      - endpoint
+      - documentation_url
+      - source_type
+      - trust_tier
+      - language
+      - default_assets
+      - categories
+      - poll_interval_seconds
+      - request_timeout_seconds
+      - maximum_items_per_poll
+      - maximum_item_age_hours
+      - maximum_response_bytes
+      - user_agent_env
+      - request_params
+      - fetch_full_article
+      - untrusted_external_content
+    properties:
+      source_id:
+        type: string
+        pattern: "^[a-z][a-z0-9_-]{2,63}$"
+      enabled:
+        type: boolean
+      priority:
+        type: integer
+        minimum: 1
+        maximum: 100
+      display_name:
+        type: string
+        minLength: 1
+        maxLength: 128
+      adapter:
+        enum: [bybit_announcements_v5, rss_atom]
+      endpoint:
+        type: string
+        format: uri
+        pattern: "^https://"
+        maxLength: 2048
+      documentation_url:
+        type: string
+        format: uri
+        pattern: "^https://"
+      source_type:
+        enum: [exchange_announcement, regulator, media]
+      trust_tier:
+        enum: [official, primary, secondary]
+      language:
+        const: en
+      default_assets:
+        type: array
+        minItems: 1
+        maxItems: 20
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^(?:MARKET|[A-Z][A-Z0-9]{1,15})$"
+      categories:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          enum:
+            - listing
+            - delisting
+            - regulation
+            - security_incident
+            - protocol_update
+            - tokenomics
+            - market_structure
+            - macro
+            - other
+      poll_interval_seconds:
+        type: integer
+        minimum: 300
+        maximum: 3600
+      request_timeout_seconds:
+        type: integer
+        minimum: 5
+        maximum: 30
+      maximum_items_per_poll:
+        type: integer
+        minimum: 1
+        maximum: 100
+      maximum_item_age_hours:
+        type: integer
+        minimum: 1
+        maximum: 72
+      maximum_response_bytes:
+        type: integer
+        minimum: 10000
+        maximum: 5000000
+      user_agent_env:
+        type: string
+        const: ALPHAMIND_NEWS_USER_AGENT
+      request_params:
+        type: object
+        additionalProperties: false
+        properties:
+          locale:
+            const: en-US
+          limit:
+            type: integer
+            minimum: 1
+            maximum: 50
+      fetch_full_article:
+        const: false
+      untrusted_external_content:
+        const: true
+    allOf:
+      - if:
+          properties:
+            adapter: {const: bybit_announcements_v5}
+          required: [adapter]
+        then:
+          properties:
+            endpoint: {const: https://api.bybit.com/v5/announcements/index}
+            source_type: {const: exchange_announcement}
+            trust_tier: {const: official}
+            request_params:
+              required: [locale, limit]
+        else:
+          properties:
+            request_params: {maxProperties: 0}
+$comment: >-
+  Runtime code must additionally enforce unique source ids/priorities, incremental cursors, HTTP
+  content types and size limits, timestamp freshness, deduplication and registry-based asset mapping.

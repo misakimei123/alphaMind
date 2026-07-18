@@ -1,0 +1,19 @@
+schema_version: 1
+news_id: news-20260718T115500Z-0123456789ab
+source:
+  source_id: bybit_announcements
+  display_name: Bybit Announcements
+  source_type: exchange_announcement
+  trust_tier: official
+published_at_utc: "2026-07-18T11:55:00Z"
+fetched_at_utc: "2026-07-18T11:56:00Z"
+title: Example SOL market announcement
+canonical_url: https://example.invalid/news/sol-market-announcement
+summary: Example normalized summary used only by the schema contract fixture.
+assets: [SOL]
+category: market_structure
+language: en
+title_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+content_sha256: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+tags: [market_update]
+untrusted_external_content: true

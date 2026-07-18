@@ -11,8 +11,6 @@
   "use_exit_signal": true,
   "exit_profit_only": false,
   "ignore_roi_if_entry_signal": false,
-  "trading_mode": "spot",
-  "margin_mode": "",
   "entry_pricing": {
     "price_side": "same",
     "use_order_book": true,
@@ -27,10 +25,6 @@
   },
   "exchange": {
     "name": "bybit",
-    "pair_whitelist": [
-      "BTC/USDT",
-      "ETH/USDT"
-    ],
     "pair_blacklist": []
   },
   "pairlists": [

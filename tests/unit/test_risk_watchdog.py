@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import replace
@@ -9,14 +10,21 @@ from pathlib import Path
 
 import pytest
 
+from alphamind.config import MarketKind, load_instrument_registry
 from alphamind.config.risk_limits import load_risk_limits
+from alphamind.market import load_market_capability_snapshot
 from alphamind.risk.watchdog import (
     WATCHDOG_TARGET_INTERVAL,
     AccountRuntimeObservation,
     CashFlowKind,
     ExternalCashFlow,
+    FuturesPositionObservation,
+    OpenOrderObservation,
+    OrderIntent,
+    OrderSide,
     PeriodBoundary,
     PositionObservation,
+    PositionSide,
     RiskAccountingState,
     WatchdogObservation,
     atomic_publish_snapshot,
@@ -27,6 +35,15 @@ from alphamind.risk.watchdog import (
 
 PROJECT_ROOT = Path(__file__).parents[2]
 RISK_CONFIG = PROJECT_ROOT / "configs" / "common" / "risk-limits.toml"
+INSTRUMENT_REGISTRY = load_instrument_registry(
+    PROJECT_ROOT / "configs" / "alphamind" / "instruments.example.yaml"
+)
+SPOT_PAIRS = INSTRUMENT_REGISTRY.enabled_pairs(MarketKind.SPOT)
+FUTURES_PAIRS = INSTRUMENT_REGISTRY.enabled_pairs(MarketKind.FUTURES)
+MARKET_CAPABILITIES = load_market_capability_snapshot(
+    PROJECT_ROOT / "configs" / "alphamind" / "market-capabilities.snapshot.json",
+    registry=INSTRUMENT_REGISTRY,
+)
 GENERATED_AT = datetime(2026, 7, 17, 12, tzinfo=UTC)
 
 
@@ -41,6 +58,8 @@ def _observation(
     market_observed_at: datetime | None = None,
     account_complete: bool = True,
     market_complete: bool = True,
+    orders_complete: bool = True,
+    orders_observed_at: datetime | None = None,
     runtime_reconciled: bool = True,
     daily_opening_nav: Decimal = Decimal("500"),
     weekly_opening_nav: Decimal = Decimal("500"),
@@ -48,7 +67,7 @@ def _observation(
     baseline: Decimal = Decimal("500"),
     cash_flows: tuple[ExternalCashFlow, ...] = (),
     manual_kill_switch: bool = False,
-    position: PositionObservation | None = None,
+    position: PositionObservation | FuturesPositionObservation | None = None,
 ) -> WatchdogObservation:
     if position is None:
         position = PositionObservation(
@@ -68,10 +87,14 @@ def _observation(
             quote_cash=quote_cash,
             available_balance_quote=quote_cash,
             positions=(position,),
+            open_orders=(),
             accrued_fees=accrued_fees,
             known_liabilities=known_liabilities,
             unexplained_balance_difference=unexplained_balance_difference,
-            pending_entry_exposure_quote=Decimal("20"),
+            available_margin_quote=quote_cash,
+            used_margin_quote=Decimal("0"),
+            orders_observed_at_utc=orders_observed_at or GENERATED_AT - timedelta(seconds=4),
+            orders_complete=orders_complete,
             account_complete=account_complete,
             runtime_reconciled=runtime_reconciled,
         ),
@@ -100,6 +123,8 @@ def _build(observation: WatchdogObservation) -> dict[str, object]:
     return build_risk_snapshot(
         observation,
         load_risk_limits(RISK_CONFIG),
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
         risk_config_sha256=risk_config_sha256(RISK_CONFIG),
         producer_version="0.1.0",
     )
@@ -187,6 +212,217 @@ def test_nav_includes_unrealized_mark_and_accrued_fees() -> None:
     assert accounting["nav"] == "489.00"
     assert accounting["daily_pnl"] == "-11.00"
     assert _decision(snapshot)["reason_codes"] == ["daily_loss_limit_reached"]
+
+
+@pytest.mark.parametrize("pair", ["SOL/USDT", "HYPE/USDT"])
+def test_registry_spot_pairs_are_accepted_without_code_changes(pair: str) -> None:
+    position = PositionObservation(
+        pair=pair,
+        base_quantity=Decimal("1"),
+        best_bid=Decimal("200"),
+        last_trade=Decimal("201"),
+    )
+
+    snapshot = _build(_observation(position=position))
+
+    assert _accounting(snapshot)["positions"][0]["pair"] == pair
+
+
+@pytest.mark.parametrize(
+    ("side", "entry_price", "mark_price", "liquidation_price"),
+    [
+        (PositionSide.LONG, Decimal("100"), Decimal("110"), Decimal("60")),
+        (PositionSide.SHORT, Decimal("110"), Decimal("100"), Decimal("150")),
+    ],
+)
+def test_futures_long_and_short_include_mark_liquidation_margin_and_funding(
+    side: PositionSide,
+    entry_price: Decimal,
+    mark_price: Decimal,
+    liquidation_price: Decimal,
+) -> None:
+    position = FuturesPositionObservation(
+        pair="SOL/USDT:USDT",
+        side=side,
+        quantity=Decimal("1"),
+        entry_price=entry_price,
+        mark_price=mark_price,
+        liquidation_price=liquidation_price,
+        leverage=Decimal("2"),
+        position_margin_quote=Decimal("50"),
+        maintenance_margin_quote=Decimal("2"),
+        unrealized_pnl_quote=Decimal("10"),
+        funding_rate=Decimal("0.0001"),
+        accrued_funding_quote=Decimal("-1"),
+        next_funding_at_utc=GENERATED_AT + timedelta(hours=4),
+    )
+    observation = _observation(
+        quote_cash=Decimal("500"),
+        position=position,
+        baseline=Decimal("509"),
+        daily_opening_nav=Decimal("509"),
+        weekly_opening_nav=Decimal("509"),
+        high_water_mark=Decimal("509"),
+    )
+    account = replace(
+        observation.account,
+        available_balance_quote=Decimal("450"),
+        available_margin_quote=Decimal("450"),
+        used_margin_quote=Decimal("50"),
+    )
+
+    snapshot = _build(replace(observation, account=account))
+
+    accounting = _accounting(snapshot)
+    raw_position = accounting["positions"][0]
+    assert accounting["nav"] == "509"
+    assert accounting["futures_unrealized_pnl_quote"] == "10"
+    assert accounting["accrued_funding_quote"] == "-1"
+    assert raw_position["market"] == "linear_perpetual"
+    assert raw_position["side"] == side.value
+    assert Decimal(raw_position["liquidation_buffer_fraction"]) > 0
+
+
+def test_open_orders_derive_pending_exposure_by_market_and_direction() -> None:
+    def order(
+        order_id: str,
+        pair: str,
+        market: MarketKind,
+        position_side: PositionSide,
+        quantity: str,
+        filled: str,
+        price: str,
+    ) -> OpenOrderObservation:
+        return OpenOrderObservation(
+            order_id=order_id,
+            pair=pair,
+            market=market,
+            side=(OrderSide.BUY if position_side is PositionSide.LONG else OrderSide.SELL),
+            position_side=position_side,
+            intent=OrderIntent.ENTRY,
+            order_type="limit",
+            quantity=Decimal(quantity),
+            filled_quantity=Decimal(filled),
+            reference_price=Decimal(price),
+            reduce_only=False,
+            created_at_utc=GENERATED_AT - timedelta(minutes=2),
+            updated_at_utc=GENERATED_AT - timedelta(seconds=2),
+        )
+
+    orders = (
+        order(
+            "spot-entry",
+            "BTC/USDT",
+            MarketKind.SPOT,
+            PositionSide.LONG,
+            "0.002",
+            "0.001",
+            "20000",
+        ),
+        order(
+            "futures-long-entry",
+            "SOL/USDT:USDT",
+            MarketKind.FUTURES,
+            PositionSide.LONG,
+            "1",
+            "0",
+            "100",
+        ),
+        order(
+            "futures-short-entry",
+            "ETH/USDT:USDT",
+            MarketKind.FUTURES,
+            PositionSide.SHORT,
+            "2",
+            "0",
+            "50",
+        ),
+    )
+    observation = _observation()
+    account = replace(observation.account, open_orders=orders)
+
+    snapshot = _build(replace(observation, account=account))
+
+    exposure = snapshot["exposure"]
+    assert exposure["pending_spot_entry_exposure_quote"] == "20.000"
+    assert exposure["pending_futures_long_entry_exposure_quote"] == "100"
+    assert exposure["pending_futures_short_entry_exposure_quote"] == "100"
+    assert exposure["pending_entry_exposure_quote"] == "220.000"
+    assert len(snapshot["open_orders"]) == 3
+
+
+def test_protection_order_is_expressed_but_does_not_add_pending_entry_risk() -> None:
+    protection = OpenOrderObservation(
+        order_id="spot-stop",
+        pair="BTC/USDT",
+        market=MarketKind.SPOT,
+        side=OrderSide.SELL,
+        position_side=PositionSide.LONG,
+        intent=OrderIntent.STOP_LOSS,
+        order_type="stop_market",
+        quantity=Decimal("0.01"),
+        filled_quantity=Decimal("0"),
+        reference_price=Decimal("18000"),
+        trigger_price=Decimal("18000"),
+        reduce_only=True,
+        created_at_utc=GENERATED_AT - timedelta(minutes=2),
+        updated_at_utc=GENERATED_AT - timedelta(seconds=2),
+    )
+    observation = _observation()
+    account = replace(observation.account, open_orders=(protection,))
+
+    snapshot = _build(replace(observation, account=account))
+
+    assert snapshot["exposure"]["pending_entry_exposure_quote"] == "0"
+    assert snapshot["open_orders"][0]["intent"] == "stop_loss"
+    with pytest.raises(ValueError, match="side is inconsistent"):
+        _build(
+            replace(
+                observation,
+                account=replace(account, open_orders=(replace(protection, side=OrderSide.BUY),)),
+            )
+        )
+
+
+def test_futures_leverage_and_liquidation_relationship_fail_closed() -> None:
+    position = FuturesPositionObservation(
+        pair="HYPE/USDT:USDT",
+        side=PositionSide.LONG,
+        quantity=Decimal("1"),
+        entry_price=Decimal("10"),
+        mark_price=Decimal("11"),
+        liquidation_price=Decimal("8"),
+        leverage=Decimal("2"),
+        position_margin_quote=Decimal("5.5"),
+        maintenance_margin_quote=Decimal("0.1"),
+        unrealized_pnl_quote=Decimal("1"),
+        funding_rate=Decimal("0.0001"),
+        accrued_funding_quote=Decimal("0"),
+        next_funding_at_utc=GENERATED_AT + timedelta(hours=4),
+    )
+    observation = _observation(position=position)
+    account = replace(observation.account, used_margin_quote=Decimal("5.5"))
+    with pytest.raises(ValueError, match="leverage exceeds"):
+        _build(replace(observation, account=account))
+
+    valid_leverage = replace(position, leverage=Decimal("1"))
+    account = replace(
+        account, positions=(replace(valid_leverage, liquidation_price=Decimal("12")),)
+    )
+    with pytest.raises(ValueError, match="liquidation price"):
+        _build(replace(observation, account=account))
+
+
+def test_position_outside_instrument_registry_is_rejected() -> None:
+    position = PositionObservation(
+        pair="XRP/USDT",
+        base_quantity=Decimal("1"),
+        best_bid=Decimal("2"),
+        last_trade=Decimal("2.1"),
+    )
+
+    with pytest.raises(ValueError, match="Instrument Registry"):
+        _build(_observation(position=position))
 
 
 def test_pending_cash_flow_review_remains_close_only_after_event_cycle() -> None:
@@ -278,6 +514,11 @@ def test_kill_conditions_require_manual_review_and_keep_safe_exit(
         ),
         (_observation(account_complete=False), "account_source_incomplete"),
         (_observation(market_complete=False), "market_source_incomplete"),
+        (_observation(orders_complete=False), "open_orders_source_incomplete"),
+        (
+            _observation(orders_observed_at=GENERATED_AT - timedelta(seconds=31)),
+            "open_orders_stale",
+        ),
     ],
 )
 def test_incomplete_stale_or_future_sources_fail_closed(
@@ -322,7 +563,14 @@ def test_atomic_publish_and_load_round_trip(tmp_path: Path) -> None:
     snapshot = _build(_observation())
 
     atomic_publish_snapshot(snapshot, destination)
-    result = load_risk_snapshot(destination, now_utc=GENERATED_AT + timedelta(seconds=15))
+    result = load_risk_snapshot(
+        destination,
+        now_utc=GENERATED_AT + timedelta(seconds=15),
+        allowed_pairs=SPOT_PAIRS,
+        allowed_futures_pairs=FUTURES_PAIRS,
+        expected_registry_sha256=INSTRUMENT_REGISTRY.source_sha256,
+        expected_capability_sha256=MARKET_CAPABILITIES.source_sha256,
+    )
 
     assert result.snapshot == snapshot
     assert result.entry_allowed
@@ -359,7 +607,7 @@ def test_failed_replace_preserves_previous_complete_snapshot(
     [
         (None, GENERATED_AT, "snapshot_missing"),
         ("{partial", GENERATED_AT, "snapshot_corrupt"),
-        ('{"schema_version": 2}', GENERATED_AT, "schema_version_unsupported"),
+        ('{"schema_version": 1}', GENERATED_AT, "schema_version_unsupported"),
     ],
 )
 def test_snapshot_read_failures_are_local_fail_closed(
@@ -372,7 +620,7 @@ def test_snapshot_read_failures_are_local_fail_closed(
     if contents is not None:
         path.write_text(contents, encoding="utf-8")
 
-    result = load_risk_snapshot(path, now_utc=now)
+    result = load_risk_snapshot(path, now_utc=now, allowed_pairs=SPOT_PAIRS)
 
     assert result.snapshot is None
     assert not result.entry_allowed
@@ -387,8 +635,16 @@ def test_stale_snapshot_and_consumer_clock_skew_fail_closed(tmp_path: Path) -> N
     snapshot = _build(_observation())
     atomic_publish_snapshot(snapshot, path)
 
-    stale = load_risk_snapshot(path, now_utc=GENERATED_AT + timedelta(seconds=60))
-    clock_skew = load_risk_snapshot(path, now_utc=GENERATED_AT - timedelta(seconds=6))
+    stale = load_risk_snapshot(
+        path,
+        now_utc=GENERATED_AT + timedelta(seconds=60),
+        allowed_pairs=SPOT_PAIRS,
+    )
+    clock_skew = load_risk_snapshot(
+        path,
+        now_utc=GENERATED_AT - timedelta(seconds=6),
+        allowed_pairs=SPOT_PAIRS,
+    )
 
     assert stale.reason_codes == ("snapshot_stale",)
     assert clock_skew.reason_codes == ("snapshot_clock_skew",)
@@ -402,7 +658,71 @@ def test_semantically_tampered_snapshot_is_rejected_as_corrupt(tmp_path: Path) -
     accounting["nav"] = "999"
     path.write_text(json.dumps(snapshot), encoding="utf-8")
 
-    result = load_risk_snapshot(path, now_utc=GENERATED_AT)
+    result = load_risk_snapshot(path, now_utc=GENERATED_AT, allowed_pairs=SPOT_PAIRS)
 
     assert result.reason_codes == ("snapshot_corrupt",)
     assert result.safe_exit_allowed
+
+
+def test_snapshot_hash_and_config_bindings_reject_tampering(tmp_path: Path) -> None:
+    path = tmp_path / "risk-snapshot.json"
+    snapshot = _build(_observation())
+    snapshot["producer_version"] = "0.1.1"
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    content_tampered = load_risk_snapshot(path, now_utc=GENERATED_AT)
+    assert content_tampered.reason_codes == ("snapshot_corrupt",)
+
+    atomic_publish_snapshot(_build(_observation()), path)
+    binding_mismatch = load_risk_snapshot(
+        path,
+        now_utc=GENERATED_AT,
+        expected_registry_sha256="0" * 64,
+    )
+    assert binding_mismatch.reason_codes == ("snapshot_corrupt",)
+
+
+def test_consumer_rechecks_futures_leverage_against_capability(tmp_path: Path) -> None:
+    position = FuturesPositionObservation(
+        pair="HYPE/USDT:USDT",
+        side=PositionSide.LONG,
+        quantity=Decimal("1"),
+        entry_price=Decimal("10"),
+        mark_price=Decimal("11"),
+        liquidation_price=Decimal("8"),
+        leverage=Decimal("1"),
+        position_margin_quote=Decimal("11"),
+        maintenance_margin_quote=Decimal("0.1"),
+        unrealized_pnl_quote=Decimal("1"),
+        funding_rate=Decimal("0.0001"),
+        accrued_funding_quote=Decimal("0"),
+        next_funding_at_utc=GENERATED_AT + timedelta(hours=4),
+    )
+    observation = _observation(
+        quote_cash=Decimal("500"),
+        position=position,
+        baseline=Decimal("501"),
+        daily_opening_nav=Decimal("501"),
+        weekly_opening_nav=Decimal("501"),
+        high_water_mark=Decimal("501"),
+    )
+    account = replace(observation.account, used_margin_quote=Decimal("11"))
+    snapshot = _build(replace(observation, account=account))
+    snapshot["accounting"]["positions"][0]["leverage"] = "2"
+    identity_document = dict(snapshot)
+    identity_document.pop("snapshot_id")
+    identity = hashlib.sha256(
+        json.dumps(identity_document, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:12]
+    snapshot["snapshot_id"] = f"risk-20260717T120000Z-{identity}"
+    path = tmp_path / "risk-snapshot.json"
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    result = load_risk_snapshot(
+        path,
+        now_utc=GENERATED_AT,
+        allowed_futures_pairs=FUTURES_PAIRS,
+        maximum_futures_leverage={"HYPE/USDT:USDT": Decimal("1")},
+    )
+
+    assert result.reason_codes == ("snapshot_corrupt",)

@@ -1,5 +1,7 @@
 # ADR-0004：首个策略冻结为 4h Donchian 趋势基线
 
+> 2026-07-18 定位修订：本 ADR 继续描述已实现的 Donchian 历史研究基线，但该策略不再是 AI MVP 的唯一交易权威，也不限制 Instrument Registry、30 分钟决策周期或 Spot/Futures。当前范围和任务以 [完整开发计划](../development-plan.md) 为准。
+
 | 元数据 | 内容 |
 |---|---|
 | 状态 | DONE |

@@ -5,6 +5,10 @@ from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
+from alphamind.config import load_instrument_registry
+from alphamind.market import load_market_capability_snapshot
 from alphamind.risk.freqtrade_adapter import (
     calculate_initial_stop_price,
     calculate_runtime_entry_approval,
@@ -16,6 +20,13 @@ from alphamind.risk.watchdog import SnapshotReadResult
 
 PROJECT_ROOT = Path(__file__).parents[2]
 RISK_CONFIG_PATH = PROJECT_ROOT / "configs/common/freqtrade-risk-adapter.toml"
+INSTRUMENT_REGISTRY = load_instrument_registry(
+    PROJECT_ROOT / "configs/alphamind/instruments.example.yaml"
+)
+MARKET_CAPABILITIES = load_market_capability_snapshot(
+    PROJECT_ROOT / "configs/alphamind/market-capabilities.snapshot.json",
+    registry=INSTRUMENT_REGISTRY,
+)
 
 
 def snapshot_result(
@@ -53,7 +64,11 @@ def snapshot_result(
 
 
 def test_runtime_config_matches_frozen_research_and_exchange_inputs() -> None:
-    config = load_freqtrade_risk_config(RISK_CONFIG_PATH)
+    config = load_freqtrade_risk_config(
+        RISK_CONFIG_PATH,
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
+    )
     walk_forward = (PROJECT_ROOT / "configs/research/walk-forward-v1.toml").read_text(
         encoding="utf-8"
     )
@@ -70,6 +85,13 @@ def test_runtime_config_matches_frozen_research_and_exchange_inputs() -> None:
     assert config.atr_period == 20
     assert config.stop_multiple == Decimal("2.0")
     assert config.maximum_holding_time_enabled is False
+    assert config.enabled_spot_pairs == frozenset({"BTC/USDT", "ETH/USDT", "SOL/USDT", "HYPE/USDT"})
+    assert config.instrument_registry_sha256 == INSTRUMENT_REGISTRY.source_sha256
+    assert config.market_capability_snapshot_sha256 == MARKET_CAPABILITIES.source_sha256
+    assert config.enabled_futures_pairs == frozenset(
+        {"BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT", "HYPE/USDT:USDT"}
+    )
+    assert config.futures_max_leverage["HYPE/USDT:USDT"] == Decimal("1")
     for value in (
         'symbol_exposure_fraction = "0.40"',
         'directional_exposure_fraction = "0.70"',
@@ -86,15 +108,23 @@ def test_runtime_config_matches_frozen_research_and_exchange_inputs() -> None:
         assert value in execution
     market_by_pair = {market["symbol"]: market for market in metadata["markets"]}
     for pair, constraint in config.pairs.items():
+        if pair not in market_by_pair:
+            continue
         market = market_by_pair[pair]
         assert constraint.price_tick == Decimal(str(market["precision"]["price"]))
         assert constraint.quantity_step == Decimal(str(market["precision"]["amount"]))
         assert constraint.minimum_quantity == Decimal(str(market["limits"]["amount"]["min"]))
         assert constraint.minimum_notional == Decimal(str(market["limits"]["cost"]["min"]))
+    assert config.pairs["SOL/USDT"].quantity_step == Decimal("0.0001")
+    assert config.pairs["HYPE/USDT"].price_tick == Decimal("0.01")
 
 
 def test_runtime_snapshot_and_backtest_contexts_use_identical_position_formula() -> None:
-    config = load_freqtrade_risk_config(RISK_CONFIG_PATH)
+    config = load_freqtrade_risk_config(
+        RISK_CONFIG_PATH,
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
+    )
     approval = calculate_runtime_entry_approval(
         snapshot_result(),
         config,
@@ -115,8 +145,31 @@ def test_runtime_snapshot_and_backtest_contexts_use_identical_position_formula()
     assert approval.approved_stake == approval.approved_quantity * approval.reference_rate
 
 
+def test_registry_controls_risk_constraint_membership_and_supports_new_pairs() -> None:
+    mismatched_registry = replace(INSTRUMENT_REGISTRY, source_sha256="0" * 64)
+
+    with pytest.raises(ValueError, match="does not match"):
+        load_freqtrade_risk_config(
+            RISK_CONFIG_PATH,
+            mismatched_registry,
+            MARKET_CAPABILITIES,
+        )
+
+    config = load_freqtrade_risk_config(
+        RISK_CONFIG_PATH,
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
+    )
+
+    assert set(config.pairs) == {"BTC/USDT", "ETH/USDT", "SOL/USDT", "HYPE/USDT"}
+
+
 def test_missing_or_overcommitted_snapshot_rejects_runtime_stake() -> None:
-    config = load_freqtrade_risk_config(RISK_CONFIG_PATH)
+    config = load_freqtrade_risk_config(
+        RISK_CONFIG_PATH,
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
+    )
     common = {
         "config": config,
         "pair": "ETH/USDT",
@@ -136,7 +189,11 @@ def test_missing_or_overcommitted_snapshot_rejects_runtime_stake() -> None:
 
 
 def test_initial_stop_is_fixed_to_actual_fill_and_never_widens() -> None:
-    config = load_freqtrade_risk_config(RISK_CONFIG_PATH)
+    config = load_freqtrade_risk_config(
+        RISK_CONFIG_PATH,
+        INSTRUMENT_REGISTRY,
+        MARKET_CAPABILITIES,
+    )
     stop = calculate_initial_stop_price(
         config,
         pair="BTC/USDT",

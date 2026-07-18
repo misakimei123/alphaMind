@@ -8,32 +8,27 @@ import subprocess
 import sys
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 from urllib.parse import unquote
 
-MARKDOWN_LINK = re.compile(r"!?\[[^\]\n]*\]\((?P<target>[^)\n]+)\)")
+from detect_secrets.core.secrets_collection import SecretsCollection
+from detect_secrets.settings import transient_settings
+from markdown_it import MarkdownIt
+
 URI_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-SENSITIVE_ASSIGNMENT = re.compile(
-    r"(?i)\b(api[_-]?key|client[_-]?secret|password|private[_-]?key|access[_-]?token)"
-    r"\b\s*[:=]\s*[\"']([^\"'\r\n]{8,})[\"']"
-)
-HIGH_CONFIDENCE_SECRETS = (
-    ("private key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
-    ("AWS access key", re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")),
-    ("GitHub token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{40,}\b|\bgh[opsu]_[A-Za-z0-9]{36,}\b")),
-    ("Slack token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b")),
-)
 SENSITIVE_FILENAMES = {".env", ".env.local", ".env.production", "id_rsa", "id_ed25519"}
 SENSITIVE_SUFFIXES = {".key", ".pem", ".p12", ".pfx"}
-PLACEHOLDER_MARKERS = {
-    "${",
-    "$env:",
-    "changeme",
-    "example",
-    "fixture",
-    "not-set",
-    "placeholder",
-    "redacted",
+SECRET_BASELINE = ".secrets.baseline"
+DEFAULT_SECRET_SETTINGS: dict[str, object] = {
+    "plugins_used": [
+        {"name": "AWSKeyDetector"},
+        {"name": "GitHubTokenDetector"},
+        {"name": "KeywordDetector"},
+        {"name": "PrivateKeyDetector"},
+        {"name": "SlackDetector"},
+    ]
 }
+MARKDOWN = MarkdownIt("commonmark")
 
 
 def repository_files(root: Path) -> list[Path]:
@@ -49,11 +44,23 @@ def repository_files(root: Path) -> list[Path]:
     return [Path(path) for path in paths if path]
 
 
-def _link_destination(raw_target: str) -> str:
-    target = raw_target.strip()
-    if target.startswith("<") and ">" in target:
-        return target[1 : target.index(">")]
-    return target.split(maxsplit=1)[0]
+def _markdown_destinations(text: str) -> Iterable[tuple[str, int]]:
+    """由 CommonMark token 返回链接目标及其使用位置。"""
+
+    for token in MARKDOWN.parse(text):
+        if token.type != "inline" or token.children is None or token.map is None:
+            continue
+        line = token.map[0] + 1
+        for child in token.children:
+            if child.type in {"softbreak", "hardbreak"}:
+                line += 1
+                continue
+            attribute = "href" if child.type == "link_open" else "src"
+            if child.type not in {"link_open", "image"}:
+                continue
+            destination = child.attrGet(attribute)
+            if isinstance(destination, str) and destination:
+                yield destination, line
 
 
 def scan_markdown_links(root: Path, relative_paths: Iterable[Path]) -> list[str]:
@@ -69,8 +76,7 @@ def scan_markdown_links(root: Path, relative_paths: Iterable[Path]) -> list[str]
         if not file_path.is_file():
             continue
         text = file_path.read_text(encoding="utf-8")
-        for match in MARKDOWN_LINK.finditer(text):
-            destination = _link_destination(match.group("target"))
+        for destination, line in _markdown_destinations(text):
             if (
                 not destination
                 or destination.startswith(("#", "//"))
@@ -79,7 +85,6 @@ def scan_markdown_links(root: Path, relative_paths: Iterable[Path]) -> list[str]
                 continue
             path_part = unquote(destination.split("#", 1)[0].split("?", 1)[0])
             candidate = (file_path.parent / path_part.replace("\\", "/")).resolve()
-            line = text.count("\n", 0, match.start()) + 1
             if not candidate.is_relative_to(resolved_root):
                 findings.append(f"{display_path}:{line}: local link escapes repository")
             elif not candidate.exists():
@@ -87,37 +92,70 @@ def scan_markdown_links(root: Path, relative_paths: Iterable[Path]) -> list[str]
     return findings
 
 
-def _is_placeholder(value: str) -> bool:
-    normalized = value.strip().lower()
-    return normalized.startswith("<") or any(marker in normalized for marker in PLACEHOLDER_MARKERS)
+def _secret_policy(root: Path) -> tuple[dict[str, object], set[tuple[str, str, str]]]:
+    path = root / SECRET_BASELINE
+    if not path.is_file():
+        return DEFAULT_SECRET_SETTINGS, set()
+    document = json.loads(path.read_text(encoding="utf-8"))
+    plugins = document.get("plugins_used")
+    filters = document.get("filters_used")
+    if not isinstance(plugins, list) or not isinstance(filters, list):
+        raise ValueError(f"{SECRET_BASELINE} must define plugins_used and filters_used")
+    settings: dict[str, object] = {"plugins_used": plugins, "filters_used": filters}
+    results = document.get("results", {})
+    if not isinstance(results, dict):
+        raise ValueError(f"{SECRET_BASELINE} results must be an object")
+    fingerprints: set[tuple[str, str, str]] = set()
+    for raw_path, raw_findings in results.items():
+        if not isinstance(raw_path, str) or not isinstance(raw_findings, list):
+            raise ValueError(f"{SECRET_BASELINE} contains an invalid result")
+        for raw_finding in raw_findings:
+            if not isinstance(raw_finding, dict):
+                raise ValueError(f"{SECRET_BASELINE} contains an invalid finding")
+            finding: dict[str, Any] = raw_finding
+            detector = finding.get("type")
+            hashed_secret = finding.get("hashed_secret")
+            if not isinstance(detector, str) or not isinstance(hashed_secret, str):
+                raise ValueError(f"{SECRET_BASELINE} finding is incomplete")
+            fingerprints.add((raw_path.replace("\\", "/"), detector, hashed_secret))
+    return settings, fingerprints
 
 
 def scan_secrets(root: Path, relative_paths: Iterable[Path]) -> list[str]:
-    """只报告高置信度 secret，输出中不回显疑似凭据内容。"""
+    """使用 detect-secrets 报告新 secret，输出中不回显疑似凭据内容。"""
 
     findings: list[str] = []
+    settings, baseline = _secret_policy(root)
+    candidates: list[tuple[Path, str]] = []
     for relative_path in relative_paths:
         file_path = root / relative_path
         display_path = relative_path.as_posix()
         if not file_path.is_file():
             continue
+        if display_path == SECRET_BASELINE:
+            continue
         lower_name = relative_path.name.lower()
         if lower_name in SENSITIVE_FILENAMES or relative_path.suffix.lower() in SENSITIVE_SUFFIXES:
             findings.append(f"{display_path}: sensitive filename must not be tracked")
             continue
-        try:
-            text = file_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        for label, pattern in HIGH_CONFIDENCE_SECRETS:
-            for match in pattern.finditer(text):
-                line = text.count("\n", 0, match.start()) + 1
-                findings.append(f"{display_path}:{line}: suspected {label}")
-        for match in SENSITIVE_ASSIGNMENT.finditer(text):
-            if _is_placeholder(match.group(2)):
+        candidates.append((file_path, display_path))
+
+    secrets = SecretsCollection()
+    with transient_settings(settings):
+        for file_path, _ in candidates:
+            secrets.scan_file(str(file_path))
+    detected = secrets.json()
+    for file_path, display_path in candidates:
+        for raw_finding in detected.get(str(file_path), []):
+            detector = raw_finding.get("type")
+            hashed_secret = raw_finding.get("hashed_secret")
+            line = raw_finding.get("line_number")
+            if not isinstance(detector, str) or not isinstance(hashed_secret, str):
                 continue
-            line = text.count("\n", 0, match.start()) + 1
-            findings.append(f"{display_path}:{line}: suspected sensitive assignment")
+            if (display_path, detector, hashed_secret) in baseline:
+                continue
+            line_suffix = f":{line}" if isinstance(line, int) else ""
+            findings.append(f"{display_path}{line_suffix}: suspected secret ({detector})")
     return findings
 
 

@@ -1,0 +1,15 @@
+schema_version: 1
+event_id: 018f1000-1234-7abc-8def-0123456789ab
+proposal_id: proposal-20260718T120000Z-0123456789ab
+action_id: act-20260718T120000Z-0123456789ab
+event_type: USER_APPROVED
+from_state: PENDING_APPROVAL
+to_state: APPROVED
+occurred_at_utc: "2026-07-18T12:02:00Z"
+actor:
+  actor_type: telegram_user
+  user_id_sha256: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  chat_id_sha256: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+nonce_sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+idempotency_key: telegram:callback:fixture-01
+reason_codes: [USER_CONFIRMED]

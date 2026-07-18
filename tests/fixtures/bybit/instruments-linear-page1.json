@@ -1,0 +1,30 @@
+{
+  "retCode": 0,
+  "retMsg": "OK",
+  "result": {
+    "category": "linear",
+    "list": [
+      {
+        "symbol": "BTCUSDT",
+        "contractType": "LinearPerpetual",
+        "status": "Trading",
+        "baseCoin": "BTC",
+        "quoteCoin": "USDT",
+        "settleCoin": "USDT",
+        "deliveryTime": "0",
+        "priceFilter": {"tickSize": "0.10"},
+        "lotSizeFilter": {
+          "minOrderQty": "0.001",
+          "qtyStep": "0.001",
+          "minNotionalValue": "5",
+          "maxOrderQty": "1500",
+          "maxMktOrderQty": "150"
+        },
+        "leverageFilter": {"maxLeverage": "100"},
+        "fundingInterval": 480
+      }
+    ],
+    "nextPageCursor": "next-linear-page"
+  },
+  "time": 1784370001000
+}

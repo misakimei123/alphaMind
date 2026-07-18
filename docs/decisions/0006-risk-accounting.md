@@ -2,7 +2,7 @@
 
 | 元数据 | 内容 |
 |---|---|
-| 状态 | DONE |
+| 状态 | DONE / v1 Spot 已实现，2026-07-18 进入 RiskSnapshot v2 扩展 |
 | 任务 | P0-06 |
 | 制定日期 | 2026-07-16 |
 | 独立评审 | 项目所有人 misakimei123，2026-07-16 |
@@ -12,6 +12,34 @@
 | 配置基线 | `configs/common/risk-limits.toml` |
 | 机器可读合同 | `data/schemas/risk-snapshot.schema.yaml` |
 | 操作手册 | `docs/runbooks/kill-switch.md` |
+
+## 0. 2026-07-18 风险范围修订
+
+本 ADR 的确定性风险、USDT 会计、现金流调整、高水位、日/周损失、Kill Switch、Close-Only 和 Freqtrade 单一交易写入者继续有效。AI、新闻或 Telegram 均不能修改这些边界。
+
+R1/R5 将 v1 现货会计扩展为：
+
+```text
+NAV = spot_quote_cash
+    + sum(spot_position_conservative_value)
+    + futures_wallet_equity
+    + futures_unrealized_pnl
+    - accrued_fees
+    - known_liabilities
+```
+
+最终公式必须避免把 futures wallet equity 与 margin/UPnL 重复计数，并通过 Bybit 账户类型 fixture 验证。RiskSnapshot v2 还必须包含：
+
+- Instrument Registry 中启用的 spot/futures 市场；
+- long/short 仓位、挂单和条件单；
+- mark price、entry price、liq price、leverage 和 margin；
+- funding rate、累计 funding 与保护单状态；
+- 单标的/组合名义敞口、强平缓冲和剩余风险预算；
+- `ENTRY_ALLOWED/CLOSE_ONLY/KILLED_MANUAL_REVIEW` 及全部 reason codes。
+
+合约新增确定性上限：全局/标的/交易所最大杠杆、合约保证金占 NAV、单标的/组合名义敞口、最小强平缓冲、funding 风险和 futures on-exchange stop。AI 的 requested leverage 只作为建议，最终值由风险代码裁剪。
+
+本文后续 BTC/ETH 现货公式描述历史 v1 口径；R1-04 已升级为 spot/futures RiskSnapshot v2，但 R5-03 完成前仍不得把只读合约会计直接用于真实合约。现有 10%/45 USDT、0.25%/1%/3%/5% 作为保守默认值保留，是否调整由 R0-05 收口。
 
 ## 1. 决策范围
 

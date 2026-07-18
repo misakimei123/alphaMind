@@ -19,6 +19,7 @@ x-freqtrade-base: &freqtrade-base
   volumes:
     - ./configs/freqtrade:/freqtrade/configs:ro
     - ./configs/common:/freqtrade/common:ro
+    - ./configs/alphamind:/freqtrade/alphamind:ro
     - ./src:/freqtrade/src:ro
     - ./user_data:/freqtrade/user_data
 
@@ -78,13 +79,31 @@ services:
       - --config
       - /freqtrade/configs/backtest.json
 
-  dry-run:
+  spot-dry-run:
     <<: *freqtrade-base
-    profiles: [dry-run]
+    profiles: [dry-run, spot-dry-run]
+    environment:
+      PYTHONPATH: /freqtrade/src
+      ALPHAMIND_PROJECT_COMMIT: ${ALPHAMIND_PROJECT_COMMIT:-}
+      FREQTRADE__EXCHANGE__KEY: ${ALPHAMIND_BYBIT_SPOT_API_KEY:-}
+      FREQTRADE__EXCHANGE__SECRET: ${ALPHAMIND_BYBIT_SPOT_API_SECRET:-}
     command:
       - trade
       - --config
-      - /freqtrade/configs/dry-run.json
+      - /freqtrade/configs/spot.dry-run.json
+
+  futures-dry-run:
+    <<: *freqtrade-base
+    profiles: [dry-run, futures-dry-run]
+    environment:
+      PYTHONPATH: /freqtrade/src
+      ALPHAMIND_PROJECT_COMMIT: ${ALPHAMIND_PROJECT_COMMIT:-}
+      FREQTRADE__EXCHANGE__KEY: ${ALPHAMIND_BYBIT_FUTURES_API_KEY:-}
+      FREQTRADE__EXCHANGE__SECRET: ${ALPHAMIND_BYBIT_FUTURES_API_SECRET:-}
+    command:
+      - trade
+      - --config
+      - /freqtrade/configs/futures.dry-run.json
 
   replay:
     <<: *freqtrade-base
@@ -201,4 +220,4 @@ services:
     volumes:
       - ./:/workspace:ro
 
-# live.template.json 故意不映射为 Compose service；P5 批准前不能通过本文件启动 Live。
+# spot/futures live templates 故意不映射为 Compose service；R6 批准前不能通过本文件启动 Live。

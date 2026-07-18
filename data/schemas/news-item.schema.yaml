@@ -1,0 +1,113 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/news-item.schema.yaml
+title: alphaMind NewsItem v1
+description: >-
+  Normalized external news. Text is explicitly untrusted data and never carries tool authority.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - news_id
+  - source
+  - published_at_utc
+  - fetched_at_utc
+  - title
+  - canonical_url
+  - summary
+  - assets
+  - category
+  - language
+  - title_sha256
+  - content_sha256
+  - untrusted_external_content
+properties:
+  schema_version:
+    const: 1
+  news_id:
+    type: string
+    pattern: "^news-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  source:
+    type: object
+    additionalProperties: false
+    required: [source_id, display_name, source_type, trust_tier]
+    properties:
+      source_id:
+        type: string
+        pattern: "^[a-z][a-z0-9_-]{2,63}$"
+      display_name:
+        type: string
+        minLength: 1
+        maxLength: 128
+      source_type:
+        enum:
+          - exchange_announcement
+          - regulator
+          - project_official
+          - security_research
+          - media
+          - aggregator
+      trust_tier:
+        enum: [official, primary, secondary, unverified]
+  published_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  fetched_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  title:
+    type: string
+    minLength: 1
+    maxLength: 300
+  canonical_url:
+    type: string
+    format: uri
+    pattern: "^https://"
+    maxLength: 2048
+  summary:
+    type: string
+    minLength: 1
+    maxLength: 2000
+  assets:
+    type: array
+    minItems: 1
+    maxItems: 20
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(?:MARKET|[A-Z][A-Z0-9]{1,15})$"
+  category:
+    enum:
+      - listing
+      - delisting
+      - regulation
+      - security_incident
+      - protocol_update
+      - tokenomics
+      - market_structure
+      - macro
+      - other
+  language:
+    type: string
+    pattern: "^[a-z]{2}(?:-[A-Z]{2})?$"
+  title_sha256:
+    $ref: "#/$defs/sha256"
+  content_sha256:
+    $ref: "#/$defs/sha256"
+  tags:
+    type: array
+    maxItems: 20
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^[a-z][a-z0-9_-]{1,63}$"
+  untrusted_external_content:
+    const: true
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+$comment: >-
+  Runtime validation must reject future timestamps and stale items from the primary context,
+  deduplicate canonical URL/title/content hashes, and require action news_refs to exist in the cycle.

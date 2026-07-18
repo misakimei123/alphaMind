@@ -1,0 +1,54 @@
+# Dry-run example only. Values here do not authorize live trading or real leverage.
+schema_version: 2
+environment: dry_run
+
+scheduler:
+  decision_cycle_minutes: 30
+  cycle_timeout_seconds: 120
+  news_lookback_hours: 6
+  max_actions_per_cycle: 8
+  state_db_path: user_data/state/cycle-scheduler.sqlite
+  snapshot_directory: user_data/cycles
+
+execution:
+  approval_required: true
+  exchange: bybit
+  instrument_registry_path: configs/alphamind/instruments.example.yaml
+  market_capability_snapshot_path: configs/alphamind/market-capabilities.snapshot.json
+  spot:
+    enabled: true
+    freqtrade_config_path: configs/freqtrade/spot.dry-run.json
+    runtime_db_path: sqlite:////freqtrade/user_data/db/spot.dry-run.sqlite
+    bot_identity: alphamind_spot_dry_run
+    api_key_env: ALPHAMIND_BYBIT_SPOT_API_KEY
+    api_secret_env: ALPHAMIND_BYBIT_SPOT_API_SECRET
+  futures:
+    enabled: true
+    freqtrade_config_path: configs/freqtrade/futures.dry-run.json
+    runtime_db_path: sqlite:////freqtrade/user_data/db/futures.dry-run.sqlite
+    bot_identity: alphamind_futures_dry_run
+    api_key_env: ALPHAMIND_BYBIT_FUTURES_API_KEY
+    api_secret_env: ALPHAMIND_BYBIT_FUTURES_API_SECRET
+    margin_mode: isolated
+    position_mode: one_way
+    global_max_leverage: "3"
+
+risk:
+  risk_limits_path: configs/common/risk-limits.toml
+  snapshot_path: user_data/risk/risk-snapshot.json
+  risk_snapshot_max_age_seconds: 60
+  maximum_approval_price_drift_fraction: "0.01"
+  news_required_for_risk_increase: true
+  allow_add_to_losing_position: false
+
+decision:
+  ai_profile_path: configs/alphamind/ai-profile.example.yaml
+  news_source_registry_path: configs/alphamind/news-sources.example.yaml
+
+approval:
+  channel: telegram
+  ttl_minutes: 10
+  bot_token_env: ALPHAMIND_TELEGRAM_BOT_TOKEN
+  allowed_user_ids_env: ALPHAMIND_TELEGRAM_ALLOWED_USER_IDS
+  allowed_chat_ids_env: ALPHAMIND_TELEGRAM_ALLOWED_CHAT_IDS
+  callback_secret_env: ALPHAMIND_TELEGRAM_CALLBACK_SECRET

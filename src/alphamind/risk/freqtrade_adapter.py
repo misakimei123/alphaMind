@@ -10,6 +10,8 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from alphamind.config.instruments import InstrumentRegistry, MarketKind
+from alphamind.market.capabilities import MarketCapabilitySnapshot
 from alphamind.risk.position_sizing import (
     PositionSizeContext,
     PositionSizeDecision,
@@ -21,7 +23,6 @@ from alphamind.risk.watchdog import SnapshotReadResult
 
 ZERO = Decimal("0")
 ONE = Decimal("1")
-SUPPORTED_PAIRS = frozenset({"BTC/USDT", "ETH/USDT"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +47,11 @@ class FreqtradeRiskConfig:
     fee_rate_per_side: Decimal
     half_spread_rate: Decimal
     slippage_rate_per_side: Decimal
+    instrument_registry_sha256: str
+    market_capability_snapshot_sha256: str
+    enabled_spot_pairs: frozenset[str]
+    enabled_futures_pairs: frozenset[str]
+    futures_max_leverage: Mapping[str, Decimal]
     pairs: Mapping[str, PairConstraint]
 
 
@@ -94,7 +100,11 @@ def _decimal_string(
     return value
 
 
-def load_freqtrade_risk_config(path: str | Path) -> FreqtradeRiskConfig:
+def load_freqtrade_risk_config(
+    path: str | Path,
+    instrument_registry: InstrumentRegistry,
+    market_capabilities: MarketCapabilitySnapshot,
+) -> FreqtradeRiskConfig:
     """一次性加载并严格校验运行时适配配置；callback 不重复读取文件。"""
 
     config_path = Path(path)
@@ -102,7 +112,7 @@ def load_freqtrade_risk_config(path: str | Path) -> FreqtradeRiskConfig:
         root = tomllib.load(stream)
     _require_exact_keys(
         root,
-        {"schema_version", "snapshot_path", "strategy", "risk", "costs", "pairs"},
+        {"schema_version", "snapshot_path", "strategy", "risk", "costs"},
         location="config",
     )
     if type(root["schema_version"]) is not int or root["schema_version"] != 1:
@@ -141,27 +151,31 @@ def load_freqtrade_risk_config(path: str | Path) -> FreqtradeRiskConfig:
         location="costs",
     )
 
-    raw_pairs = _require_mapping(root["pairs"], location="pairs")
-    if set(raw_pairs) != SUPPORTED_PAIRS:
-        raise ValueError("pairs must contain exactly BTC/USDT and ETH/USDT")
+    enabled_spot_pairs = frozenset(instrument_registry.enabled_pairs(MarketKind.SPOT))
+    if market_capabilities.instrument_registry_sha256 != instrument_registry.source_sha256:
+        raise ValueError("market capability snapshot does not match the Instrument Registry")
     pairs: dict[str, PairConstraint] = {}
-    for pair in sorted(SUPPORTED_PAIRS):
-        raw_pair = _require_mapping(raw_pairs[pair], location=f"pairs.{pair}")
-        _require_exact_keys(
-            raw_pair,
-            {"price_tick", "quantity_step", "minimum_quantity", "minimum_notional"},
-            location=f"pairs.{pair}",
-        )
+    for pair in market_capabilities.available_pairs(MarketKind.SPOT):
+        if pair not in enabled_spot_pairs:
+            raise ValueError("market capability contains a spot pair disabled by the Registry")
+        capability = market_capabilities.capability_for_pair(pair, MarketKind.SPOT)
+        assert capability is not None
+        assert capability.price_tick is not None
+        assert capability.quantity_step is not None
+        assert capability.minimum_quantity is not None
+        assert capability.minimum_notional is not None
         pairs[pair] = PairConstraint(
-            price_tick=_decimal_string(raw_pair, "price_tick", location=f"pairs.{pair}"),
-            quantity_step=_decimal_string(raw_pair, "quantity_step", location=f"pairs.{pair}"),
-            minimum_quantity=_decimal_string(
-                raw_pair, "minimum_quantity", location=f"pairs.{pair}"
-            ),
-            minimum_notional=_decimal_string(
-                raw_pair, "minimum_notional", location=f"pairs.{pair}"
-            ),
+            price_tick=capability.price_tick,
+            quantity_step=capability.quantity_step,
+            minimum_quantity=capability.minimum_quantity,
+            minimum_notional=capability.minimum_notional,
         )
+    enabled_futures_pairs = frozenset(market_capabilities.available_pairs(MarketKind.FUTURES))
+    futures_max_leverage: dict[str, Decimal] = {}
+    for pair in enabled_futures_pairs:
+        capability = market_capabilities.capability_for_pair(pair, MarketKind.FUTURES)
+        assert capability is not None and capability.effective_max_leverage is not None
+        futures_max_leverage[pair] = capability.effective_max_leverage
 
     config = FreqtradeRiskConfig(
         snapshot_path=Path(snapshot_path),
@@ -180,6 +194,11 @@ def load_freqtrade_risk_config(path: str | Path) -> FreqtradeRiskConfig:
         fee_rate_per_side=_decimal_string(costs, "fee_rate_per_side", location="costs"),
         half_spread_rate=_decimal_string(costs, "half_spread_rate", location="costs"),
         slippage_rate_per_side=_decimal_string(costs, "slippage_rate_per_side", location="costs"),
+        instrument_registry_sha256=instrument_registry.source_sha256,
+        market_capability_snapshot_sha256=market_capabilities.source_sha256,
+        enabled_spot_pairs=enabled_spot_pairs,
+        enabled_futures_pairs=enabled_futures_pairs,
+        futures_max_leverage=futures_max_leverage,
         pairs=pairs,
     )
     for field_name in (
@@ -300,7 +319,7 @@ def calculate_runtime_entry_approval(
         volatility_cap_quantity=nav * config.volatility_cap_fraction / entry_price,
         symbol_exposure_limit_quote=nav * config.symbol_exposure_fraction,
         current_symbol_exposure_quote=current_symbol_exposure,
-        # v1 快照只有账户级 pending；全部归入当前标的可保证不会低估风险。
+        # v2 保留分市场 pending；现货 adapter 使用账户总 pending，避免低估跨实例并发风险。
         pending_symbol_entry_exposure_quote=pending_exposure,
         directional_exposure_limit_quote=nav * config.directional_exposure_fraction,
         current_directional_exposure_quote=open_exposure,

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.freqtrade.io/schema.json",
+  "trading_mode": "spot",
+  "margin_mode": "",
+  "order_types": {
+    "entry": "limit",
+    "exit": "limit",
+    "emergency_exit": "market",
+    "force_entry": "market",
+    "force_exit": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": false
+  }
+}

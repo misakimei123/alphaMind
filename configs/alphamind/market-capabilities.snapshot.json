@@ -1,0 +1,210 @@
+{
+  "base_url": "https://api.bybit.com",
+  "endpoint": "/v5/market/instruments-info",
+  "environment": "mainnet",
+  "exchange": "bybit",
+  "fetched_at_utc": "2026-07-18T10:50:38Z",
+  "global_max_leverage": "3",
+  "instrument_registry_sha256": "e852fd5e13420087b959b86f9e73368493d7e67160548b6b1ce645115c40bf87",
+  "instruments": [
+    {
+      "enabled": true,
+      "futures": {
+        "available": true,
+        "configured_max_leverage": "2",
+        "contract_type": "LinearPerpetual",
+        "effective_max_leverage": "2",
+        "enabled_by_registry": true,
+        "exchange_max_leverage": "100",
+        "exchange_symbol": "BTCUSDT",
+        "funding_interval_minutes": 480,
+        "market": "futures",
+        "maximum_limit_quantity": "1500",
+        "maximum_market_quantity": "150",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.001",
+        "pair": "BTC/USDT:USDT",
+        "price_tick": "0.1",
+        "quantity_step": "0.001",
+        "status": "Trading",
+        "unavailable_reason": null
+      },
+      "instrument_id": "BTC",
+      "spot": {
+        "available": true,
+        "configured_max_leverage": null,
+        "contract_type": null,
+        "effective_max_leverage": null,
+        "enabled_by_registry": true,
+        "exchange_max_leverage": null,
+        "exchange_symbol": "BTCUSDT",
+        "funding_interval_minutes": null,
+        "market": "spot",
+        "maximum_limit_quantity": "230",
+        "maximum_market_quantity": "120",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.000001",
+        "pair": "BTC/USDT",
+        "price_tick": "0.1",
+        "quantity_step": "0.000001",
+        "status": "Trading",
+        "unavailable_reason": null
+      }
+    },
+    {
+      "enabled": true,
+      "futures": {
+        "available": true,
+        "configured_max_leverage": "2",
+        "contract_type": "LinearPerpetual",
+        "effective_max_leverage": "2",
+        "enabled_by_registry": true,
+        "exchange_max_leverage": "100",
+        "exchange_symbol": "ETHUSDT",
+        "funding_interval_minutes": 480,
+        "market": "futures",
+        "maximum_limit_quantity": "10000",
+        "maximum_market_quantity": "2000",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.01",
+        "pair": "ETH/USDT:USDT",
+        "price_tick": "0.01",
+        "quantity_step": "0.01",
+        "status": "Trading",
+        "unavailable_reason": null
+      },
+      "instrument_id": "ETH",
+      "spot": {
+        "available": true,
+        "configured_max_leverage": null,
+        "contract_type": null,
+        "effective_max_leverage": null,
+        "enabled_by_registry": true,
+        "exchange_max_leverage": null,
+        "exchange_symbol": "ETHUSDT",
+        "funding_interval_minutes": null,
+        "market": "spot",
+        "maximum_limit_quantity": "8118",
+        "maximum_market_quantity": "2706",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.00001",
+        "pair": "ETH/USDT",
+        "price_tick": "0.01",
+        "quantity_step": "0.00001",
+        "status": "Trading",
+        "unavailable_reason": null
+      }
+    },
+    {
+      "enabled": true,
+      "futures": {
+        "available": true,
+        "configured_max_leverage": "2",
+        "contract_type": "LinearPerpetual",
+        "effective_max_leverage": "2",
+        "enabled_by_registry": true,
+        "exchange_max_leverage": "100",
+        "exchange_symbol": "SOLUSDT",
+        "funding_interval_minutes": 480,
+        "market": "futures",
+        "maximum_limit_quantity": "96000",
+        "maximum_market_quantity": "12000",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.1",
+        "pair": "SOL/USDT:USDT",
+        "price_tick": "0.01",
+        "quantity_step": "0.1",
+        "status": "Trading",
+        "unavailable_reason": null
+      },
+      "instrument_id": "SOL",
+      "spot": {
+        "available": true,
+        "configured_max_leverage": null,
+        "contract_type": null,
+        "effective_max_leverage": null,
+        "enabled_by_registry": true,
+        "exchange_max_leverage": null,
+        "exchange_symbol": "SOLUSDT",
+        "funding_interval_minutes": null,
+        "market": "spot",
+        "maximum_limit_quantity": "26000",
+        "maximum_market_quantity": "13000",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.0001",
+        "pair": "SOL/USDT",
+        "price_tick": "0.01",
+        "quantity_step": "0.0001",
+        "status": "Trading",
+        "unavailable_reason": null
+      }
+    },
+    {
+      "enabled": true,
+      "futures": {
+        "available": true,
+        "configured_max_leverage": "1",
+        "contract_type": "LinearPerpetual",
+        "effective_max_leverage": "1",
+        "enabled_by_registry": true,
+        "exchange_max_leverage": "75",
+        "exchange_symbol": "HYPEUSDT",
+        "funding_interval_minutes": 480,
+        "market": "futures",
+        "maximum_limit_quantity": "73500",
+        "maximum_market_quantity": "14700",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.01",
+        "pair": "HYPE/USDT:USDT",
+        "price_tick": "0.001",
+        "quantity_step": "0.01",
+        "status": "Trading",
+        "unavailable_reason": null
+      },
+      "instrument_id": "HYPE",
+      "spot": {
+        "available": true,
+        "configured_max_leverage": null,
+        "contract_type": null,
+        "effective_max_leverage": null,
+        "enabled_by_registry": true,
+        "exchange_max_leverage": null,
+        "exchange_symbol": "HYPEUSDT",
+        "funding_interval_minutes": null,
+        "market": "spot",
+        "maximum_limit_quantity": "7056",
+        "maximum_market_quantity": "3528",
+        "minimum_notional": "5",
+        "minimum_quantity": "0.001",
+        "pair": "HYPE/USDT",
+        "price_tick": "0.01",
+        "quantity_step": "0.001",
+        "status": "Trading",
+        "unavailable_reason": null
+      }
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_id": "capability-20260718T105038Z-4b031ffe64c6",
+  "source": {
+    "page_sha256": {
+      "linear": [
+        "f831bde134bf6ae67e6d60286408bdb10d05f6e6bfcefbbed173286726ea4e58"
+      ],
+      "spot": [
+        "e6527611a1367731d8990294ba39ac2edd0ffb41d5da74bcecb5fc6c38b4f746"
+      ]
+    },
+    "response_sha256": "7a2a6a30d40431cd1cc0bb2054732d46f5bfe38aff114a6e0b66a1ecaed350fc",
+    "server_time_milliseconds": [
+      1784371838804,
+      1784371839432
+    ]
+  },
+  "summary": {
+    "available_futures_count": 4,
+    "available_spot_count": 4,
+    "instrument_count": 4,
+    "unavailable_enabled_markets": []
+  }
+}

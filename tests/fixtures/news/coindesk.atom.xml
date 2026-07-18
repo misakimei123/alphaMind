@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>CoinDesk</title>
+  <id>https://www.coindesk.com/</id>
+  <updated>2026-07-18T12:35:00Z</updated>
+  <entry>
+    <id>tag:coindesk.com,2026:hype-update</id>
+    <title>HYPE protocol upgrade reaches mainnet</title>
+    <link rel="alternate" href="https://www.coindesk.com/markets/2026/07/18/hype-update?fbclid=tracking" />
+    <summary>HYPE completed a protocol upgrade.</summary>
+    <category term="Protocol Update" />
+    <published>2026-07-18T12:35:00Z</published>
+  </entry>
+</feed>

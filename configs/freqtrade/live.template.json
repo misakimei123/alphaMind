@@ -1,9 +1,0 @@
-{
-  "$schema": "https://schema.freqtrade.io/schema.json",
-  "add_config_files": [
-    "common.json"
-  ],
-  "dry_run": false,
-  "bot_name": "alphamind-live-template",
-  "db_url": "postgresql+psycopg://<set-at-runtime>"
-}

@@ -1,0 +1,213 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/trade-action.schema.yaml
+title: alphaMind TradeAction v2
+description: >-
+  Structured AI proposal. The model proposes intent only; deterministic code computes quantity,
+  checks risk and exchange rules, and requires human approval before execution.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - cycle_id
+  - action_id
+  - instrument_id
+  - market
+  - side
+  - action
+  - order_preference
+  - entry
+  - stop_loss
+  - take_profit
+  - reduce_fraction
+  - requested_leverage
+  - target_reference_id
+  - valid_for_seconds
+  - reason_codes
+  - news_refs
+  - rationale
+  - risks
+properties:
+  schema_version:
+    const: 2
+  cycle_id:
+    $ref: "#/$defs/cycle_id"
+  action_id:
+    $ref: "#/$defs/action_id"
+  instrument_id:
+    $ref: "#/$defs/instrument_id"
+  market:
+    enum: [spot, linear_perpetual]
+  side:
+    enum: [long, short]
+  action:
+    enum: [HOLD, OPEN, ADD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+  order_preference:
+    enum: [none, market, limit]
+  entry:
+    anyOf:
+      - $ref: "#/$defs/entry_range"
+      - type: "null"
+  stop_loss:
+    anyOf:
+      - $ref: "#/$defs/positive_decimal"
+      - type: "null"
+  take_profit:
+    type: array
+    maxItems: 5
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/positive_decimal"
+  reduce_fraction:
+    anyOf:
+      - $ref: "#/$defs/nonzero_fraction"
+      - type: "null"
+  requested_leverage:
+    $ref: "#/$defs/positive_decimal"
+  target_reference_id:
+    type: [string, "null"]
+    pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+  valid_for_seconds:
+    type: integer
+    minimum: 30
+    maximum: 1800
+  reason_codes:
+    type: array
+    minItems: 1
+    maxItems: 16
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^[A-Z][A-Z0-9_]{1,63}$"
+  news_refs:
+    type: array
+    maxItems: 20
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^news-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  rationale:
+    type: string
+    minLength: 1
+    maxLength: 1200
+  risks:
+    type: array
+    minItems: 1
+    maxItems: 12
+    uniqueItems: true
+    items:
+      type: string
+      minLength: 1
+      maxLength: 300
+allOf:
+  - if:
+      properties:
+        market: {const: spot}
+      required: [market]
+    then:
+      properties:
+        side: {const: long}
+        requested_leverage: {const: "1"}
+  - if:
+      properties:
+        action: {const: HOLD}
+      required: [action]
+    then:
+      properties:
+        order_preference: {const: none}
+        entry: {type: "null"}
+        stop_loss: {type: "null"}
+        take_profit: {maxItems: 0}
+        reduce_fraction: {type: "null"}
+        target_reference_id: {type: "null"}
+  - if:
+      properties:
+        action: {enum: [OPEN, ADD]}
+      required: [action]
+    then:
+      properties:
+        order_preference: {enum: [market, limit]}
+        entry: {$ref: "#/$defs/entry_range"}
+        stop_loss: {$ref: "#/$defs/positive_decimal"}
+        reduce_fraction: {type: "null"}
+        target_reference_id: {type: "null"}
+  - if:
+      properties:
+        action: {const: REDUCE}
+      required: [action]
+    then:
+      properties:
+        order_preference: {enum: [market, limit]}
+        entry: {type: "null"}
+        reduce_fraction: {$ref: "#/$defs/nonzero_fraction"}
+        target_reference_id: {type: "null"}
+  - if:
+      properties:
+        action: {const: CLOSE}
+      required: [action]
+    then:
+      properties:
+        order_preference: {enum: [market, limit]}
+        entry: {type: "null"}
+        reduce_fraction: {type: "null"}
+        target_reference_id: {type: "null"}
+  - if:
+      properties:
+        action: {const: CANCEL_ORDER}
+      required: [action]
+    then:
+      properties:
+        order_preference: {const: none}
+        entry: {type: "null"}
+        stop_loss: {type: "null"}
+        take_profit: {maxItems: 0}
+        reduce_fraction: {type: "null"}
+        target_reference_id: {type: string}
+  - if:
+      properties:
+        action: {const: REPLACE_PROTECTION}
+      required: [action]
+    then:
+      properties:
+        order_preference: {const: none}
+        entry: {type: "null"}
+        stop_loss: {$ref: "#/$defs/positive_decimal"}
+        reduce_fraction: {type: "null"}
+        target_reference_id: {type: string}
+  - if:
+      properties:
+        reason_codes:
+          contains:
+            enum: [POSITIVE_NEWS, NEGATIVE_NEWS, NEWS_RISK]
+      required: [reason_codes]
+    then:
+      properties:
+        news_refs:
+          minItems: 1
+$defs:
+  cycle_id:
+    type: string
+    pattern: "^cycle-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}$"
+  action_id:
+    type: string
+    pattern: "^act-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  instrument_id:
+    type: string
+    pattern: "^[A-Z][A-Z0-9]{1,15}$"
+  positive_decimal:
+    type: string
+    pattern: "^(?:0\\.0*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$"
+  nonzero_fraction:
+    type: string
+    pattern: "^(?:0\\.[0-9]*[1-9][0-9]*|1(?:\\.0+)?)$"
+  entry_range:
+    type: object
+    additionalProperties: false
+    required: [min, max]
+    properties:
+      min:
+        $ref: "#/$defs/positive_decimal"
+      max:
+        $ref: "#/$defs/positive_decimal"
+$comment: >-
+  Business validation must verify instrument/market membership, min <= max, side-aware stop and
+  targets, referenced news, requested leverage, price drift, risk limits and exchange precision.

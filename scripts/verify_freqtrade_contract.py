@@ -272,6 +272,8 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
 
     audit = importlib.import_module("alphamind.audit")
     risk = importlib.import_module("alphamind.risk")
+    instruments = importlib.import_module("alphamind.config.instruments")
+    capabilities = importlib.import_module("alphamind.market.capabilities")
     risk_limits = importlib.import_module("alphamind.config.risk_limits")
     pandas = importlib.import_module("pandas")
     strategy = strategy_type({})
@@ -297,8 +299,17 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
         limits=audit.OutboxLimits(logical_capacity=2, entry_stop_pending=1),
     )
     strategy._audit_sequence = 0
+    instrument_registry = instruments.load_instrument_registry(
+        PROJECT_ROOT / "configs/alphamind/instruments.example.yaml"
+    )
+    market_capabilities = capabilities.load_market_capability_snapshot(
+        PROJECT_ROOT / "configs/alphamind/market-capabilities.snapshot.json",
+        registry=instrument_registry,
+    )
     adapter_config = risk.load_freqtrade_risk_config(
-        PROJECT_ROOT / "configs/common/freqtrade-risk-adapter.toml"
+        PROJECT_ROOT / "configs/common/freqtrade-risk-adapter.toml",
+        instrument_registry,
+        market_capabilities,
     )
     snapshot_path = Path("/tmp/alphamind-contract-risk-snapshot.json")
     generated_at = datetime(2026, 7, 17, 12, tzinfo=UTC)
@@ -313,10 +324,14 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
             quote_cash=Decimal("500"),
             available_balance_quote=Decimal("500"),
             positions=(),
+            open_orders=(),
             accrued_fees=Decimal("0"),
             known_liabilities=Decimal("0"),
             unexplained_balance_difference=Decimal("0"),
-            pending_entry_exposure_quote=Decimal("0"),
+            available_margin_quote=Decimal("500"),
+            used_margin_quote=Decimal("0"),
+            orders_observed_at_utc=generated_at - timedelta(seconds=3),
+            orders_complete=True,
             account_complete=True,
             runtime_reconciled=True,
         ),
@@ -340,6 +355,8 @@ def verify_risk_callbacks(strategy_type: Any) -> dict[str, object]:
     payload = risk.build_risk_snapshot(
         observation,
         risk_limits.load_risk_limits(limits_path),
+        instrument_registry,
+        market_capabilities,
         risk_config_sha256=risk.risk_config_sha256(limits_path),
         producer_version="0.2.0",
     )

@@ -1,0 +1,233 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/approval-event.schema.yaml
+title: alphaMind ApprovalEvent v1
+description: Immutable state transition for one proposed trade action.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - event_id
+  - proposal_id
+  - action_id
+  - event_type
+  - from_state
+  - to_state
+  - occurred_at_utc
+  - actor
+  - nonce_sha256
+  - idempotency_key
+  - reason_codes
+properties:
+  schema_version:
+    const: 1
+  event_id:
+    type: string
+    format: uuid
+  proposal_id:
+    $ref: "#/$defs/proposal_id"
+  action_id:
+    $ref: "#/$defs/action_id"
+  event_type:
+    enum:
+      - CREATED
+      - VALIDATION_PASSED
+      - APPROVAL_REQUESTED
+      - USER_APPROVED
+      - USER_REJECTED
+      - APPROVAL_EXPIRED
+      - REVALIDATION_STARTED
+      - EXECUTION_QUEUED
+      - EXECUTION_PROGRESS
+      - EXECUTION_SUCCEEDED
+      - EXECUTION_CANCELLED
+      - EXECUTION_FAILED
+  from_state:
+    anyOf:
+      - $ref: "#/$defs/state"
+      - type: "null"
+  to_state:
+    $ref: "#/$defs/state"
+  occurred_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  actor:
+    type: object
+    additionalProperties: false
+    required: [actor_type, user_id_sha256, chat_id_sha256]
+    properties:
+      actor_type:
+        enum: [system, telegram_user, executor]
+      user_id_sha256:
+        anyOf:
+          - $ref: "#/$defs/sha256"
+          - type: "null"
+      chat_id_sha256:
+        anyOf:
+          - $ref: "#/$defs/sha256"
+          - type: "null"
+    allOf:
+      - if:
+          properties:
+            actor_type: {const: telegram_user}
+          required: [actor_type]
+        then:
+          properties:
+            user_id_sha256: {$ref: "#/$defs/sha256"}
+            chat_id_sha256: {$ref: "#/$defs/sha256"}
+        else:
+          properties:
+            user_id_sha256: {type: "null"}
+            chat_id_sha256: {type: "null"}
+  nonce_sha256:
+    anyOf:
+      - $ref: "#/$defs/sha256"
+      - type: "null"
+  idempotency_key:
+    type: string
+    pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$"
+  reason_codes:
+    type: array
+    minItems: 1
+    maxItems: 16
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^[A-Z][A-Z0-9_]{1,63}$"
+allOf:
+  - oneOf:
+      - $ref: "#/$defs/create_transition"
+      - $ref: "#/$defs/draft_validated_transition"
+      - $ref: "#/$defs/validated_pending_transition"
+      - $ref: "#/$defs/pending_decision_transition"
+      - $ref: "#/$defs/approved_revalidating_transition"
+      - $ref: "#/$defs/revalidating_result_transition"
+      - $ref: "#/$defs/queued_result_transition"
+      - $ref: "#/$defs/partial_result_transition"
+  - if:
+      properties:
+        event_type: {enum: [USER_APPROVED, USER_REJECTED]}
+      required: [event_type]
+    then:
+      properties:
+        actor:
+          properties:
+            actor_type: {const: telegram_user}
+        nonce_sha256:
+          $ref: "#/$defs/sha256"
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  proposal_id:
+    type: string
+    pattern: "^proposal-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  action_id:
+    type: string
+    pattern: "^act-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  state:
+    enum:
+      - DRAFT
+      - VALIDATED
+      - PENDING_APPROVAL
+      - APPROVED
+      - REJECTED
+      - EXPIRED
+      - REVALIDATING
+      - QUEUED
+      - EXECUTED
+      - PARTIALLY_FILLED
+      - CANCELLED
+      - FAILED
+  create_transition:
+    properties:
+      event_type: {const: CREATED}
+      from_state: {type: "null"}
+      to_state: {const: DRAFT}
+  draft_validated_transition:
+    properties:
+      event_type: {const: VALIDATION_PASSED}
+      from_state: {const: DRAFT}
+      to_state: {const: VALIDATED}
+  validated_pending_transition:
+    properties:
+      event_type: {const: APPROVAL_REQUESTED}
+      from_state: {const: VALIDATED}
+      to_state: {const: PENDING_APPROVAL}
+  pending_decision_transition:
+    properties:
+      event_type:
+        enum: [USER_APPROVED, USER_REJECTED, APPROVAL_EXPIRED]
+      from_state: {const: PENDING_APPROVAL}
+      to_state:
+        enum: [APPROVED, REJECTED, EXPIRED]
+    oneOf:
+      - properties:
+          event_type: {const: USER_APPROVED}
+          to_state: {const: APPROVED}
+      - properties:
+          event_type: {const: USER_REJECTED}
+          to_state: {const: REJECTED}
+      - properties:
+          event_type: {const: APPROVAL_EXPIRED}
+          to_state: {const: EXPIRED}
+  approved_revalidating_transition:
+    properties:
+      event_type: {const: REVALIDATION_STARTED}
+      from_state: {const: APPROVED}
+      to_state: {const: REVALIDATING}
+  revalidating_result_transition:
+    properties:
+      event_type: {enum: [EXECUTION_QUEUED, APPROVAL_EXPIRED, EXECUTION_CANCELLED, EXECUTION_FAILED]}
+      from_state: {const: REVALIDATING}
+      to_state: {enum: [QUEUED, EXPIRED, CANCELLED, FAILED]}
+    oneOf:
+      - properties:
+          event_type: {const: EXECUTION_QUEUED}
+          to_state: {const: QUEUED}
+      - properties:
+          event_type: {const: APPROVAL_EXPIRED}
+          to_state: {const: EXPIRED}
+      - properties:
+          event_type: {const: EXECUTION_CANCELLED}
+          to_state: {const: CANCELLED}
+      - properties:
+          event_type: {const: EXECUTION_FAILED}
+          to_state: {const: FAILED}
+  queued_result_transition:
+    properties:
+      event_type: {enum: [EXECUTION_PROGRESS, EXECUTION_SUCCEEDED, EXECUTION_CANCELLED, EXECUTION_FAILED]}
+      from_state: {const: QUEUED}
+      to_state: {enum: [PARTIALLY_FILLED, EXECUTED, CANCELLED, FAILED]}
+    oneOf:
+      - properties:
+          event_type: {const: EXECUTION_PROGRESS}
+          to_state: {const: PARTIALLY_FILLED}
+      - properties:
+          event_type: {const: EXECUTION_SUCCEEDED}
+          to_state: {const: EXECUTED}
+      - properties:
+          event_type: {const: EXECUTION_CANCELLED}
+          to_state: {const: CANCELLED}
+      - properties:
+          event_type: {const: EXECUTION_FAILED}
+          to_state: {const: FAILED}
+  partial_result_transition:
+    properties:
+      event_type: {enum: [EXECUTION_SUCCEEDED, EXECUTION_CANCELLED, EXECUTION_FAILED]}
+      from_state: {const: PARTIALLY_FILLED}
+      to_state: {enum: [EXECUTED, CANCELLED, FAILED]}
+    oneOf:
+      - properties:
+          event_type: {const: EXECUTION_SUCCEEDED}
+          to_state: {const: EXECUTED}
+      - properties:
+          event_type: {const: EXECUTION_CANCELLED}
+          to_state: {const: CANCELLED}
+      - properties:
+          event_type: {const: EXECUTION_FAILED}
+          to_state: {const: FAILED}
+$comment: >-
+  The raw callback nonce and full trade parameters must never be stored in Telegram callback data.

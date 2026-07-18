@@ -47,7 +47,7 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_runtime_contract_freezes_five_unique_environments_and_migration_owner() -> None:
+def test_runtime_contract_freezes_isolated_environments_and_migration_owner() -> None:
     contract = load_runtime_database_contract(CONTRACT_PATH)
     manifest = load_runtime_schema_manifest(MANIFEST_PATH)
     runtime_lock = (PROJECT_ROOT / "configs/common/runtime-versions.toml").read_text(
@@ -61,28 +61,37 @@ def test_runtime_contract_freezes_five_unique_environments_and_migration_owner()
     assert contract.rto_seconds == 60
     assert tuple(contract.environments) == (
         "backtest",
-        "dry_run",
+        "spot_dry_run",
+        "futures_dry_run",
         "replay",
         "testnet_contract",
-        "live_canary",
+        "spot_live_canary",
+        "futures_live_canary",
     )
     sqlite_urls = [
         environment.db_url
         for environment in contract.environments.values()
         if environment.backend == "sqlite"
     ]
-    assert len(sqlite_urls) == len(set(sqlite_urls)) == 4
-    live = contract.environments["live_canary"]
-    assert live.db_url is None
-    assert live.db_url_env == "FREQTRADE__DB_URL"
-    assert live.owner_role != live.watchdog_role
+    assert len(sqlite_urls) == len(set(sqlite_urls)) == 5
+    live_environments = [
+        contract.environments["spot_live_canary"],
+        contract.environments["futures_live_canary"],
+    ]
+    assert len({environment.db_url_env for environment in live_environments}) == 2
+    assert len({environment.database for environment in live_environments}) == 2
+    assert len({environment.schema for environment in live_environments}) == 2
+    for live in live_environments:
+        assert live.db_url is None
+        assert live.owner_role != live.watchdog_role
 
 
 def test_freqtrade_configs_match_runtime_contract_without_live_credentials() -> None:
     contract = load_runtime_database_contract(CONTRACT_PATH)
     config_names = {
         "backtest": "backtest.json",
-        "dry_run": "dry-run.json",
+        "spot_dry_run": "spot.dry-run.json",
+        "futures_dry_run": "futures.dry-run.json",
         "replay": "replay.json",
         "testnet_contract": "contract.json",
     }
@@ -91,13 +100,16 @@ def test_freqtrade_configs_match_runtime_contract_without_live_credentials() -> 
             (PROJECT_ROOT / "configs/freqtrade" / config_name).read_text(encoding="utf-8")
         )
         assert config["db_url"] == contract.environments[environment_name].db_url
-    live = json.loads(
-        (PROJECT_ROOT / "configs/freqtrade/live.template.json").read_text(encoding="utf-8")
-    )
-    assert live["db_url"] == "postgresql+psycopg://<set-at-runtime>"
-    assert "sqlite" not in live["db_url"]
-    assert "key" not in json.dumps(live).lower()
-    assert "secret" not in json.dumps(live).lower()
+    live_names = ("spot.live.template.json", "futures.live.template.json")
+    live_urls: set[str] = set()
+    for name in live_names:
+        live = json.loads((PROJECT_ROOT / "configs/freqtrade" / name).read_text(encoding="utf-8"))
+        assert live["db_url"].startswith("postgresql+psycopg://<")
+        assert "sqlite" not in live["db_url"]
+        assert "key" not in json.dumps(live).lower()
+        assert "secret" not in json.dumps(live).lower()
+        live_urls.add(live["db_url"])
+    assert len(live_urls) == 2
 
 
 def test_sqlite_inspection_is_query_only_and_detects_schema_drift(tmp_path: Path) -> None:

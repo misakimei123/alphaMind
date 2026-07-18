@@ -20,15 +20,3 @@ gap_buffer_rate = "0.002"
 fee_rate_per_side = "0.001"
 half_spread_rate = "0.00025"
 slippage_rate_per_side = "0.0005"
-
-[pairs."BTC/USDT"]
-price_tick = "0.1"
-quantity_step = "0.000001"
-minimum_quantity = "0.000001"
-minimum_notional = "5"
-
-[pairs."ETH/USDT"]
-price_tick = "0.01"
-quantity_step = "0.00001"
-minimum_quantity = "0.00001"
-minimum_notional = "5"

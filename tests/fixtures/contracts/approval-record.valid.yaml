@@ -1,0 +1,87 @@
+schema_version: 1
+proposal_id: proposal-20260718T120000Z-0123456789ab
+cycle_id: cycle-20260718T120000Z-0123abcd
+action:
+  schema_version: 2
+  cycle_id: cycle-20260718T120000Z-0123abcd
+  action_id: act-20260718T120000Z-0123456789ab
+  instrument_id: SOL
+  market: linear_perpetual
+  side: long
+  action: OPEN
+  order_preference: limit
+  entry:
+    min: "155.00"
+    max: "156.50"
+  stop_loss: "150.00"
+  take_profit: ["165.00", "172.00"]
+  reduce_fraction: null
+  requested_leverage: "2"
+  target_reference_id: null
+  valid_for_seconds: 600
+  reason_codes: [TREND, POSITIVE_NEWS]
+  news_refs: [news-20260718T115500Z-0123456789ab]
+  rationale: Trend and the cited fixture news support a candidate long entry.
+  risks:
+    - Price may reverse before approval or execution.
+    - Funding and liquidation distance require deterministic revalidation.
+action_sha256: "2222222222222222222222222222222222222222222222222222222222222222"
+state: PENDING_APPROVAL
+created_at_utc: "2026-07-18T12:00:10Z"
+updated_at_utc: "2026-07-18T12:00:12Z"
+expires_at_utc: "2026-07-18T12:10:00Z"
+nonce_sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+idempotency_key: proposal:fixture-01
+authorization:
+  allowed_user_id_sha256:
+    - eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  allowed_chat_id_sha256:
+    - ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  decided_by: null
+events:
+  - schema_version: 1
+    event_id: 018f1000-1234-7abc-8def-012345678901
+    proposal_id: proposal-20260718T120000Z-0123456789ab
+    action_id: act-20260718T120000Z-0123456789ab
+    event_type: CREATED
+    from_state: null
+    to_state: DRAFT
+    occurred_at_utc: "2026-07-18T12:00:10Z"
+    actor:
+      actor_type: system
+      user_id_sha256: null
+      chat_id_sha256: null
+    nonce_sha256: null
+    idempotency_key: proposal:fixture-01:create
+    reason_codes: [ACTION_RECEIVED]
+  - schema_version: 1
+    event_id: 018f1000-1234-7abc-8def-012345678902
+    proposal_id: proposal-20260718T120000Z-0123456789ab
+    action_id: act-20260718T120000Z-0123456789ab
+    event_type: VALIDATION_PASSED
+    from_state: DRAFT
+    to_state: VALIDATED
+    occurred_at_utc: "2026-07-18T12:00:11Z"
+    actor:
+      actor_type: system
+      user_id_sha256: null
+      chat_id_sha256: null
+    nonce_sha256: null
+    idempotency_key: proposal:fixture-01:validate
+    reason_codes: [DETERMINISTIC_VALIDATION_PASSED]
+  - schema_version: 1
+    event_id: 018f1000-1234-7abc-8def-012345678903
+    proposal_id: proposal-20260718T120000Z-0123456789ab
+    action_id: act-20260718T120000Z-0123456789ab
+    event_type: APPROVAL_REQUESTED
+    from_state: VALIDATED
+    to_state: PENDING_APPROVAL
+    occurred_at_utc: "2026-07-18T12:00:12Z"
+    actor:
+      actor_type: system
+      user_id_sha256: null
+      chat_id_sha256: null
+    nonce_sha256: null
+    idempotency_key: proposal:fixture-01:request
+    reason_codes: [TELEGRAM_REQUEST_SENT]
+execution: null

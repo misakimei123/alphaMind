@@ -1,5 +1,7 @@
 # Phase 0 Scope Frozen Gate 评审
 
+> 2026-07-18 状态说明：本文是旧 P0 范围的历史完成记录，不再冻结当前产品范围，也不维护当前阻塞或下一任务。AI、Telegram、新闻、配置化标的和 Spot/Futures 已由 R0 重定基线；唯一状态见 [完整开发计划](../development-plan.md)。
+
 | 元数据 | 内容 |
 |---|---|
 | 状态 | DONE |

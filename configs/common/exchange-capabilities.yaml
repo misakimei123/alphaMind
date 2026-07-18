@@ -6,9 +6,10 @@ exchange:
   name: Bybit International
   ccxt_id: bybit
   api_version: v5
-  market_type: spot
-  margin_enabled: false
-  leverage: 1
+  market_types:
+    - spot
+    - linear_perpetual
+  spot_margin_enabled: false
   region_policy:
     implementation: region_agnostic
     live_gate: recheck_account_eligibility_terms_and_endpoint
@@ -19,6 +20,12 @@ symbols:
     required: true
   - unified: ETH/USDT
     exchange_id: ETHUSDT
+    required: true
+  - unified: SOL/USDT
+    exchange_id: SOLUSDT
+    required: true
+  - unified: HYPE/USDT
+    exchange_id: HYPEUSDT
     required: true
 
 freqtrade:
@@ -52,15 +59,35 @@ environments:
 
 market_rules:
   source_endpoint: /v5/market/instruments-info
+  generated_snapshot: configs/alphamind/market-capabilities.snapshot.json
+  refresh_uses_authentication: false
+  maximum_age_hours: 24
   hardcode_values: false
-  required_fields:
+  pagination:
+    spot: single_page
+    linear: cursor_until_exhausted
+  spot_required_fields:
     - status
     - baseCoin
     - quoteCoin
     - priceFilter.tickSize
+    - lotSizeFilter.basePrecision
+    - lotSizeFilter.minOrderQty
     - lotSizeFilter.minOrderAmt
     - lotSizeFilter.maxLimitOrderQty
     - lotSizeFilter.maxMarketOrderQty
+  linear_required_fields:
+    - status
+    - contractType
+    - settleCoin
+    - priceFilter.tickSize
+    - lotSizeFilter.qtyStep
+    - lotSizeFilter.minOrderQty
+    - lotSizeFilter.minNotionalValue
+    - lotSizeFilter.maxOrderQty
+    - lotSizeFilter.maxMktOrderQty
+    - leverageFilter.maxLeverage
+    - fundingInterval
 
 orders:
   market: true

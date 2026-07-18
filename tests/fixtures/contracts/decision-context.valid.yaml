@@ -1,0 +1,64 @@
+schema_version: 1
+cycle_id: cycle-20260718T120000Z-0123abcd
+generated_at_utc: "2026-07-18T12:00:05Z"
+as_of_utc: "2026-07-18T12:00:00Z"
+environment: dry_run
+config_sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+instrument_registry_sha256: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+risk_snapshot_id: risk-20260718T120000Z-0123456789ab
+allowed_actions: [HOLD, OPEN, ADD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+account:
+  quote_currency: USDT
+  nav: "500"
+  spot_available_quote: "300"
+  futures_available_margin: "180"
+  futures_margin_used: "20"
+  risk_state: ENTRY_ALLOWED
+instruments:
+  - instrument_id: SOL
+    observed_at_utc: "2026-07-18T12:00:00Z"
+    completed_candle_at_utc: "2026-07-18T11:30:00Z"
+    spot:
+      pair: SOL/USDT
+      last_price: "156.00"
+      base_balance: "0"
+      position_value_quote: "0"
+    futures:
+      pair: SOL/USDT:USDT
+      mark_price: "156.10"
+      index_price: "156.05"
+      funding_rate: "0.0001"
+      next_funding_at_utc: "2026-07-18T16:00:00Z"
+      position: null
+    features:
+      timeframe: 30m
+      donchian_upper: "155.80"
+      donchian_lower: "148.20"
+      atr: "3.10"
+      ema_fast: "154.20"
+      ema_slow: "151.80"
+      volume_ratio: "1.40"
+open_orders: []
+pending_approvals: []
+recent_fills: []
+news_items:
+  - schema_version: 1
+    news_id: news-20260718T115500Z-0123456789ab
+    source:
+      source_id: bybit_announcements
+      display_name: Bybit Announcements
+      source_type: exchange_announcement
+      trust_tier: official
+    published_at_utc: "2026-07-18T11:55:00Z"
+    fetched_at_utc: "2026-07-18T11:56:00Z"
+    title: Example SOL market announcement
+    canonical_url: https://example.invalid/news/sol-market-announcement
+    summary: Example normalized summary used only by the schema contract fixture.
+    assets: [SOL]
+    category: market_structure
+    language: en
+    title_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    content_sha256: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    tags: [market_update]
+    untrusted_external_content: true
+previous_cycle: null

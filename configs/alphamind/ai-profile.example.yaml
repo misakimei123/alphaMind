@@ -1,0 +1,72 @@
+# R0-04 dry-run profile. API spending limits are circuit breakers, not trading authorization.
+schema_version: 1
+profile_id: openai_terra_trade_decision_v1
+
+provider:
+  id: openai
+  api: responses
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+
+model:
+  id: gpt-5.6-terra
+  reasoning_effort: medium
+  verbosity: low
+  temperature: null
+  seed: null
+
+prompt:
+  id: alphamind_trade_decision
+  version: 1
+  path: prompts/ai/trade-decision-v1.md
+  sha256: 9f154e3b8b888766bf95cefba69802e1404ae30cc0a683a8b09bcf0039db1f16
+
+structured_output:
+  enabled: true
+  strict: true
+  schema_name: alphamind_model_decision_v1
+  schema_path: data/schemas/model-decision.schema.yaml
+  runtime_action_schema_path: data/schemas/trade-action.schema.yaml
+
+request:
+  timeout_seconds: 90
+  max_input_tokens: 24000
+  max_output_tokens: 3000
+  store_response: false
+  tools_enabled: false
+  background: false
+
+retry:
+  maximum_attempts: 2
+  backoff_seconds: [2]
+  retry_on: [timeout, rate_limit, server_error, malformed_structured_output]
+  never_retry_on:
+    - authentication_error
+    - policy_refusal
+    - business_validation_error
+    - budget_exceeded
+
+cost:
+  currency: USD
+  pricing_checked_at_utc: "2026-07-18T00:00:00Z"
+  input_per_million_tokens: "2.50"
+  cached_input_per_million_tokens: "0.25"
+  output_per_million_tokens: "15.00"
+  maximum_cost_per_cycle: "0.11"
+  maximum_cost_per_utc_day: "5.50"
+  pricing_source: https://developers.openai.com/api/docs/models/gpt-5.6-terra
+
+failure_policy:
+  timeout: HOLD_ONLY
+  provider_error: HOLD_ONLY
+  invalid_output: HOLD_ONLY
+  budget_exceeded: HOLD_ONLY
+
+audit:
+  record_model_id: true
+  record_prompt_sha256: true
+  record_config_sha256: true
+  record_input_sha256: true
+  record_usage: true
+  record_raw_prompt: false
+  record_api_key: false

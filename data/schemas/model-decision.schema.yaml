@@ -1,0 +1,159 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/model-decision.schema.yaml
+title: alphaMind ModelDecision v1
+description: >-
+  Provider-facing strict structured output envelope. Each action is subsequently validated against
+  trade-action.schema.yaml and deterministic cross-object risk rules.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - cycle_id
+  - actions
+  - decision_summary
+  - global_risks
+properties:
+  schema_version:
+    const: 1
+  cycle_id:
+    $ref: "#/$defs/cycle_id"
+  actions:
+    type: array
+    minItems: 1
+    maxItems: 20
+    items:
+      $ref: "#/$defs/action"
+  decision_summary:
+    type: string
+    minLength: 1
+    maxLength: 800
+  global_risks:
+    type: array
+    minItems: 1
+    maxItems: 12
+    uniqueItems: true
+    items:
+      type: string
+      minLength: 1
+      maxLength: 300
+$defs:
+  cycle_id:
+    type: string
+    pattern: "^cycle-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}$"
+  action_id:
+    type: string
+    pattern: "^act-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  positive_decimal:
+    type: string
+    pattern: "^(?:0\\.0*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$"
+  nonzero_fraction:
+    type: string
+    pattern: "^(?:0\\.[0-9]*[1-9][0-9]*|1(?:\\.0+)?)$"
+  entry_range:
+    type: object
+    additionalProperties: false
+    required: [min, max]
+    properties:
+      min:
+        $ref: "#/$defs/positive_decimal"
+      max:
+        $ref: "#/$defs/positive_decimal"
+  action:
+    type: object
+    additionalProperties: false
+    required:
+      - schema_version
+      - cycle_id
+      - action_id
+      - instrument_id
+      - market
+      - side
+      - action
+      - order_preference
+      - entry
+      - stop_loss
+      - take_profit
+      - reduce_fraction
+      - requested_leverage
+      - target_reference_id
+      - valid_for_seconds
+      - reason_codes
+      - news_refs
+      - rationale
+      - risks
+    properties:
+      schema_version:
+        const: 2
+      cycle_id:
+        $ref: "#/$defs/cycle_id"
+      action_id:
+        $ref: "#/$defs/action_id"
+      instrument_id:
+        type: string
+        pattern: "^[A-Z][A-Z0-9]{1,15}$"
+      market:
+        enum: [spot, linear_perpetual]
+      side:
+        enum: [long, short]
+      action:
+        enum: [HOLD, OPEN, ADD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+      order_preference:
+        enum: [none, market, limit]
+      entry:
+        anyOf:
+          - $ref: "#/$defs/entry_range"
+          - type: "null"
+      stop_loss:
+        anyOf:
+          - $ref: "#/$defs/positive_decimal"
+          - type: "null"
+      take_profit:
+        type: array
+        maxItems: 5
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/positive_decimal"
+      reduce_fraction:
+        anyOf:
+          - $ref: "#/$defs/nonzero_fraction"
+          - type: "null"
+      requested_leverage:
+        $ref: "#/$defs/positive_decimal"
+      target_reference_id:
+        type: [string, "null"]
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+      valid_for_seconds:
+        type: integer
+        minimum: 30
+        maximum: 1800
+      reason_codes:
+        type: array
+        minItems: 1
+        maxItems: 16
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^[A-Z][A-Z0-9_]{1,63}$"
+      news_refs:
+        type: array
+        maxItems: 20
+        uniqueItems: true
+        items:
+          type: string
+          pattern: "^news-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      rationale:
+        type: string
+        minLength: 1
+        maxLength: 1200
+      risks:
+        type: array
+        minItems: 1
+        maxItems: 12
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+          maxLength: 300
+$comment: >-
+  R2 must reject refusals, incomplete responses and cycle-id mismatches, enforce max actions from
+  effective runtime config, then validate every action with trade-action.schema.yaml.

@@ -18,7 +18,7 @@ def validator() -> jsonschema.Draft202012Validator:
 
 def valid_snapshot() -> dict[str, object]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "snapshot_id": "risk-20260716T000000Z-0123456789ab",
         "producer_version": "0.1.0",
         "generated_at_utc": "2026-07-16T00:00:00Z",
@@ -26,19 +26,25 @@ def valid_snapshot() -> dict[str, object]:
         "account_id": "paper-primary",
         "accounting_currency": "USDT",
         "risk_config_sha256": "0" * 64,
+        "instrument_registry_sha256": "1" * 64,
+        "market_capability_snapshot_sha256": "2" * 64,
         "source_freshness": {
             "account_observed_at_utc": "2026-07-15T23:59:55Z",
             "market_observed_at_utc": "2026-07-15T23:59:58Z",
+            "orders_observed_at_utc": "2026-07-15T23:59:57Z",
             "maximum_source_age_seconds": 30,
             "maximum_future_clock_skew_seconds": 5,
             "account_complete": True,
             "market_complete": True,
+            "orders_complete": True,
         },
         "accounting": {
             "quote_cash": "500",
             "positions": [],
             "accrued_fees": "0",
             "known_liabilities": "0",
+            "futures_unrealized_pnl_quote": "0",
+            "accrued_funding_quote": "0",
             "nav": "500",
             "approved_capital_baseline": "500",
             "cumulative_net_external_cash_flow": "0",
@@ -53,10 +59,19 @@ def valid_snapshot() -> dict[str, object]:
             "drawdown_fraction": "0",
             "unexplained_balance_difference": "0",
         },
+        "open_orders": [],
         "exposure": {
             "open_exposure_quote": "0",
+            "spot_open_exposure_quote": "0",
+            "futures_long_notional_quote": "0",
+            "futures_short_notional_quote": "0",
             "pending_entry_exposure_quote": "0",
+            "pending_spot_entry_exposure_quote": "0",
+            "pending_futures_long_entry_exposure_quote": "0",
+            "pending_futures_short_entry_exposure_quote": "0",
             "available_balance_quote": "500",
+            "available_margin_quote": "500",
+            "used_margin_quote": "0",
         },
         "thresholds": {
             "trade_risk_fraction": "0.0025",
@@ -123,6 +138,94 @@ def test_each_risk_state_has_a_valid_contract(
             "reason_codes": [reason],
         }
     )
+
+    validator.validate(snapshot)
+
+
+def test_position_pair_is_registry_extensible_not_asset_enumerated(
+    validator: jsonschema.Draft202012Validator,
+) -> None:
+    snapshot = valid_snapshot()
+    accounting = snapshot["accounting"]
+    assert isinstance(accounting, dict)
+    accounting["positions"] = [
+        {
+            "instrument_id": "SOL",
+            "market": "spot",
+            "pair": "SOL/USDT",
+            "side": "long",
+            "quantity": "1",
+            "best_bid": "100",
+            "last_trade": "101",
+            "conservative_exit_mark": "100",
+            "marked_value": "100",
+        }
+    ]
+    accounting["quote_cash"] = "400"
+
+    validator.validate(snapshot)
+
+
+def test_futures_position_and_open_order_contracts(
+    validator: jsonschema.Draft202012Validator,
+) -> None:
+    snapshot = valid_snapshot()
+    accounting = snapshot["accounting"]
+    exposure = snapshot["exposure"]
+    assert isinstance(accounting, dict) and isinstance(exposure, dict)
+    accounting["positions"] = [
+        {
+            "instrument_id": "SOL",
+            "market": "linear_perpetual",
+            "pair": "SOL/USDT:USDT",
+            "side": "short",
+            "quantity": "1",
+            "entry_price": "110",
+            "mark_price": "100",
+            "liquidation_price": "150",
+            "leverage": "2",
+            "notional_quote": "100",
+            "position_margin_quote": "50",
+            "maintenance_margin_quote": "2",
+            "unrealized_pnl_quote": "10",
+            "funding_rate": "0.0001",
+            "accrued_funding_quote": "-1",
+            "next_funding_at_utc": "2026-07-16T08:00:00Z",
+            "liquidation_buffer_fraction": "0.5",
+        }
+    ]
+    accounting["quote_cash"] = "491"
+    accounting["futures_unrealized_pnl_quote"] = "10"
+    accounting["accrued_funding_quote"] = "-1"
+    exposure.update(
+        {
+            "open_exposure_quote": "100",
+            "futures_short_notional_quote": "100",
+            "available_margin_quote": "450",
+            "used_margin_quote": "50",
+        }
+    )
+    snapshot["open_orders"] = [
+        {
+            "order_id": "order-1",
+            "instrument_id": "SOL",
+            "market": "linear_perpetual",
+            "pair": "SOL/USDT:USDT",
+            "side": "buy",
+            "position_side": "short",
+            "intent": "stop_loss",
+            "order_type": "stop_market",
+            "quantity": "1",
+            "filled_quantity": "0",
+            "remaining_quantity": "1",
+            "reference_price": "105",
+            "trigger_price": "105",
+            "remaining_notional_quote": "105",
+            "reduce_only": True,
+            "created_at_utc": "2026-07-15T23:50:00Z",
+            "updated_at_utc": "2026-07-15T23:59:00Z",
+        }
+    ]
 
     validator.validate(snapshot)
 

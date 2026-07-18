@@ -10,7 +10,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-ENVIRONMENTS = ("backtest", "dry_run", "replay", "testnet_contract", "live_canary")
+ENVIRONMENTS = (
+    "backtest",
+    "spot_dry_run",
+    "futures_dry_run",
+    "replay",
+    "testnet_contract",
+    "spot_live_canary",
+    "futures_live_canary",
+)
+POSTGRESQL_ENVIRONMENTS = {"spot_live_canary", "futures_live_canary"}
 RECOVERY_ORDER = (
     "exchange_facts",
     "runtime_db",
@@ -94,7 +103,7 @@ def load_runtime_database_contract(path: str | Path) -> RuntimeDatabaseContract:
 
     raw_environments = _mapping(document.get("environments"), "environments")
     if set(raw_environments) != set(ENVIRONMENTS):
-        raise ValueError("runtime DB environments must be exactly the frozen five layers")
+        raise ValueError("runtime DB environments must match the frozen isolated layers")
     environments: dict[str, RuntimeEnvironment] = {}
     sqlite_urls: set[str] = set()
     identities: set[str] = set()
@@ -115,7 +124,7 @@ def load_runtime_database_contract(path: str | Path) -> RuntimeDatabaseContract:
             environment = RuntimeEnvironment(
                 name, backend, identity, db_url, None, None, None, None, None
             )
-        elif backend == "postgresql" and name == "live_canary":
+        elif backend == "postgresql" and name in POSTGRESQL_ENVIRONMENTS:
             required = {
                 "backend",
                 "db_url_env",

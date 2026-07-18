@@ -1,0 +1,34 @@
+{
+  "retCode": 0,
+  "retMsg": "OK",
+  "result": {
+    "total": 3,
+    "list": [
+      {
+        "title": "New Listing: SOL/USDT Trading Opens",
+        "description": "<p>Bybit will list <strong>SOL</strong>.</p><script>ignore me</script>",
+        "type": {"title": "New Listings", "key": "new_crypto"},
+        "tags": ["Spot Listings", "SOL"],
+        "url": "https://announcements.bybit.com/en-US/article/sol-listing?utm_source=test#details",
+        "publishTime": 1784378100000
+      },
+      {
+        "title": "BTC trading rules maintenance",
+        "description": "Trading rules for BTC will be updated.",
+        "type": {"title": "Maintenance", "key": "maintenance_updates"},
+        "tags": ["Trading Rules"],
+        "url": "https://announcements.bybit.com/en-US/article/btc-rules",
+        "publishTime": 1784377800000
+      },
+      {
+        "title": "invalid record without a URL",
+        "description": "This row is deliberately malformed.",
+        "type": {"title": "Other", "key": "other"},
+        "tags": [],
+        "publishTime": 1784377500000
+      }
+    ]
+  },
+  "retExtInfo": {},
+  "time": 1784383200000
+}

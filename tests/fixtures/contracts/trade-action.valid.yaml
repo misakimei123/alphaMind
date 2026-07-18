@@ -1,0 +1,23 @@
+schema_version: 2
+cycle_id: cycle-20260718T120000Z-0123abcd
+action_id: act-20260718T120000Z-0123456789ab
+instrument_id: SOL
+market: linear_perpetual
+side: long
+action: OPEN
+order_preference: limit
+entry:
+  min: "155.00"
+  max: "156.50"
+stop_loss: "150.00"
+take_profit: ["165.00", "172.00"]
+reduce_fraction: null
+requested_leverage: "2"
+target_reference_id: null
+valid_for_seconds: 600
+reason_codes: [TREND, POSITIVE_NEWS]
+news_refs: [news-20260718T115500Z-0123456789ab]
+rationale: Trend and the cited fixture news support a candidate long entry.
+risks:
+  - Price may reverse before approval or execution.
+  - Funding and liquidation distance require deterministic revalidation.

@@ -1,0 +1,88 @@
+# Initial read-only sources checked on 2026-07-18. Availability must be rechecked at runtime.
+schema_version: 1
+registry_id: initial_crypto_news_v1
+checked_at_utc: "2026-07-18T00:00:00Z"
+instrument_registry_path: configs/alphamind/instruments.example.yaml
+
+normalization:
+  title_max_characters: 300
+  summary_max_characters: 2000
+  item_text_max_characters: 4000
+  cycle_text_max_characters: 16000
+  future_clock_skew_seconds: 300
+  deduplication_keys: [canonical_url, title_sha256, content_sha256]
+  strip_active_content: true
+
+availability_policy:
+  minimum_healthy_sources_for_risk_increase: 1
+  no_healthy_source_allowed_actions: [HOLD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+  unknown_asset_mapping: MARKET
+
+sources:
+  - source_id: bybit_announcements
+    enabled: true
+    priority: 10
+    display_name: Bybit Announcements
+    adapter: bybit_announcements_v5
+    endpoint: https://api.bybit.com/v5/announcements/index
+    documentation_url: https://bybit-exchange.github.io/docs/v5/announcement
+    source_type: exchange_announcement
+    trust_tier: official
+    language: en
+    default_assets: [MARKET]
+    categories: [listing, delisting, market_structure, other]
+    poll_interval_seconds: 900
+    request_timeout_seconds: 15
+    maximum_items_per_poll: 20
+    maximum_item_age_hours: 24
+    maximum_response_bytes: 1000000
+    user_agent_env: ALPHAMIND_NEWS_USER_AGENT
+    request_params:
+      locale: en-US
+      limit: 20
+    fetch_full_article: false
+    untrusted_external_content: true
+
+  - source_id: sec_press_releases
+    enabled: true
+    priority: 20
+    display_name: U.S. SEC Press Releases
+    adapter: rss_atom
+    endpoint: https://www.sec.gov/news/pressreleases.rss
+    documentation_url: https://www.sec.gov/newsroom/press-releases
+    source_type: regulator
+    trust_tier: official
+    language: en
+    default_assets: [MARKET]
+    categories: [regulation, market_structure]
+    poll_interval_seconds: 1800
+    request_timeout_seconds: 15
+    maximum_items_per_poll: 50
+    maximum_item_age_hours: 72
+    maximum_response_bytes: 1000000
+    user_agent_env: ALPHAMIND_NEWS_USER_AGENT
+    request_params: {}
+    fetch_full_article: false
+    untrusted_external_content: true
+
+  - source_id: coindesk_rss
+    enabled: true
+    priority: 30
+    display_name: CoinDesk RSS
+    adapter: rss_atom
+    endpoint: https://www.coindesk.com/arc/outboundfeeds/rss/
+    documentation_url: https://www.coindesk.com/coindesk-news/2021/09/17/coindesk-rss
+    source_type: media
+    trust_tier: secondary
+    language: en
+    default_assets: [MARKET]
+    categories: [regulation, security_incident, protocol_update, tokenomics, market_structure, macro, other]
+    poll_interval_seconds: 900
+    request_timeout_seconds: 15
+    maximum_items_per_poll: 50
+    maximum_item_age_hours: 24
+    maximum_response_bytes: 2000000
+    user_agent_env: ALPHAMIND_NEWS_USER_AGENT
+    request_params: {}
+    fetch_full_article: false
+    untrusted_external_content: true

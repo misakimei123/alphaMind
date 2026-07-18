@@ -1,0 +1,356 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/decision-context.schema.yaml
+title: alphaMind DecisionContext v1
+description: >-
+  Read-only, point-in-time input supplied to the AI decision provider for one decision cycle.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - cycle_id
+  - generated_at_utc
+  - as_of_utc
+  - environment
+  - config_sha256
+  - instrument_registry_sha256
+  - risk_snapshot_id
+  - allowed_actions
+  - account
+  - instruments
+  - open_orders
+  - pending_approvals
+  - recent_fills
+  - news_items
+  - previous_cycle
+properties:
+  schema_version:
+    const: 1
+  cycle_id:
+    $ref: "#/$defs/cycle_id"
+  generated_at_utc:
+    $ref: "#/$defs/utc_timestamp"
+  as_of_utc:
+    $ref: "#/$defs/utc_timestamp"
+  environment:
+    enum: [dry_run, demo, testnet, live_canary]
+  config_sha256:
+    $ref: "#/$defs/sha256"
+  instrument_registry_sha256:
+    $ref: "#/$defs/sha256"
+  risk_snapshot_id:
+    type: string
+    pattern: "^risk-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  allowed_actions:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      enum: [HOLD, OPEN, ADD, REDUCE, CLOSE, CANCEL_ORDER, REPLACE_PROTECTION]
+  account:
+    $ref: "#/$defs/account"
+  instruments:
+    type: array
+    minItems: 1
+    maxItems: 50
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/instrument_snapshot"
+  open_orders:
+    type: array
+    maxItems: 200
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/open_order"
+  pending_approvals:
+    type: array
+    maxItems: 50
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/pending_approval"
+  recent_fills:
+    type: array
+    maxItems: 200
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/fill"
+  news_items:
+    type: array
+    maxItems: 100
+    uniqueItems: true
+    items:
+      $ref: news-item.schema.yaml
+  previous_cycle:
+    type: [object, "null"]
+    additionalProperties: false
+    required: [cycle_id, completed_at_utc, action_ids, user_decisions]
+    properties:
+      cycle_id:
+        $ref: "#/$defs/cycle_id"
+      completed_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+      action_ids:
+        type: array
+        maxItems: 20
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/action_id"
+      user_decisions:
+        type: array
+        maxItems: 20
+        items:
+          enum: [APPROVED, REJECTED, EXPIRED, NOT_REQUIRED]
+$defs:
+  utc_timestamp:
+    type: string
+    format: date-time
+    pattern: "Z$"
+  sha256:
+    type: string
+    pattern: "^[a-f0-9]{64}$"
+  decimal:
+    type: string
+    pattern: "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+  nonnegative_decimal:
+    type: string
+    pattern: "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+  positive_decimal:
+    type: string
+    pattern: "^(?:0\\.0*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$"
+  nullable_positive_decimal:
+    anyOf:
+      - $ref: "#/$defs/positive_decimal"
+      - type: "null"
+  cycle_id:
+    type: string
+    pattern: "^cycle-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}$"
+  action_id:
+    type: string
+    pattern: "^act-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+  instrument_id:
+    type: string
+    pattern: "^[A-Z][A-Z0-9]{1,15}$"
+  market:
+    enum: [spot, linear_perpetual]
+  side:
+    enum: [long, short]
+  account:
+    type: object
+    additionalProperties: false
+    required:
+      - quote_currency
+      - nav
+      - spot_available_quote
+      - futures_available_margin
+      - futures_margin_used
+      - risk_state
+    properties:
+      quote_currency:
+        const: USDT
+      nav:
+        $ref: "#/$defs/positive_decimal"
+      spot_available_quote:
+        $ref: "#/$defs/nonnegative_decimal"
+      futures_available_margin:
+        $ref: "#/$defs/nonnegative_decimal"
+      futures_margin_used:
+        $ref: "#/$defs/nonnegative_decimal"
+      risk_state:
+        enum: [ENTRY_ALLOWED, CLOSE_ONLY, KILLED_MANUAL_REVIEW]
+  instrument_snapshot:
+    type: object
+    additionalProperties: false
+    required:
+      - instrument_id
+      - observed_at_utc
+      - completed_candle_at_utc
+      - spot
+      - futures
+      - features
+    properties:
+      instrument_id:
+        $ref: "#/$defs/instrument_id"
+      observed_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+      completed_candle_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+      spot:
+        anyOf:
+          - $ref: "#/$defs/spot_snapshot"
+          - type: "null"
+      futures:
+        anyOf:
+          - $ref: "#/$defs/futures_snapshot"
+          - type: "null"
+      features:
+        $ref: "#/$defs/features"
+  spot_snapshot:
+    type: object
+    additionalProperties: false
+    required: [pair, last_price, base_balance, position_value_quote]
+    properties:
+      pair:
+        type: string
+        pattern: "^[A-Z][A-Z0-9]{1,15}/USDT$"
+      last_price:
+        $ref: "#/$defs/positive_decimal"
+      base_balance:
+        $ref: "#/$defs/nonnegative_decimal"
+      position_value_quote:
+        $ref: "#/$defs/nonnegative_decimal"
+  futures_snapshot:
+    type: object
+    additionalProperties: false
+    required:
+      - pair
+      - mark_price
+      - index_price
+      - funding_rate
+      - next_funding_at_utc
+      - position
+    properties:
+      pair:
+        type: string
+        pattern: "^[A-Z][A-Z0-9]{1,15}/USDT:USDT$"
+      mark_price:
+        $ref: "#/$defs/positive_decimal"
+      index_price:
+        $ref: "#/$defs/positive_decimal"
+      funding_rate:
+        $ref: "#/$defs/decimal"
+      next_funding_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+      position:
+        anyOf:
+          - $ref: "#/$defs/futures_position"
+          - type: "null"
+  futures_position:
+    type: object
+    additionalProperties: false
+    required:
+      - position_id
+      - side
+      - quantity
+      - entry_price
+      - leverage
+      - liquidation_price
+      - unrealized_pnl
+      - stop_loss
+      - take_profit
+    properties:
+      position_id:
+        type: string
+        minLength: 1
+        maxLength: 128
+      side:
+        $ref: "#/$defs/side"
+      quantity:
+        $ref: "#/$defs/positive_decimal"
+      entry_price:
+        $ref: "#/$defs/positive_decimal"
+      leverage:
+        $ref: "#/$defs/positive_decimal"
+      liquidation_price:
+        $ref: "#/$defs/nullable_positive_decimal"
+      unrealized_pnl:
+        $ref: "#/$defs/decimal"
+      stop_loss:
+        $ref: "#/$defs/nullable_positive_decimal"
+      take_profit:
+        $ref: "#/$defs/nullable_positive_decimal"
+  features:
+    type: object
+    additionalProperties: false
+    required: [timeframe, donchian_upper, donchian_lower, atr, ema_fast, ema_slow, volume_ratio]
+    properties:
+      timeframe:
+        type: string
+        pattern: "^[1-9][0-9]*[mhdwM]$"
+      donchian_upper:
+        $ref: "#/$defs/nullable_positive_decimal"
+      donchian_lower:
+        $ref: "#/$defs/nullable_positive_decimal"
+      atr:
+        $ref: "#/$defs/nullable_positive_decimal"
+      ema_fast:
+        $ref: "#/$defs/nullable_positive_decimal"
+      ema_slow:
+        $ref: "#/$defs/nullable_positive_decimal"
+      volume_ratio:
+        $ref: "#/$defs/nullable_positive_decimal"
+  open_order:
+    type: object
+    additionalProperties: false
+    required:
+      - order_id
+      - instrument_id
+      - market
+      - side
+      - intent
+      - price
+      - quantity
+      - filled_quantity
+      - reduce_only
+      - status
+    properties:
+      order_id:
+        type: string
+        minLength: 1
+        maxLength: 128
+      instrument_id:
+        $ref: "#/$defs/instrument_id"
+      market:
+        $ref: "#/$defs/market"
+      side:
+        $ref: "#/$defs/side"
+      intent:
+        enum: [OPEN, ADD, REDUCE, CLOSE, STOP_LOSS, TAKE_PROFIT]
+      price:
+        $ref: "#/$defs/nullable_positive_decimal"
+      quantity:
+        $ref: "#/$defs/positive_decimal"
+      filled_quantity:
+        $ref: "#/$defs/nonnegative_decimal"
+      reduce_only:
+        type: boolean
+      status:
+        enum: [NEW, PARTIALLY_FILLED, PENDING_CANCEL]
+  pending_approval:
+    type: object
+    additionalProperties: false
+    required: [proposal_id, action_id, state, expires_at_utc]
+    properties:
+      proposal_id:
+        type: string
+        pattern: "^proposal-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      action_id:
+        $ref: "#/$defs/action_id"
+      state:
+        const: PENDING_APPROVAL
+      expires_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+  fill:
+    type: object
+    additionalProperties: false
+    required: [fill_id, instrument_id, market, side, quantity, price, fee, occurred_at_utc]
+    properties:
+      fill_id:
+        type: string
+        minLength: 1
+        maxLength: 128
+      instrument_id:
+        $ref: "#/$defs/instrument_id"
+      market:
+        $ref: "#/$defs/market"
+      side:
+        $ref: "#/$defs/side"
+      quantity:
+        $ref: "#/$defs/positive_decimal"
+      price:
+        $ref: "#/$defs/positive_decimal"
+      fee:
+        $ref: "#/$defs/nonnegative_decimal"
+      occurred_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+$comment: >-
+  Runtime validation must check timestamp ordering/freshness, unique ids and instruments, market
+  membership, arithmetic consistency, and that all news/action references are local to this cycle.

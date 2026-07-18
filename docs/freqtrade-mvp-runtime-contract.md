@@ -1,10 +1,41 @@
-# Freqtrade MVP Runtime Contract
+# Freqtrade Runtime Contract（AI MVP）
+
+> 2026-07-18 修订：本文最初只覆盖 BTC/ETH 现货 Donchian。当前规范已扩展为 AI Action、Telegram 人工授权、配置化 Instrument Registry、Bybit Spot/Futures 双实例和 ExecutionGateway。旧现货专用段落作为已实现 v1 底座保留；与 [完整开发计划](development-plan.md) 冲突时，以开发计划为准。
+
+## 0. 当前修订范围
+
+```text
+Scheduler + Account/Market Snapshot + News
+  -> DecisionContext
+  -> LLM Action
+  -> Schema/Deterministic Risk Validation
+  -> Telegram Approval
+  -> Execution Revalidation
+  -> ExecutionGateway
+  -> Freqtrade Spot / Freqtrade Futures
+  -> Bybit
+```
+
+当前运行合同：
+
+- 默认 30 分钟 AI 决策周期，可配置且不可重叠；
+- 初始配置 BTC、ETH、SOL、HYPE，业务代码不得固定币种；
+- Bybit spot 与 USDT linear perpetual；Spot/Futures 配置、Runtime DB、bot identity 和 secret 隔离；
+- 现货 long，合约按配置支持 long/short、isolated、one-way 和最大杠杆；
+- Proposal/Action Store 保存候选与审批状态，但不是订单或持仓权威；
+- Telegram 批准构成普通 AI 动作授权，批准后必须重新校验；
+- ExecutionGateway 只驱动 Freqtrade，不直接调用 Bybit 写接口；
+- Freqtrade 仍是唯一允许向 Bybit 创建、修改或取消订单的运行组件；
+- RiskSnapshot v2 覆盖 spot/futures、挂单、mark、liq、funding、保证金和名义敞口；
+- futures 优先使用 stoploss on exchange；spot 继续显式管理 bot-managed stoploss 残余风险。
+
+旧文档中的固定 4h、BTC/ETH、现货 long/flat、无杠杆和 Donchian 唯一信号，只描述 v1 历史实现，不再限制 R0-R6。
 
 ## 1. 目的和适用范围
 
-本文档冻结 alphaMind 第一阶段的实际运行链，解决长期逻辑架构与 Freqtrade MVP 之间的映射问题。本文档优先于架构文档中的长期自研接口描述；如果二者发生冲突，MVP 按本文档执行。
+本文档描述 alphaMind 与 Freqtrade 的运行所有权和风险边界。任务、范围和进度由 [完整开发计划](development-plan.md) 唯一收口；本文不得反向恢复已被取代的旧范围。
 
-适用范围：
+以下是已实现 v1 现货底座范围，继续作为兼容和迁移输入：
 
 - Bybit 国际版单一目标交易所；
 - BTC/USDT、ETH/USDT 现货；
@@ -24,7 +55,7 @@ MVP 必须遵守以下单一所有权规则：
 5. 外部 risk watchdog 只允许读取账户与运行状态、发布风险快照和暂停新入场，不允许直接下单；
 6. 交易所是实盘余额、订单和成交的操作事实来源；发现差异时停止新入场并按 Freqtrade 支持的恢复流程处理。
 
-`TradeIntent`、`RiskApprovedOrder` 和自研订单状态机在 MVP 中是逻辑模型，不是独立的可执行订单队列。只有自研执行系统按架构门槛单独获批后，才允许把它们实现为生产实体。
+`DecisionContext`、`Action`、审批状态和执行映射可以持久化，但不成为交易所订单/持仓权威。ExecutionGateway 是获批 Action 到 Freqtrade 的受控适配器，不是自研 Order Manager；只有 Freqtrade 可以持有 Bybit 写权限。
 
 ## 3. 长期概念到 Freqtrade 的映射
 
@@ -41,6 +72,19 @@ MVP 必须遵守以下单一所有权规则：
 | `RiskApprovedOrder` | MVP 不作为独立下单实体；只保存风险审批审计事件 | Audit DB | signal id、stake、预算、reason code |
 | Order Manager | Freqtrade 内部订单生命周期 | Freqtrade | Runtime DB、日志和交易所订单 |
 | 对账与恢复 | Freqtrade Runtime DB、交易所查询和受控人工恢复 | Freqtrade operator | 差异、处置、人工操作和最终状态 |
+
+AI MVP 在该 v1 映射上新增：
+
+| 当前概念 | Freqtrade AI MVP 实现 | 所有者 | 审计证据 |
+|---|---|---|---|
+| `DecisionContext` | 账户/市场/新闻/风险的周期快照 | alphaMind scheduler | cycle id、input hash、freshness |
+| `Action` | 严格 Schema 的候选交易动作 | AI decision layer | model、prompt、action payload、news refs |
+| 人工授权 | Telegram 白名单 + nonce + TTL + 幂等状态机 | approval service | user/chat、decision、time、reason |
+| 执行前复核 | 最新价格、仓位、挂单、余额、风险和市场规则检查 | ExecutionGateway | action id、recheck snapshot、allow/reject |
+| OPEN/CLOSE | Freqtrade force entry/exit 或批准信号适配器 | Freqtrade | action id、trade id、order id |
+| ADD/REDUCE | 批准 Action 驱动 `adjust_trade_position` 或等价 RPC | Freqtrade | adjustment id、stake/amount、remaining position |
+| 合约杠杆 | strategy `leverage()`，受三层上限裁剪 | Freqtrade + risk | requested/effective/max leverage |
+| Spot/Futures runtime | 两个隔离 Freqtrade 实例与 Runtime DB | Freqtrade | bot identity、db identity、market type |
 
 `confirm_trade_entry` 位于下单关键路径，禁止在其中发起网络请求、数据库重查询或复杂计算。risk watchdog 先生成缓存快照；策略在 `bot_loop_start` 或等价的非关键位置加载快照，`confirm_trade_entry` 只进行常数时间判断。快照缺失、过期或解析失败时默认拒绝新入场。
 

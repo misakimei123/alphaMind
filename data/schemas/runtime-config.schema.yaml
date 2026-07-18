@@ -1,0 +1,225 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://alphamind.local/schemas/runtime-config.schema.yaml
+title: alphaMind RuntimeConfig v2
+description: >-
+  Personal AI trading runtime contract. It contains no credentials and keeps the
+  instrument universe in a separate registry so adding an asset does not require code changes.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - environment
+  - scheduler
+  - execution
+  - risk
+  - decision
+  - approval
+properties:
+  schema_version:
+    const: 2
+  environment:
+    enum: [dry_run, demo, testnet, live_canary]
+  scheduler:
+    type: object
+    additionalProperties: false
+    required:
+      - decision_cycle_minutes
+      - cycle_timeout_seconds
+      - news_lookback_hours
+      - max_actions_per_cycle
+      - state_db_path
+      - snapshot_directory
+    properties:
+      decision_cycle_minutes:
+        type: integer
+        minimum: 5
+        maximum: 1440
+      cycle_timeout_seconds:
+        type: integer
+        minimum: 30
+        maximum: 900
+      news_lookback_hours:
+        type: integer
+        minimum: 1
+        maximum: 72
+      max_actions_per_cycle:
+        type: integer
+        minimum: 1
+        maximum: 20
+      state_db_path:
+        $ref: "#/$defs/repository_sqlite_path"
+      snapshot_directory:
+        $ref: "#/$defs/repository_directory"
+  execution:
+    type: object
+    additionalProperties: false
+    required:
+      - approval_required
+      - exchange
+      - instrument_registry_path
+      - market_capability_snapshot_path
+      - spot
+      - futures
+    properties:
+      approval_required:
+        const: true
+      exchange:
+        const: bybit
+      instrument_registry_path:
+        $ref: "#/$defs/repository_yaml_path"
+      market_capability_snapshot_path:
+        $ref: "#/$defs/repository_json_path"
+      spot:
+        $ref: "#/$defs/runtime_instance"
+      futures:
+        $ref: "#/$defs/futures_runtime_instance"
+  risk:
+    type: object
+    additionalProperties: false
+    required:
+      - risk_limits_path
+      - risk_snapshot_max_age_seconds
+      - snapshot_path
+      - maximum_approval_price_drift_fraction
+      - news_required_for_risk_increase
+      - allow_add_to_losing_position
+    properties:
+      risk_limits_path:
+        type: string
+        pattern: "^[A-Za-z0-9_./-]+\\.toml$"
+      risk_snapshot_max_age_seconds:
+        type: integer
+        minimum: 5
+        maximum: 300
+      snapshot_path:
+        $ref: "#/$defs/repository_json_path"
+      maximum_approval_price_drift_fraction:
+        $ref: "#/$defs/fraction"
+      news_required_for_risk_increase:
+        type: boolean
+      allow_add_to_losing_position:
+        type: boolean
+  decision:
+    type: object
+    additionalProperties: false
+    required:
+      - ai_profile_path
+      - news_source_registry_path
+    properties:
+      ai_profile_path:
+        const: configs/alphamind/ai-profile.example.yaml
+      news_source_registry_path:
+        const: configs/alphamind/news-sources.example.yaml
+  approval:
+    type: object
+    additionalProperties: false
+    required:
+      - channel
+      - ttl_minutes
+      - bot_token_env
+      - allowed_user_ids_env
+      - allowed_chat_ids_env
+      - callback_secret_env
+    properties:
+      channel:
+        const: telegram
+      ttl_minutes:
+        type: integer
+        minimum: 1
+        maximum: 30
+      bot_token_env:
+        $ref: "#/$defs/environment_variable"
+      allowed_user_ids_env:
+        $ref: "#/$defs/environment_variable"
+      allowed_chat_ids_env:
+        $ref: "#/$defs/environment_variable"
+      callback_secret_env:
+        $ref: "#/$defs/environment_variable"
+$defs:
+  positive_decimal:
+    type: string
+    pattern: "^(?:0\\.0*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$"
+  fraction:
+    type: string
+    pattern: "^(?:0(?:\\.[0-9]+)?|1(?:\\.0+)?)$"
+  repository_yaml_path:
+    type: string
+    pattern: "^[A-Za-z0-9_./-]+\\.ya?ml$"
+  repository_json_path:
+    type: string
+    pattern: "^[A-Za-z0-9_./-]+\\.json$"
+  repository_sqlite_path:
+    type: string
+    pattern: "^[A-Za-z0-9_./-]+\\.sqlite$"
+  repository_directory:
+    type: string
+    pattern: "^[A-Za-z0-9_./-]+$"
+  environment_variable:
+    type: string
+    pattern: "^[A-Z][A-Z0-9_]{2,127}$"
+  runtime_instance:
+    type: object
+    additionalProperties: false
+    required:
+      - enabled
+      - freqtrade_config_path
+      - runtime_db_path
+      - bot_identity
+      - api_key_env
+      - api_secret_env
+    properties:
+      enabled:
+        type: boolean
+      freqtrade_config_path:
+        type: string
+        pattern: "^[A-Za-z0-9_./-]+\\.json$"
+      runtime_db_path:
+        type: string
+        minLength: 1
+        maxLength: 256
+      bot_identity:
+        type: string
+        pattern: "^[a-z][a-z0-9_-]{2,63}$"
+      api_key_env:
+        $ref: "#/$defs/environment_variable"
+      api_secret_env:
+        $ref: "#/$defs/environment_variable"
+  futures_runtime_instance:
+    type: object
+    additionalProperties: false
+    required:
+      - enabled
+      - freqtrade_config_path
+      - runtime_db_path
+      - bot_identity
+      - margin_mode
+      - position_mode
+      - global_max_leverage
+      - api_key_env
+      - api_secret_env
+    properties:
+      enabled:
+        type: boolean
+      freqtrade_config_path:
+        type: string
+        pattern: "^[A-Za-z0-9_./-]+\\.json$"
+      runtime_db_path:
+        type: string
+        minLength: 1
+        maxLength: 256
+      bot_identity:
+        type: string
+        pattern: "^[a-z][a-z0-9_-]{2,63}$"
+      api_key_env:
+        $ref: "#/$defs/environment_variable"
+      api_secret_env:
+        $ref: "#/$defs/environment_variable"
+      margin_mode:
+        const: isolated
+      position_mode:
+        const: one_way
+      global_max_leverage:
+        $ref: "#/$defs/positive_decimal"
+$comment: >-
+  Runtime code must additionally verify referenced paths, keep spot/futures identities and
+  databases distinct, and ensure approval TTL does not exceed the decision cycle.
