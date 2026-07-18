@@ -150,6 +150,16 @@ def test_secret_checker_allows_explicit_placeholder(tmp_path: Path) -> None:
     assert scan_secrets(tmp_path, [Path("config.example.py")]) == []
 
 
+def test_secret_checker_allows_explicit_inline_allowlist(tmp_path: Path) -> None:
+    source = tmp_path / "error_codes.py"
+    source.write_text(
+        'API_KEY_MISSING = "api_key_missing"  # pragma: allowlist secret\n',
+        encoding="utf-8",
+    )
+
+    assert scan_secrets(tmp_path, [Path("error_codes.py")]) == []
+
+
 def test_linux_ci_is_read_only_pinned_and_runs_deterministic_gates() -> None:
     workflow_path = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
     workflow = yaml.load(workflow_path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)

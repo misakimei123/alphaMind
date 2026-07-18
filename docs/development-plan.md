@@ -1739,8 +1739,10 @@ R2-03 待验证证据（2026-07-18）：
 - `test_infrastructure_reuses_mature_libraries` 固定运行时和开发依赖清单，并拒绝手写 HTTP/XML/HTML/
   平台锁/Markdown/secret scanner/response envelope 回归；聚焦回归覆盖 CommonMark code fence/reference link、
   detect-secrets 不回显、httpx 同源重定向和 headers、Bybit 分页、feedparser、HTML 清洗以及 filelock 超时
-  跨线程释放。最终全量 `pytest` 为 350 项通过，strict mypy 检查 65 个 source 文件，Ruff check/format
-  覆盖 99 个 Python 文件，repository scan 检查 341 个文件；pairlist、capability、effective config、
+  跨线程释放。Linux CI 对非敏感 `API_KEY_MISSING` 错误码的 KeywordDetector 误报使用官方 inline
+  allowlist 明确消除，并由跨平台回归测试固定。最终全量 `pytest` 为 351 项通过，strict mypy 检查
+  65 个 source 文件，Ruff check/format
+  覆盖 99 个 Python 文件，repository scan 检查 339 个文件；pairlist、capability、effective config、
   离线 AI check、`uv lock --check` 和 `git diff --check` 均通过。
 
 ### 13.10 R3：Telegram 人工授权

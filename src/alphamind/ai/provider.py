@@ -40,7 +40,7 @@ JsonObject = dict[str, Any]
 
 
 class ProviderErrorCode(StrEnum):
-    API_KEY_MISSING = "api_key_missing"
+    API_KEY_MISSING = "api_key_missing"  # pragma: allowlist secret
     AUTHENTICATION_ERROR = "authentication_error"
     BUDGET_EXCEEDED = "budget_exceeded"
     BUSINESS_VALIDATION_ERROR = "business_validation_error"
