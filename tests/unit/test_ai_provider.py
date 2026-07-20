@@ -28,7 +28,11 @@ from alphamind.ai import (
     UsageLedgerError,
 )
 from alphamind.config import EffectiveConfig, load_effective_config
-from alphamind.decision import BoundDecisionContext, DecisionContractBinder
+from alphamind.decision import (
+    ActionRejectionCode,
+    BoundDecisionContext,
+    DecisionContractBinder,
+)
 
 PROJECT_ROOT = Path(__file__).parents[2]
 CONTRACT_FIXTURES = PROJECT_ROOT / "tests" / "fixtures" / "contracts"
@@ -71,6 +75,14 @@ def _response(document: dict[str, object] | None = None) -> Response:
     response = Response.model_validate(document or _success_document())
     response._request_id = "req_fixture_001"  # type: ignore[attr-defined]
     return response
+
+
+def _response_for_decision(decision: dict[str, object]) -> Response:
+    document = _success_document()
+    output = cast(list[dict[str, object]], document["output"])
+    content = cast(list[dict[str, object]], output[0]["content"])
+    content[0]["text"] = json.dumps(decision)
+    return _response(document)
 
 
 class FakeResponses:
@@ -211,6 +223,49 @@ def test_request_uses_strict_responses_contract_without_tools_or_storage(tmp_pat
     assert all(set(item["required"]) == set(item["properties"]) for item in object_schemas)
     assert client.requests[0] == payload
     assert "test-key-never-logged" not in json.dumps(payload)
+
+
+def test_provider_returns_only_actions_accepted_by_business_validation(tmp_path: Path) -> None:
+    _, context = _effective_context()
+    transport = _success_document()
+    output = cast(list[dict[str, object]], transport["output"])
+    content = cast(list[dict[str, object]], output[0]["content"])
+    decision = json.loads(cast(str, content[0]["text"]))
+    rejected = deepcopy(_yaml("model-decision.valid.yaml")["actions"][0])
+    rejected["requested_leverage"] = "3"
+    decision["actions"].append(rejected)
+    client = FakeClient([_response_for_decision(decision)])
+
+    result = _provider(tmp_path, client).decide(context, now_utc=NOW)
+
+    assert result.status == "SUCCESS"
+    assert result.decision is not None
+    assert result.decision.action_ids == ("act-20260718T120005Z-aabbccddeeff",)
+    assert result.validation_report is not None
+    assert result.validation_report.rejected_action_ids == ("act-20260718T120000Z-0123456789ab",)
+    assert result.validation_report.action_results[1].rejection_codes == (
+        ActionRejectionCode.LEVERAGE_OUT_OF_RANGE,
+    )
+    assert len(client.requests) == 1
+
+
+def test_provider_fails_closed_when_every_action_is_rejected(tmp_path: Path) -> None:
+    _, context = _effective_context()
+    decision = _yaml("model-decision.valid.yaml")
+    decision["actions"][0]["requested_leverage"] = "3"
+    client = FakeClient([_response_for_decision(decision)])
+
+    result = _provider(tmp_path, client).decide(context, now_utc=NOW)
+
+    assert result.status == "HOLD_ONLY"
+    assert result.error_code is ProviderErrorCode.BUSINESS_VALIDATION_ERROR
+    assert result.decision is None
+    assert result.validation_report is not None
+    assert result.validation_report.accepted_action_ids == ()
+    assert result.validation_report.rejected_action_ids == ("act-20260718T120000Z-0123456789ab",)
+    assert result.to_safe_dict()["action_validation"] is not None
+    assert result.usage_summary.attempts == 1
+    assert len(client.requests) == 1
 
 
 def test_deepseek_chat_uses_json_output_and_runtime_schema_binding(tmp_path: Path) -> None:

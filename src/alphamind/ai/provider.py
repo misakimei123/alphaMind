@@ -30,11 +30,13 @@ from alphamind.ai.usage import (
 )
 from alphamind.config import EffectiveConfig
 from alphamind.decision import (
+    ActionBusinessValidator,
     BoundDecisionContext,
     BoundModelDecision,
     ContractErrorCode,
     ContractValidationError,
     DecisionContractBinder,
+    DecisionValidationReport,
 )
 
 JsonObject = dict[str, Any]
@@ -110,6 +112,7 @@ class ProviderResult:
     config_sha256: str
     input_sha256: str
     usage_summary: UsageSummary
+    validation_report: DecisionValidationReport | None
 
     def to_safe_dict(self) -> JsonObject:
         return {
@@ -123,6 +126,9 @@ class ProviderResult:
             "input_sha256": self.input_sha256,
             "usage": self.usage_summary.to_dict(),
             "decision": self.decision.document if self.decision else None,
+            "action_validation": (
+                self.validation_report.to_safe_dict() if self.validation_report else None
+            ),
         }
 
 
@@ -134,11 +140,13 @@ class _ResponseFailure(RuntimeError):
         usage: Usage | None = None,
         response_id: str | None = None,
         model_id: str | None = None,
+        validation_report: DecisionValidationReport | None = None,
     ) -> None:
         self.code = code
         self.usage = usage
         self.response_id = response_id
         self.model_id = model_id
+        self.validation_report = validation_report
         super().__init__(code.value)
 
 
@@ -264,6 +272,7 @@ class OpenAICompatibleProvider:
         if self.profile["provider"]["base_url"] != allowed_endpoints.get(provider_key):
             raise ValueError("AI provider base URL is not allowed")
         self.binder = DecisionContractBinder(effective)
+        self.action_validator = ActionBusinessValidator(effective, binder=self.binder)
         prompt_path = effective.project_root / self.profile["prompt"]["path"]
         schema_path = effective.project_root / self.profile["structured_output"]["schema_path"]
         self.prompt = prompt_path.read_text(encoding="utf-8")
@@ -367,6 +376,7 @@ class OpenAICompatibleProvider:
         last_response_id: str | None = None
         last_request_id: str | None = None
         last_model_id = str(self.profile["model"]["id"])
+        last_validation_report: DecisionValidationReport | None = None
         # 这里不交给 SDK 或通用 retry decorator：每次实际尝试前必须先原子预留预算，
         # 并按本次 provider usage/失败类型独立结算，才能维持周期与 UTC 日成本上限。
         for attempt_number in range(1, maximum_attempts + 1):
@@ -393,7 +403,9 @@ class OpenAICompatibleProvider:
                 request_id = getattr(response, "_request_id", None)
                 if not isinstance(request_id, str):
                     request_id = None
-                decision, usage, response_id, model_id = self._parse_response(response, context)
+                decision, validation_report, usage, response_id, model_id = self._parse_response(
+                    response, context
+                )
                 self.usage_ledger.settle(
                     attempt_id,
                     settled_at_utc=now,
@@ -412,6 +424,7 @@ class OpenAICompatibleProvider:
                     response_id=response_id,
                     request_id=request_id,
                     model_id=model_id,
+                    validation_report=validation_report,
                 )
             except openai.APIError as error:
                 last_error, last_request_id = _provider_error(error)
@@ -431,6 +444,7 @@ class OpenAICompatibleProvider:
                 last_error = error.code
                 last_response_id = error.response_id
                 last_model_id = error.model_id or last_model_id
+                last_validation_report = error.validation_report
                 request_id = getattr(response, "_request_id", None)
                 if not isinstance(request_id, str):
                     request_id = None
@@ -461,13 +475,14 @@ class OpenAICompatibleProvider:
             response_id=last_response_id,
             request_id=last_request_id,
             model_id=last_model_id,
+            validation_report=last_validation_report,
         )
 
     def _parse_response(
         self,
         response: Response | ChatCompletion,
         context: BoundDecisionContext,
-    ) -> tuple[BoundModelDecision, Usage, str, str]:
+    ) -> tuple[BoundModelDecision, DecisionValidationReport, Usage, str, str]:
         if isinstance(response, ChatCompletion):
             return self._parse_chat_response(response, context)
         return self._parse_responses_response(response, context)
@@ -476,7 +491,7 @@ class OpenAICompatibleProvider:
         self,
         response: Response,
         context: BoundDecisionContext,
-    ) -> tuple[BoundModelDecision, Usage, str, str]:
+    ) -> tuple[BoundModelDecision, DecisionValidationReport, Usage, str, str]:
         response_id = response.id
         model_id = response.model
         if not response_id.startswith("resp_"):
@@ -505,20 +520,20 @@ class OpenAICompatibleProvider:
                 model_id=model_id,
             )
         output_text = _output_text(response, usage, response_id, model_id)
-        decision = self._bind_output_text(
+        decision, validation_report = self._bind_output_text(
             output_text,
             context,
             usage=usage,
             response_id=response_id,
             model_id=model_id,
         )
-        return decision, usage, response_id, model_id
+        return decision, validation_report, usage, response_id, model_id
 
     def _parse_chat_response(
         self,
         response: ChatCompletion,
         context: BoundDecisionContext,
-    ) -> tuple[BoundModelDecision, Usage, str, str]:
+    ) -> tuple[BoundModelDecision, DecisionValidationReport, Usage, str, str]:
         response_id = response.id
         model_id = response.model
         if not response_id:
@@ -569,14 +584,14 @@ class OpenAICompatibleProvider:
                 response_id=response_id,
                 model_id=model_id,
             )
-        decision = self._bind_output_text(
+        decision, validation_report = self._bind_output_text(
             output_text,
             context,
             usage=usage,
             response_id=response_id,
             model_id=model_id,
         )
-        return decision, usage, response_id, model_id
+        return decision, validation_report, usage, response_id, model_id
 
     def _bind_output_text(
         self,
@@ -586,7 +601,7 @@ class OpenAICompatibleProvider:
         usage: Usage,
         response_id: str,
         model_id: str,
-    ) -> BoundModelDecision:
+    ) -> tuple[BoundModelDecision, DecisionValidationReport]:
         try:
             decision_document = json.loads(output_text)
         except json.JSONDecodeError:
@@ -621,7 +636,16 @@ class OpenAICompatibleProvider:
                 response_id=response_id,
                 model_id=model_id,
             ) from None
-        return decision
+        validation_report = self.action_validator.validate(context, decision)
+        if validation_report.accepted_decision is None:
+            raise _ResponseFailure(
+                ProviderErrorCode.BUSINESS_VALIDATION_ERROR,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+                validation_report=validation_report,
+            )
+        return validation_report.accepted_decision, validation_report
 
     def _result(
         self,
@@ -632,6 +656,7 @@ class OpenAICompatibleProvider:
         response_id: str | None = None,
         request_id: str | None = None,
         model_id: str | None = None,
+        validation_report: DecisionValidationReport | None = None,
     ) -> ProviderResult:
         try:
             summary = self.usage_ledger.cycle_summary(context.cycle_id)
@@ -639,6 +664,7 @@ class OpenAICompatibleProvider:
             summary = UsageSummary(0, Usage(0, 0, 0), "0.000000000")
             error_code = ProviderErrorCode.PROVIDER_ERROR
             decision = None
+            validation_report = None
         return ProviderResult(
             status="SUCCESS" if error_code is None else "HOLD_ONLY",
             decision=decision,
@@ -650,6 +676,7 @@ class OpenAICompatibleProvider:
             config_sha256=self.effective.effective_sha256,
             input_sha256=context.sha256,
             usage_summary=summary,
+            validation_report=validation_report,
         )
 
 

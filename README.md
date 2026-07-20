@@ -12,8 +12,8 @@ alphaMind 是个人 AI 加密货币交易系统。目标运行方式是：默认
 - Freqtrade 继续作为唯一 Bybit 交易写入者，AI 与 Telegram Bot 均不直接持有交易密钥。
 
 仓库在旧 4h Donchian 研究、风险、审计和 Runtime DB 底座上，已经完成 R0/R1 的产品合同、
-配置化市场与只读周期观察，以及 AI 决策合同绑定、新闻采集和模型 provider。R2-03 已完成真实只读
-provider 冒烟与 usage 对账；Telegram、ExecutionGateway 和批准后交易闭环仍按
+配置化市场与只读周期观察，以及 AI 决策合同绑定、新闻采集和模型 provider。R2-04 已完成逐动作
+业务校验、拒绝报告与审批候选过滤；Telegram、ExecutionGateway 和批准后交易闭环仍按
 [唯一开发计划](docs/development-plan.md) 推进。
 
 仓库不包含凭据，也没有可启动 Live 的 Compose service；当前实现包括：
@@ -36,7 +36,10 @@ provider 冒烟与 usage 对账；Telegram、ExecutionGateway 和批准后交易
   状态记录和原子 JSON 快照，RiskSnapshot 缺失时明确保持 close-only；
 - NewsItem、DecisionContext、ModelDecision 与 TradeAction 的严格运行时绑定：拒绝不支持的版本、
   配置或周期不匹配、伪造新闻来源、非本周期引用、重复 ID、不可用市场及不允许的动作；绑定结果
-  使用规范化 JSON 和 SHA-256 固化，只有通过绑定的候选动作才能交给后续审批层；
+  使用规范化 JSON 和 SHA-256 固化，并绑定生成 decision 的精确 Context hash；
+- 确定性 Action 业务校验：逐动作检查审批 TTL、新闻相关性、方向/杠杆、仓位状态、亏损加仓、价格
+  漂移与 tick、long/short 止损止盈几何和保护单不可放宽；输出稳定拒绝 code，只有通过全部规则的动作
+  才能成为后续审批候选，全部拒绝时 provider fail-closed 为 `HOLD_ONLY`；
 - 配置化 Bybit V5 公告与 RSS/Atom 新闻适配器：`httpx` 处理 HTTP，`feedparser` 统一 Feed，
   BeautifulSoup 清洗 HTML；项目叠加 HTTPS 同源、Content-Type、响应大小、DTD/entity 和请求超时
   边界，使用 ETag/Last-Modified、发布时间高水位和原子状态文件增量抓取，按 canonical

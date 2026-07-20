@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-20 / R2-03 完成 DeepSeek 真实只读 provider 冒烟、结构化 HOLD 与 usage/成本账本对账；下一任务为 R2-04 Action 业务校验 |
+| 最近进度更新 | 2026-07-20 / R2-04 完成 Action 业务校验、新闻引用校验、逐动作拒绝报告与审批候选过滤；下一任务为 R2-05 特征接入 Context |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01/R2-02 已完成决策合同与新闻采集。R2-03 已完成 OpenAI Responses 与 DeepSeek Chat Completions provider、结构化输出、有限重试、成本账本及一次 DeepSeek 真实只读请求和 usage 对账，状态为 `DONE`；当前下一任务是 R2-04 Action 业务校验。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-04 已完成决策合同、新闻采集、模型 provider 与逐动作确定性业务校验，R2-04 状态为 `DONE`；当前下一任务是 R2-05 将 Donchian/ATR/EMA 等特征接入 Context。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1621,7 +1621,7 @@ R1-06 完成证据（2026-07-18）：
 - `R2-01`（`DONE`）：实现并绑定 R0-03 冻结的 NewsItem、DecisionContext 与 Action schema，补跨对象业务校验与版本兼容；
 - `R2-02`（`DONE`）：至少两个可配置新闻/公告适配器、增量抓取、去重和资产关联；
 - `R2-03`（`DONE`）：LLM provider interface、结构化输出、超时、有限重试、成本记录，以及真实只读 API 冒烟和 usage 对账；
-- `R2-04`：Action 业务校验、新闻引用校验和逐动作拒绝原因；
+- `R2-04`（`DONE`）：Action 业务校验、新闻引用校验和逐动作拒绝原因；
 - `R2-05`：将 Donchian/ATR/EMA 等接入 Context，不再直接拥有交易权威；
 - `R2-06`：保存 HOLD、候选动作、模型错误、model/prompt/config 版本和输入 hash。
 
@@ -1712,6 +1712,28 @@ R2-03 完成证据（2026-07-20）：
   由 typed fixture 和离线合同测试覆盖，不把两种 API 的兼容范围混为一谈；
 - 本任务不读取 Bybit 交易密钥、不发送 Telegram，也不创建、修改或取消订单。R2-03 据此转为 `DONE`，
   下一任务为 R2-04。
+
+R2-04 完成证据（2026-07-20）：
+
+- `src/alphamind/decision/validation.py` 新增确定性 `ActionBusinessValidator`，在 R2-01 schema/binder
+  之后逐动作聚合稳定拒绝 code；覆盖审批 TTL、风险增加新闻必需性与资产相关性、合约方向和三层有效
+  杠杆上限、已有/缺失/方向不符仓位、禁止亏损加仓、入场区间与当前价格漂移、price tick、long/short
+  止损止盈几何与顺序、CANCEL_ORDER 目标方向、REPLACE_PROTECTION 目标归属以及禁止放宽现有止损；
+- `BoundModelDecision` 绑定生成它的精确 `context_sha256`，相同 cycle 的另一份 Context 也不能替换原始
+  校验输入。`DecisionValidationReport` 保留每个 action 的 `ACCEPTED/REJECTED`、拒绝 code、源 decision
+  hash 和 context hash；只有全部规则通过的动作进入 `approval_candidates`，混合输出会过滤拒绝动作，
+  全部拒绝时 provider 返回 `HOLD_ONLY/business_validation_error` 且不重试；
+- Action 合同不携带可执行 quantity，因此本任务不伪造数量步长、minimum quantity/notional、最终保证金
+  或风险定仓结果；这些值继续由既有确定性风险纯函数和 R4-02/R5-03 执行链基于审批时账户状态计算。
+  当前 DecisionContext 也没有现货成本基线，配置禁止亏损加仓时 spot ADD 会以
+  `position_pnl_unavailable` fail-closed，而不是猜测盈亏；
+- 新增 10 项 R2-04 测试，覆盖有效/无效动作混合过滤、同周期 Context 替换、稳定多原因聚合、新闻与
+  TTL、亏损加仓、仓位/动作形状、保护单放宽、provider 部分接受和全部拒绝。聚焦 contract/provider/
+  validator 48 项通过；全量 `pytest` 366 项通过，strict mypy 检查 66 个 source 文件，Ruff check/format
+  覆盖 101 个 Python 文件，repository scan 检查 343 个文件，`uv lock --check` 和
+  `git diff --check` 通过；
+- 本任务只消费冻结配置、Context、capability 和 provider fixture，不发起真实模型或交易所请求，不读取
+  交易密钥、不发送 Telegram，也不创建、修改或取消订单。R2-04 据此转为 `DONE`，下一任务为 R2-05。
 
 全仓依赖优先审计（2026-07-18）：
 
@@ -1969,13 +1991,13 @@ git diff --check
 | 34 | R0-04 模型与新闻配置 | DONE | 模型/Prompt/成本/失败策略、ModelDecision 严格输出及 Bybit/SEC/CoinDesk 三源合同；合同 47 项、全量 231 项 pytest 通过 |
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
-| 37 | R2-01 至 R2-06 新闻与 AI 决策 | IN_PROGRESS | R2-01/R2-02/R2-03 已完成；**下一任务是 R2-04 Action 业务校验、新闻引用校验和逐动作拒绝原因** |
+| 37 | R2-01 至 R2-06 新闻与 AI 决策 | IN_PROGRESS | R2-01 至 R2-04 已完成；**下一任务是 R2-05 将 Donchian/ATR/EMA 等接入 Context** |
 | 38 | R3-01 至 R3-06 Telegram 授权 | NOT_STARTED | Proposal Store、白名单、nonce、TTL、重新校验与通知 |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-20 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-03 已完成。当前唯一下一任务是 R2-04 Action 业务校验、新闻引用校验和逐动作拒绝原因。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-20 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-04 已完成。当前唯一下一任务是 R2-05 将 Donchian/ATR/EMA 等特征接入 Context，不再直接拥有交易权威。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 

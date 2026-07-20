@@ -89,6 +89,7 @@ class BoundDecisionContext:
 class BoundModelDecision:
     _document_json: str
     sha256: str
+    context_sha256: str
     cycle_id: str
     action_ids: tuple[str, ...]
 
@@ -657,6 +658,7 @@ class DecisionContractBinder:
         return BoundModelDecision(
             _document_json=canonical_json,
             sha256=_canonical_sha256(canonical_json),
+            context_sha256=context.sha256,
             cycle_id=context.cycle_id,
             action_ids=action_ids,
         )
