@@ -152,6 +152,7 @@ def _parse_text(raw: str) -> str:
 
 
 ENVIRONMENT_OVERRIDES: Mapping[str, tuple[tuple[str, ...], OverrideParser]] = {
+    "ALPHAMIND_AI_PROFILE_PATH": (("decision", "ai_profile_path"), _parse_text),
     "ALPHAMIND_ENVIRONMENT": (("environment",), _parse_text),
     "ALPHAMIND_DECISION_CYCLE_MINUTES": (
         ("scheduler", "decision_cycle_minutes"),

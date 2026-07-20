@@ -1,0 +1,26 @@
+{
+  "id": "chatcmpl_fixture_success_001",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "{\"schema_version\":1,\"cycle_id\":\"cycle-20260718T120000Z-0123abcd\",\"actions\":[{\"schema_version\":2,\"cycle_id\":\"cycle-20260718T120000Z-0123abcd\",\"action_id\":\"act-20260718T120005Z-aabbccddeeff\",\"instrument_id\":\"SOL\",\"market\":\"spot\",\"side\":\"long\",\"action\":\"HOLD\",\"order_preference\":\"none\",\"entry\":null,\"stop_loss\":null,\"take_profit\":[],\"reduce_fraction\":null,\"requested_leverage\":\"1\",\"target_reference_id\":null,\"valid_for_seconds\":300,\"reason_codes\":[\"INSUFFICIENT_EVIDENCE\"],\"news_refs\":[],\"rationale\":\"No risk increase is justified by the supplied context.\",\"risks\":[\"The observation may become stale before the next cycle.\"]}],\"decision_summary\":\"Hold pending stronger evidence.\",\"global_risks\":[\"This proposal has no execution authority.\"]}",
+        "refusal": null,
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1784376005,
+  "model": "deepseek-v4-flash",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_fixture_deepseek_v4_flash",
+  "usage": {
+    "completion_tokens": 100,
+    "prompt_cache_hit_tokens": 200,
+    "prompt_cache_miss_tokens": 800,
+    "prompt_tokens": 1000,
+    "total_tokens": 1100
+  }
+}

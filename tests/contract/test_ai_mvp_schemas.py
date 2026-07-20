@@ -116,6 +116,9 @@ def test_valid_examples_satisfy_contracts(
         lambda config: config["execution"]["futures"].update({"global_max_leverage": 3}),
         lambda config: config["approval"].update({"bot_token": "must-not-be-stored"}),
         lambda config: config["scheduler"].update({"decision_cycle_minutes": 1}),
+        lambda config: config["decision"].update(
+            {"ai_profile_path": "configs/alphamind/unreviewed-provider.yaml"}
+        ),
     ],
 )
 def test_runtime_config_rejects_unsafe_or_ambiguous_values(
@@ -288,29 +291,34 @@ def test_ai_profile_pins_the_versioned_prompt_content(
 
     assert profile["prompt"]["sha256"] == actual_sha256
 
+    deepseek = load_yaml(PROJECT_ROOT / "configs" / "alphamind" / "ai-profile.deepseek-test.yaml")
+    validator("ai-profile.schema.yaml", schemas, registry).validate(deepseek)
+    assert deepseek["prompt"]["sha256"] == actual_sha256
+
 
 def test_ai_cost_caps_cover_one_full_attempt_and_the_half_hour_schedule() -> None:
-    profile = load_yaml(PROJECT_ROOT / "configs" / "alphamind" / "ai-profile.example.yaml")
     runtime = load_yaml(PROJECT_ROOT / "configs" / "alphamind" / "runtime.example.yaml")
-    request = profile["request"]
-    cost = profile["cost"]
-    assert isinstance(request, dict)
-    assert isinstance(cost, dict)
+    for filename in ("ai-profile.example.yaml", "ai-profile.deepseek-test.yaml"):
+        profile = load_yaml(PROJECT_ROOT / "configs" / "alphamind" / filename)
+        request = profile["request"]
+        cost = profile["cost"]
+        assert isinstance(request, dict)
+        assert isinstance(cost, dict)
 
-    one_million = Decimal("1000000")
-    maximum_attempt_cost = (
-        Decimal(request["max_input_tokens"])
-        * Decimal(cost["input_per_million_tokens"])
-        / one_million
-        + Decimal(request["max_output_tokens"])
-        * Decimal(cost["output_per_million_tokens"])
-        / one_million
-    )
-    per_cycle_cap = Decimal(cost["maximum_cost_per_cycle"])
-    cycles_per_day = Decimal(1440 // runtime["scheduler"]["decision_cycle_minutes"])
+        one_million = Decimal("1000000")
+        maximum_attempt_cost = (
+            Decimal(request["max_input_tokens"])
+            * Decimal(cost["input_per_million_tokens"])
+            / one_million
+            + Decimal(request["max_output_tokens"])
+            * Decimal(cost["output_per_million_tokens"])
+            / one_million
+        )
+        per_cycle_cap = Decimal(cost["maximum_cost_per_cycle"])
+        cycles_per_day = Decimal(1440 // runtime["scheduler"]["decision_cycle_minutes"])
 
-    assert maximum_attempt_cost <= per_cycle_cap
-    assert per_cycle_cap * cycles_per_day <= Decimal(cost["maximum_cost_per_utc_day"])
+        assert maximum_attempt_cost <= per_cycle_cap
+        assert per_cycle_cap * cycles_per_day <= Decimal(cost["maximum_cost_per_utc_day"])
 
 
 def test_trade_decision_prompt_keeps_model_read_only_and_news_untrusted() -> None:

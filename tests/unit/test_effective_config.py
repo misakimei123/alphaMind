@@ -107,6 +107,26 @@ def test_whitelisted_environment_overrides_are_typed_and_hashed() -> None:
     assert "must-not-be-read" not in serialized
 
 
+def test_ai_profile_override_selects_versioned_deepseek_profile_without_reading_key() -> None:
+    effective = load_effective_config(
+        PROJECT_ROOT,
+        environ={
+            "ALPHAMIND_AI_PROFILE_PATH": ("configs/alphamind/ai-profile.deepseek-test.yaml"),
+            "DEEPSEEK_API_KEY": "must-not-be-read",  # pragma: allowlist secret
+        },
+    )
+
+    assert effective.applied_overrides == ("ALPHAMIND_AI_PROFILE_PATH",)
+    assert effective.ai_profile["provider"] == {
+        "id": "deepseek",
+        "api": "chat_completions",
+        "base_url": "https://api.deepseek.com",
+        "api_key_env": "DEEPSEEK_API_KEY",  # pragma: allowlist secret
+    }
+    assert effective.ai_profile["model"]["id"] == "deepseek-v4-flash"
+    assert "must-not-be-read" not in json.dumps(effective.to_safe_dict())
+
+
 def test_leverage_override_requires_matching_capability_refresh() -> None:
     with pytest.raises(ConfigError, match="global leverage does not match"):
         load_effective_config(

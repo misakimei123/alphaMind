@@ -23,34 +23,45 @@ properties:
     type: string
     pattern: "^[a-z][a-z0-9_-]{2,63}$"
   provider:
-    type: object
-    additionalProperties: false
-    required: [id, api, base_url, api_key_env]
-    properties:
-      id:
-        const: openai
-      api:
-        const: responses
-      base_url:
-        const: https://api.openai.com/v1
-      api_key_env:
-        type: string
-        const: OPENAI_API_KEY
+    oneOf:
+      - type: object
+        additionalProperties: false
+        required: [id, api, base_url, api_key_env]
+        properties:
+          id: {const: openai}
+          api: {const: responses}
+          base_url: {const: https://api.openai.com/v1}
+          api_key_env: {const: OPENAI_API_KEY}
+      - type: object
+        additionalProperties: false
+        required: [id, api, base_url, api_key_env]
+        properties:
+          id: {const: deepseek}
+          api: {const: chat_completions}
+          base_url: {const: https://api.deepseek.com}
+          api_key_env: {const: DEEPSEEK_API_KEY}
   model:
-    type: object
-    additionalProperties: false
-    required: [id, reasoning_effort, verbosity, temperature, seed]
-    properties:
-      id:
-        const: gpt-5.6-terra
-      reasoning_effort:
-        const: medium
-      verbosity:
-        const: low
-      temperature:
-        type: "null"
-      seed:
-        type: "null"
+    oneOf:
+      - type: object
+        additionalProperties: false
+        required: [id, thinking, reasoning_effort, verbosity, temperature, seed]
+        properties:
+          id: {const: gpt-5.6-terra}
+          thinking: {type: "null"}
+          reasoning_effort: {const: medium}
+          verbosity: {const: low}
+          temperature: {type: "null"}
+          seed: {type: "null"}
+      - type: object
+        additionalProperties: false
+        required: [id, thinking, reasoning_effort, verbosity, temperature, seed]
+        properties:
+          id: {const: deepseek-v4-flash}
+          thinking: {const: disabled}
+          reasoning_effort: {type: "null"}
+          verbosity: {type: "null"}
+          temperature: {const: 0}
+          seed: {type: "null"}
   prompt:
     type: object
     additionalProperties: false
@@ -67,12 +78,20 @@ properties:
   structured_output:
     type: object
     additionalProperties: false
-    required: [enabled, strict, schema_name, schema_path, runtime_action_schema_path]
+    required:
+      - enabled
+      - strict
+      - provider_schema_enforced
+      - schema_name
+      - schema_path
+      - runtime_action_schema_path
     properties:
       enabled:
         const: true
       strict:
         const: true
+      provider_schema_enforced:
+        type: boolean
       schema_name:
         const: alphamind_model_decision_v1
       schema_path:
@@ -154,17 +173,18 @@ properties:
       pricing_checked_at_utc:
         $ref: "#/$defs/utc_timestamp"
       input_per_million_tokens:
-        const: "2.50"
+        $ref: "#/$defs/positive_decimal"
       cached_input_per_million_tokens:
-        const: "0.25"
+        $ref: "#/$defs/positive_decimal"
       output_per_million_tokens:
-        const: "15.00"
+        $ref: "#/$defs/positive_decimal"
       maximum_cost_per_cycle:
         $ref: "#/$defs/positive_decimal"
       maximum_cost_per_utc_day:
         $ref: "#/$defs/positive_decimal"
       pricing_source:
-        const: https://developers.openai.com/api/docs/models/gpt-5.6-terra
+        type: string
+        format: uri
   failure_policy:
     type: object
     additionalProperties: false
@@ -197,6 +217,42 @@ properties:
       record_usage: {const: true}
       record_raw_prompt: {const: false}
       record_api_key: {const: false}
+allOf:
+  - oneOf:
+      - properties:
+          provider:
+            properties:
+              id: {const: openai}
+          model:
+            properties:
+              id: {const: gpt-5.6-terra}
+          structured_output:
+            properties:
+              provider_schema_enforced: {const: true}
+          cost:
+            properties:
+              input_per_million_tokens: {const: "2.50"}
+              cached_input_per_million_tokens: {const: "0.25"}
+              output_per_million_tokens: {const: "15.00"}
+              pricing_source:
+                const: https://developers.openai.com/api/docs/models/gpt-5.6-terra
+      - properties:
+          provider:
+            properties:
+              id: {const: deepseek}
+          model:
+            properties:
+              id: {const: deepseek-v4-flash}
+          structured_output:
+            properties:
+              provider_schema_enforced: {const: false}
+          cost:
+            properties:
+              input_per_million_tokens: {const: "0.14"}
+              cached_input_per_million_tokens: {const: "0.0028"}
+              output_per_million_tokens: {const: "0.28"}
+              pricing_source:
+                const: https://api-docs.deepseek.com/quick_start/pricing
 $defs:
   utc_timestamp:
     type: string

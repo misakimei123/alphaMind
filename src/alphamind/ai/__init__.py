@@ -1,6 +1,7 @@
 """alphaMind R2 AI provider 公共接口。"""
 
 from alphamind.ai.provider import (
+    OpenAICompatibleProvider,
     OpenAIResponsesProvider,
     ProviderClient,
     ProviderErrorCode,
@@ -19,6 +20,7 @@ from alphamind.ai.usage import (
 __all__ = [
     "BudgetExceededError",
     "CostPolicy",
+    "OpenAICompatibleProvider",
     "OpenAIResponsesProvider",
     "ProviderClient",
     "ProviderErrorCode",

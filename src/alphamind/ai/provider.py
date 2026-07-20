@@ -1,4 +1,4 @@
-"""OpenAI Responses API provider：严格输出、有限重试与 fail-closed。"""
+"""OpenAI-compatible provider：结构化输出、有限重试与 fail-closed。"""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from typing import Any, Protocol, cast
 import openai
 import yaml
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from openai.types.responses import Response
 
 from alphamind.ai.usage import (
@@ -58,14 +59,25 @@ class ResponsesResource(Protocol):
     def create(self, **kwargs: Any) -> Response: ...
 
 
+class ChatCompletionsResource(Protocol):
+    def create(self, **kwargs: Any) -> ChatCompletion: ...
+
+
+class ChatResource(Protocol):
+    completions: ChatCompletionsResource
+
+
 class ProviderClient(Protocol):
     responses: ResponsesResource
+    chat: ChatResource
 
 
 def _provider_error(error: openai.APIError) -> tuple[ProviderErrorCode, str | None]:
     request_id = error.request_id if isinstance(error, openai.APIStatusError) else None
     if isinstance(error, openai.APITimeoutError):
         return ProviderErrorCode.TIMEOUT, request_id
+    if isinstance(error, openai.APIStatusError) and error.status_code == 402:
+        return ProviderErrorCode.BUDGET_EXCEEDED, request_id
     if isinstance(error, (openai.AuthenticationError, openai.PermissionDeniedError)):
         return ProviderErrorCode.AUTHENTICATION_ERROR, request_id
     if isinstance(error, openai.RateLimitError):
@@ -189,6 +201,20 @@ def _usage(response: Response) -> Usage:
         raise _ResponseFailure(ProviderErrorCode.USAGE_INVALID) from None
 
 
+def _chat_usage(response: ChatCompletion) -> Usage:
+    raw = response.usage
+    if raw is None or raw.total_tokens != raw.prompt_tokens + raw.completion_tokens:
+        raise _ResponseFailure(ProviderErrorCode.USAGE_INVALID)
+    cached = getattr(raw, "prompt_cache_hit_tokens", None)
+    if not isinstance(cached, int):
+        details = raw.prompt_tokens_details
+        cached = details.cached_tokens if details and details.cached_tokens is not None else 0
+    try:
+        return Usage(raw.prompt_tokens, cached, raw.completion_tokens)
+    except ValueError:
+        raise _ResponseFailure(ProviderErrorCode.USAGE_INVALID) from None
+
+
 def _output_text(response: Response, usage: Usage, response_id: str, model_id: str) -> str:
     for item in response.output:
         if item.type == "message":
@@ -211,7 +237,7 @@ def _output_text(response: Response, usage: Usage, response_id: str, model_id: s
     return output_text
 
 
-class OpenAIResponsesProvider:
+class OpenAICompatibleProvider:
     def __init__(
         self,
         effective: EffectiveConfig,
@@ -227,8 +253,16 @@ class OpenAIResponsesProvider:
         self.client = client
         self.environ = dict(os.environ if environ is None else environ)
         self.sleep = sleep
-        if self.profile["provider"]["base_url"] != "https://api.openai.com/v1":
-            raise ValueError("OpenAI provider base URL is not allowed")
+        provider_key = (
+            str(self.profile["provider"]["id"]),
+            str(self.profile["provider"]["api"]),
+        )
+        allowed_endpoints = {
+            ("openai", "responses"): "https://api.openai.com/v1",
+            ("deepseek", "chat_completions"): "https://api.deepseek.com",
+        }
+        if self.profile["provider"]["base_url"] != allowed_endpoints.get(provider_key):
+            raise ValueError("AI provider base URL is not allowed")
         self.binder = DecisionContractBinder(effective)
         prompt_path = effective.project_root / self.profile["prompt"]["path"]
         schema_path = effective.project_root / self.profile["structured_output"]["schema_path"]
@@ -242,6 +276,27 @@ class OpenAIResponsesProvider:
 
     def request_payload(self, context: BoundDecisionContext) -> JsonObject:
         context_json = _canonical_json(context.document)
+        if self.profile["provider"]["api"] == "chat_completions":
+            # DeepSeek JSON Output 只保证合法 JSON，不承诺服务端 JSON Schema 约束；
+            # 因此把 schema 明确放入 system message，并在响应后继续执行完整本地 binder。
+            system_message = (
+                self.prompt
+                + "\n\nReturn exactly one JSON object matching this JSON Schema. "
+                + "Do not add markdown fences or commentary.\n"
+                + _canonical_json(self.schema)
+            )
+            return {
+                "model": self.profile["model"]["id"],
+                "messages": [
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": context_json},
+                ],
+                "max_tokens": self.profile["request"]["max_output_tokens"],
+                "temperature": self.profile["model"]["temperature"],
+                "response_format": {"type": "json_object"},
+                "stream": False,
+                "extra_body": {"thinking": {"type": self.profile["model"]["thinking"]}},
+            }
         return {
             "model": self.profile["model"]["id"],
             "instructions": self.prompt,
@@ -329,9 +384,12 @@ class OpenAIResponsesProvider:
             except UsageLedgerError:
                 return self._result(context, ProviderErrorCode.PROVIDER_ERROR)
 
-            response: Response | None = None
+            response: Response | ChatCompletion | None = None
             try:
-                response = client.responses.create(**payload)
+                if self.profile["provider"]["api"] == "responses":
+                    response = client.responses.create(**payload)
+                else:
+                    response = client.chat.completions.create(**payload)
                 request_id = getattr(response, "_request_id", None)
                 if not isinstance(request_id, str):
                     request_id = None
@@ -407,6 +465,15 @@ class OpenAIResponsesProvider:
 
     def _parse_response(
         self,
+        response: Response | ChatCompletion,
+        context: BoundDecisionContext,
+    ) -> tuple[BoundModelDecision, Usage, str, str]:
+        if isinstance(response, ChatCompletion):
+            return self._parse_chat_response(response, context)
+        return self._parse_responses_response(response, context)
+
+    def _parse_responses_response(
+        self,
         response: Response,
         context: BoundDecisionContext,
     ) -> tuple[BoundModelDecision, Usage, str, str]:
@@ -438,6 +505,88 @@ class OpenAIResponsesProvider:
                 model_id=model_id,
             )
         output_text = _output_text(response, usage, response_id, model_id)
+        decision = self._bind_output_text(
+            output_text,
+            context,
+            usage=usage,
+            response_id=response_id,
+            model_id=model_id,
+        )
+        return decision, usage, response_id, model_id
+
+    def _parse_chat_response(
+        self,
+        response: ChatCompletion,
+        context: BoundDecisionContext,
+    ) -> tuple[BoundModelDecision, Usage, str, str]:
+        response_id = response.id
+        model_id = response.model
+        if not response_id:
+            raise _ResponseFailure(ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT)
+        configured_model = str(self.profile["model"]["id"])
+        if not (model_id == configured_model or model_id.startswith(f"{configured_model}-")):
+            raise _ResponseFailure(
+                ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT,
+                response_id=response_id,
+            )
+        usage = _chat_usage(response)
+        if usage.input_tokens > int(
+            self.profile["request"]["max_input_tokens"]
+        ) or usage.output_tokens > int(self.profile["request"]["max_output_tokens"]):
+            raise _ResponseFailure(
+                ProviderErrorCode.USAGE_INVALID,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+            )
+        if len(response.choices) != 1:
+            raise _ResponseFailure(
+                ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+            )
+        choice = response.choices[0]
+        if choice.finish_reason == "content_filter" or choice.message.refusal:
+            raise _ResponseFailure(
+                ProviderErrorCode.POLICY_REFUSAL,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+            )
+        if choice.finish_reason != "stop" or choice.message.tool_calls:
+            raise _ResponseFailure(
+                ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+            )
+        output_text = choice.message.content
+        if not output_text:
+            raise _ResponseFailure(
+                ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT,
+                usage=usage,
+                response_id=response_id,
+                model_id=model_id,
+            )
+        decision = self._bind_output_text(
+            output_text,
+            context,
+            usage=usage,
+            response_id=response_id,
+            model_id=model_id,
+        )
+        return decision, usage, response_id, model_id
+
+    def _bind_output_text(
+        self,
+        output_text: str,
+        context: BoundDecisionContext,
+        *,
+        usage: Usage,
+        response_id: str,
+        model_id: str,
+    ) -> BoundModelDecision:
         try:
             decision_document = json.loads(output_text)
         except json.JSONDecodeError:
@@ -472,7 +621,7 @@ class OpenAIResponsesProvider:
                 response_id=response_id,
                 model_id=model_id,
             ) from None
-        return decision, usage, response_id, model_id
+        return decision
 
     def _result(
         self,
@@ -504,6 +653,15 @@ class OpenAIResponsesProvider:
         )
 
 
+class OpenAIResponsesProvider(OpenAICompatibleProvider):
+    """兼容旧调用点，并保证该实例只接受 OpenAI Responses profile。"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        if self.profile["provider"]["api"] != "responses":
+            raise ValueError("OpenAIResponsesProvider requires a responses profile")
+
+
 def build_provider(
     effective: EffectiveConfig,
     *,
@@ -511,10 +669,10 @@ def build_provider(
     client: ProviderClient | None = None,
     environ: Mapping[str, str] | None = None,
     sleep: Callable[[float], None] = time.sleep,
-) -> OpenAIResponsesProvider:
+) -> OpenAICompatibleProvider:
     policy = CostPolicy.from_profile(effective.ai_profile)
     ledger = UsageLedger(usage_db_path, policy)
-    return OpenAIResponsesProvider(
+    return OpenAICompatibleProvider(
         effective,
         usage_ledger=ledger,
         client=client,

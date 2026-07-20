@@ -1,19 +1,19 @@
-# R0-04 dry-run profile. API spending limits are circuit breakers, not trading authorization.
+# R2-03 read-only compatibility profile. This profile never grants trading authority.
 schema_version: 1
-profile_id: openai_terra_trade_decision_v1
+profile_id: deepseek_v4_flash_trade_decision_test_v1
 
 provider:
-  id: openai
-  api: responses
-  base_url: https://api.openai.com/v1
-  api_key_env: OPENAI_API_KEY
+  id: deepseek
+  api: chat_completions
+  base_url: https://api.deepseek.com
+  api_key_env: DEEPSEEK_API_KEY  # pragma: allowlist secret
 
 model:
-  id: gpt-5.6-terra
-  thinking: null
-  reasoning_effort: medium
-  verbosity: low
-  temperature: null
+  id: deepseek-v4-flash
+  thinking: disabled
+  reasoning_effort: null
+  verbosity: null
+  temperature: 0
   seed: null
 
 prompt:
@@ -25,7 +25,7 @@ prompt:
 structured_output:
   enabled: true
   strict: true
-  provider_schema_enforced: true
+  provider_schema_enforced: false
   schema_name: alphamind_model_decision_v1
   schema_path: data/schemas/model-decision.schema.yaml
   runtime_action_schema_path: data/schemas/trade-action.schema.yaml
@@ -50,13 +50,13 @@ retry:
 
 cost:
   currency: USD
-  pricing_checked_at_utc: "2026-07-18T00:00:00Z"
-  input_per_million_tokens: "2.50"
-  cached_input_per_million_tokens: "0.25"
-  output_per_million_tokens: "15.00"
-  maximum_cost_per_cycle: "0.11"
-  maximum_cost_per_utc_day: "5.50"
-  pricing_source: https://developers.openai.com/api/docs/models/gpt-5.6-terra
+  pricing_checked_at_utc: "2026-07-20T00:00:00Z"
+  input_per_million_tokens: "0.14"
+  cached_input_per_million_tokens: "0.0028"
+  output_per_million_tokens: "0.28"
+  maximum_cost_per_cycle: "0.01"
+  maximum_cost_per_utc_day: "0.48"
+  pricing_source: https://api-docs.deepseek.com/quick_start/pricing
 
 failure_policy:
   timeout: HOLD_ONLY

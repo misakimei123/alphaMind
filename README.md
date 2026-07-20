@@ -12,8 +12,9 @@ alphaMind 是个人 AI 加密货币交易系统。目标运行方式是：默认
 - Freqtrade 继续作为唯一 Bybit 交易写入者，AI 与 Telegram Bot 均不直接持有交易密钥。
 
 仓库在旧 4h Donchian 研究、风险、审计和 Runtime DB 底座上，已经完成 R0/R1 的产品合同、
-配置化市场与只读周期观察，以及 AI 决策合同绑定、新闻采集和模型 provider 的离线实现。真实模型
-冒烟、Telegram、ExecutionGateway 和批准后交易闭环仍按 [唯一开发计划](docs/development-plan.md) 推进。
+配置化市场与只读周期观察，以及 AI 决策合同绑定、新闻采集和模型 provider。R2-03 已完成真实只读
+provider 冒烟与 usage 对账；Telegram、ExecutionGateway 和批准后交易闭环仍按
+[唯一开发计划](docs/development-plan.md) 推进。
 
 仓库不包含凭据，也没有可启动 Live 的 Compose service；当前实现包括：
 
@@ -40,7 +41,9 @@ alphaMind 是个人 AI 加密货币交易系统。目标运行方式是：默认
   BeautifulSoup 清洗 HTML；项目叠加 HTTPS 同源、Content-Type、响应大小、DTD/entity 和请求超时
   边界，使用 ETag/Last-Modified、发布时间高水位和原子状态文件增量抓取，按 canonical
   URL/title/content 跨周期去重，并从 Instrument Registry 关联资产；
-- OpenAI 官方 Python SDK 驱动的 Responses provider：严格 JSON Schema 输出、无 tools/无 storage、
+- OpenAI 官方 Python SDK 驱动的 OpenAI Responses 与 DeepSeek Chat Completions provider：OpenAI
+  使用服务端严格 JSON Schema，DeepSeek 使用 JSON Output 后再执行完整本地 schema/binder；两条路径均
+  不启用 tools，OpenAI 固定 `store=false`，DeepSeek 不发送其 Chat Completions 未定义的 storage 参数；
   90 秒超时、最多两次项目级重试、失败时 `HOLD_ONLY`，并以 SQLite WAL 在请求前原子预留成本；
 - 仓库质量门禁使用 `markdown-it-py` 解析 CommonMark 本地链接，并使用 Yelp `detect-secrets` 插件与
   指纹 baseline 检测新增凭据；不回显疑似 secret；
@@ -99,6 +102,19 @@ uv run run-ai-decision --check --pretty
 $env:OPENAI_API_KEY = "<development-key>"
 uv run run-ai-decision --context <current-decision-context.yaml> --pretty
 ```
+
+使用版本化 DeepSeek 测试 profile 时，base URL、模型 ID、non-thinking 和官方价格均来自配置文件；
+`ALPHAMIND_AI_PROFILE_PATH` 只允许切换到仓库审核过的 profile：
+
+```powershell
+$env:DEEPSEEK_API_KEY = "<development-key>"
+$env:ALPHAMIND_AI_PROFILE_PATH = "configs/alphamind/ai-profile.deepseek-test.yaml"
+uv run run-ai-decision --check --pretty
+uv run run-ai-decision --context <current-decision-context.yaml> --pretty
+```
+
+DeepSeek 的 JSON Output 只保证合法 JSON，不等价于 OpenAI Responses 的服务端严格 JSON Schema；所有
+返回仍必须通过本地 `ModelDecision/TradeAction` 完整绑定，否则重试或 fail-closed 为 `HOLD_ONLY`。
 
 手工生成一次只读周期快照、查看状态或持续按配置调度：
 

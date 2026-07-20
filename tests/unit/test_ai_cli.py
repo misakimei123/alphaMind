@@ -44,6 +44,28 @@ def test_check_never_prints_configured_key(capsys: object) -> None:
     assert json.loads(captured.out)["provider"]["api_key_configured"] is True
 
 
+def test_check_reports_deepseek_chat_contract_without_printing_key(capsys: object) -> None:
+    secret = "deepseek-secret-that-must-not-be-printed"  # pragma: allowlist secret
+    exit_code = main(
+        ["--project-root", str(PROJECT_ROOT), "--check"],
+        environ={
+            "ALPHAMIND_AI_PROFILE_PATH": ("configs/alphamind/ai-profile.deepseek-test.yaml"),
+            "DEEPSEEK_API_KEY": secret,
+        },
+    )
+
+    captured = capsys.readouterr()  # type: ignore[attr-defined]
+    output = json.loads(captured.out)
+    assert exit_code == 0
+    assert secret not in captured.out
+    assert secret not in captured.err
+    assert output["provider"]["endpoint"] == "https://api.deepseek.com/chat/completions"
+    assert output["model"]["id"] == "deepseek-v4-flash"
+    assert output["model"]["thinking"] == "disabled"
+    assert output["structured_output"]["strict"] is True
+    assert output["structured_output"]["provider_schema_enforced"] is False
+
+
 def test_context_is_required_outside_check(capsys: object) -> None:
     exit_code = main(["--project-root", str(PROJECT_ROOT)], environ={})
 

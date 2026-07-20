@@ -12,13 +12,16 @@ import httpx
 import openai
 import pytest
 import yaml
+from openai.types.chat import ChatCompletion
 from openai.types.responses import Response
 
 import alphamind.ai.provider as provider_module
 from alphamind.ai import (
     BudgetExceededError,
     CostPolicy,
+    OpenAICompatibleProvider,
     OpenAIResponsesProvider,
+    ProviderClient,
     ProviderErrorCode,
     Usage,
     UsageLedger,
@@ -30,6 +33,7 @@ from alphamind.decision import BoundDecisionContext, DecisionContractBinder
 PROJECT_ROOT = Path(__file__).parents[2]
 CONTRACT_FIXTURES = PROJECT_ROOT / "tests" / "fixtures" / "contracts"
 OPENAI_FIXTURES = PROJECT_ROOT / "tests" / "fixtures" / "openai"
+DEEPSEEK_FIXTURES = PROJECT_ROOT / "tests" / "fixtures" / "deepseek"
 NOW = datetime(2026, 7, 18, 12, 0, 5, tzinfo=UTC)
 
 
@@ -52,6 +56,15 @@ def _success_document() -> dict[str, object]:
     document = json.loads((OPENAI_FIXTURES / "responses-success.json").read_text(encoding="utf-8"))
     assert isinstance(document, dict)
     return document
+
+
+def _deepseek_response() -> ChatCompletion:
+    document = json.loads(
+        (DEEPSEEK_FIXTURES / "chat-completion-success.json").read_text(encoding="utf-8")
+    )
+    response = ChatCompletion.model_validate(document)
+    response._request_id = "req_deepseek_fixture_001"  # type: ignore[attr-defined]
+    return response
 
 
 def _response(document: dict[str, object] | None = None) -> Response:
@@ -83,6 +96,33 @@ class FakeClient:
     @property
     def requests(self) -> list[dict[str, object]]:
         return self.responses.requests
+
+
+class FakeChatCompletions:
+    def __init__(self, responses: list[ChatCompletion | openai.APIError]) -> None:
+        self.responses = list(responses)
+        self.requests: list[dict[str, object]] = []
+
+    def create(self, **kwargs: object) -> ChatCompletion:
+        self.requests.append(dict(kwargs))
+        next_response = self.responses.pop(0)
+        if isinstance(next_response, openai.APIError):
+            raise next_response
+        return next_response
+
+
+class FakeChatResource:
+    def __init__(self, responses: list[ChatCompletion | openai.APIError]) -> None:
+        self.completions = FakeChatCompletions(responses)
+
+
+class FakeChatClient:
+    def __init__(self, responses: list[ChatCompletion | openai.APIError]) -> None:
+        self.chat = FakeChatResource(responses)
+
+    @property
+    def requests(self) -> list[dict[str, object]]:
+        return self.chat.completions.requests
 
 
 def _status_error(
@@ -171,6 +211,80 @@ def test_request_uses_strict_responses_contract_without_tools_or_storage(tmp_pat
     assert all(set(item["required"]) == set(item["properties"]) for item in object_schemas)
     assert client.requests[0] == payload
     assert "test-key-never-logged" not in json.dumps(payload)
+
+
+def test_deepseek_chat_uses_json_output_and_runtime_schema_binding(tmp_path: Path) -> None:
+    selected_environ = {
+        "ALPHAMIND_AI_PROFILE_PATH": "configs/alphamind/ai-profile.deepseek-test.yaml",
+    }
+    effective = load_effective_config(PROJECT_ROOT, environ=selected_environ)
+    context_document = _yaml("decision-context.valid.yaml")
+    context_document["config_sha256"] = effective.effective_sha256
+    context_document["instrument_registry_sha256"] = effective.instrument_registry.source_sha256
+    context = DecisionContractBinder(effective).bind_context(context_document, now_utc=NOW)
+    client = FakeChatClient([_deepseek_response()])
+    provider = OpenAICompatibleProvider(
+        effective,
+        usage_ledger=UsageLedger(
+            tmp_path / "deepseek-usage.sqlite",
+            CostPolicy.from_profile(effective.ai_profile),
+        ),
+        client=cast(ProviderClient, client),
+        environ={"DEEPSEEK_API_KEY": "test-key-never-logged"},
+        sleep=lambda _: None,
+    )
+
+    payload = provider.request_payload(context)
+    result = provider.decide(context, now_utc=NOW)
+
+    assert payload["model"] == "deepseek-v4-flash"
+    assert payload["response_format"] == {"type": "json_object"}
+    assert payload["extra_body"] == {"thinking": {"type": "disabled"}}
+    assert "tools" not in payload
+    assert "tool_choice" not in payload
+    assert result.status == "SUCCESS"
+    assert result.decision is not None
+    assert result.decision.document["actions"][0]["action"] == "HOLD"
+    assert result.usage_summary.usage == Usage(1000, 200, 100)
+    assert result.usage_summary.accounted_cost_usd == "0.000140560"
+    assert client.requests == [payload]
+    assert "test-key-never-logged" not in json.dumps(payload)
+
+
+def test_deepseek_non_stop_output_retries_then_fails_closed(tmp_path: Path) -> None:
+    selected_environ = {
+        "ALPHAMIND_AI_PROFILE_PATH": "configs/alphamind/ai-profile.deepseek-test.yaml",
+    }
+    effective = load_effective_config(PROJECT_ROOT, environ=selected_environ)
+    context_document = _yaml("decision-context.valid.yaml")
+    context_document["config_sha256"] = effective.effective_sha256
+    context_document["instrument_registry_sha256"] = effective.instrument_registry.source_sha256
+    context = DecisionContractBinder(effective).bind_context(context_document, now_utc=NOW)
+    first = _deepseek_response()
+    second = _deepseek_response()
+    first.choices[0].finish_reason = "length"
+    second.choices[0].finish_reason = "length"
+    client = FakeChatClient([first, second])
+    sleeps: list[float] = []
+    provider = OpenAICompatibleProvider(
+        effective,
+        usage_ledger=UsageLedger(
+            tmp_path / "deepseek-malformed-usage.sqlite",
+            CostPolicy.from_profile(effective.ai_profile),
+        ),
+        client=cast(ProviderClient, client),
+        environ={"DEEPSEEK_API_KEY": "test-key-never-logged"},
+        sleep=sleeps.append,
+    )
+
+    result = provider.decide(context, now_utc=NOW)
+
+    assert result.status == "HOLD_ONLY"
+    assert result.error_code is ProviderErrorCode.MALFORMED_STRUCTURED_OUTPUT
+    assert result.decision is None
+    assert result.usage_summary.attempts == 2
+    assert len(client.requests) == 2
+    assert sleeps == [2.0]
 
 
 def test_rate_limit_and_server_errors_retry_once_then_succeed(tmp_path: Path) -> None:

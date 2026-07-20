@@ -107,7 +107,9 @@ properties:
       - news_source_registry_path
     properties:
       ai_profile_path:
-        const: configs/alphamind/ai-profile.example.yaml
+        enum:
+          - configs/alphamind/ai-profile.example.yaml
+          - configs/alphamind/ai-profile.deepseek-test.yaml
       news_source_registry_path:
         const: configs/alphamind/news-sources.example.yaml
   approval:

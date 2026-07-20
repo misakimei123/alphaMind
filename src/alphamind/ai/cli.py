@@ -18,7 +18,7 @@ import yaml
 
 from alphamind.ai import (
     CostPolicy,
-    OpenAIResponsesProvider,
+    OpenAICompatibleProvider,
     ProviderClient,
     UsageLedger,
     UsageLedgerError,
@@ -88,17 +88,20 @@ def _schema_sha256(schema: JsonObject) -> str:
 
 
 def _check_output(
-    provider: OpenAIResponsesProvider,
+    provider: OpenAICompatibleProvider,
     *,
     key_configured: bool,
 ) -> JsonObject:
     profile = provider.profile
+    endpoint_suffix = (
+        "responses" if profile["provider"]["api"] == "responses" else "chat/completions"
+    )
     return {
         "status": "configuration_valid",
         "network_request_sent": False,
         "provider": {
             "api": profile["provider"]["api"],
-            "endpoint": f"{profile['provider']['base_url']}/responses",
+            "endpoint": f"{profile['provider']['base_url']}/{endpoint_suffix}",
             "api_key_env": profile["provider"]["api_key_env"],
             "api_key_configured": key_configured,
         },
@@ -106,10 +109,12 @@ def _check_output(
             "id": profile["model"]["id"],
             "reasoning_effort": profile["model"]["reasoning_effort"],
             "verbosity": profile["model"]["verbosity"],
+            "thinking": profile["model"]["thinking"],
         },
         "structured_output": {
             "name": profile["structured_output"]["schema_name"],
             "strict": True,
+            "provider_schema_enforced": profile["structured_output"]["provider_schema_enforced"],
             "provider_schema_sha256": _schema_sha256(provider.schema),
         },
         "request": {
@@ -156,7 +161,7 @@ def main(
                     Path(temporary) / "usage.sqlite",
                     CostPolicy.from_profile(effective.ai_profile),
                 )
-                provider = OpenAIResponsesProvider(
+                provider = OpenAICompatibleProvider(
                     effective,
                     usage_ledger=ledger,
                     environ=selected_environ,

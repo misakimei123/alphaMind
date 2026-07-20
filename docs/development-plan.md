@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-18 / 完成全仓依赖优先审计与通用基础设施去手写封装；R2-03 仍为 `READY_TO_VERIFY`，下一执行步骤是一次真实只读 provider 冒烟与 usage 对账 |
+| 最近进度更新 | 2026-07-20 / R2-03 完成 DeepSeek 真实只读 provider 冒烟、结构化 HOLD 与 usage/成本账本对账；下一任务为 R2-04 Action 业务校验 |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01/R2-02 已完成决策合同与新闻采集。R2-03 的官方 OpenAI Python SDK Responses provider、严格结构化输出、有限重试和成本账本已经实现并通过离线门禁，当前为 `READY_TO_VERIFY`；因本机没有 `OPENAI_API_KEY`，仍需一次真实只读请求和 usage 对账后才能标记 `DONE`，R2-04 尚未开始。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01/R2-02 已完成决策合同与新闻采集。R2-03 已完成 OpenAI Responses 与 DeepSeek Chat Completions provider、结构化输出、有限重试、成本账本及一次 DeepSeek 真实只读请求和 usage 对账，状态为 `DONE`；当前下一任务是 R2-04 Action 业务校验。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1620,7 +1620,7 @@ R1-06 完成证据（2026-07-18）：
 
 - `R2-01`（`DONE`）：实现并绑定 R0-03 冻结的 NewsItem、DecisionContext 与 Action schema，补跨对象业务校验与版本兼容；
 - `R2-02`（`DONE`）：至少两个可配置新闻/公告适配器、增量抓取、去重和资产关联；
-- `R2-03`（`READY_TO_VERIFY`）：LLM provider interface、结构化输出、超时、有限重试和成本记录；实现与离线门禁完成，等待真实只读 API 冒烟和 usage 对账；
+- `R2-03`（`DONE`）：LLM provider interface、结构化输出、超时、有限重试、成本记录，以及真实只读 API 冒烟和 usage 对账；
 - `R2-04`：Action 业务校验、新闻引用校验和逐动作拒绝原因；
 - `R2-05`：将 Donchian/ATR/EMA 等接入 Context，不再直接拥有交易权威；
 - `R2-06`：保存 HOLD、候选动作、模型错误、model/prompt/config 版本和输入 hash。
@@ -1675,18 +1675,23 @@ R2-02 完成证据（2026-07-18）：
 - R2-02 不构建 DecisionContext、不调用 LLM、不发送 Telegram，也不创建、修改或取消订单；下一任务
   R2-03 在该 NewsItem 输出上实现 provider interface、严格结构化输出、超时、有限重试和成本记录。
 
-R2-03 待验证证据（2026-07-18）：
+R2-03 完成证据（2026-07-20）：
 
 - `src/alphamind/ai/provider.py` 使用官方 `openai` Python SDK 2.x 的 Responses API 与 typed Response，
   SDK 内建重试固定为 0，由项目统一执行最多 2 次的有限重试；请求固定官方 base URL、
   `store=false`、`background=false`、无 tools，并把冻结 Prompt、规范化 DecisionContext 与严格
   `json_schema` 组合成只读决策请求。SDK 的 `response.output_text` 正确处理 reasoning item；返回值仍
   必须通过 R2-01 完整 ModelDecision/TradeAction 运行时绑定；
+- 同一 SDK 增加 DeepSeek 官方 OpenAI-format Chat Completions 路径；版本化测试 profile 固定
+  `https://api.deepseek.com`、`deepseek-v4-flash`、non-thinking 与 JSON Output。DeepSeek 不承诺
+  Responses API 或服务端严格 JSON Schema，因此 schema 明确进入 system message，返回后仍执行完整本地
+  schema/binder；provider/API/base URL/model/pricing 组合由 schema 交叉绑定，不能任意混配；
 - 超时、429、5xx 和 malformed structured output 按配置重试；鉴权、政策拒绝、业务校验与预算失败
   不重试。模型、响应状态、response ID、usage 或输出不可信时均 fail-closed 为 `HOLD_ONLY`；账本
   预留或结算失败也不会把候选动作交给下游；
 - `src/alphamind/ai/usage.py` 使用 SQLite FULL/WAL 与 `BEGIN IMMEDIATE` 在请求前原子预留最坏成本，
-  按 nano-USD 精确记录 input/cached/output token 与周期/UTC 日上限；冻结成功 fixture 的 1,000 input、
+  每 token 价格以 Decimal 保留 DeepSeek cache-hit 小数 nano-USD 精度，每次 attempt 汇总后保守向上取整
+  到 nano-USD；冻结成功 fixture 的 1,000 input、
   200 cached input、100 output 对账为 `0.003550000 USD`。超时且无 usage 时保守计入预留成本，数据库
   不保存 API key、raw prompt、DecisionContext 或 raw response；
 - `run-ai-decision --check` 在不发网络请求时校验有效配置、Prompt hash、provider schema、模型和失败
@@ -1697,11 +1702,16 @@ R2-03 待验证证据（2026-07-18）：
   CLI 脱敏；当前全量 `pytest` 349 项通过，strict mypy 检查 65 个 source 文件，Ruff check/format 覆盖
   99 个 Python 文件，repository scan 检查 340 个文件；pairlist/capability/effective config、
   `uv lock --check`、安装后的 CLI、离线 provider check 和 `git diff --check` 均通过；
-- 本机 `OPENAI_API_KEY` 未配置，离线自检明确输出 `api_key_configured=false`，因此没有伪造真实 API
-  成功或 provider usage。解除条件：提供项目所有人授权的开发密钥和当期合法 DecisionContext，执行
-  一次只读请求，核对 response/model/structured output、provider usage 与本地成本账本一致；完成后
-  R2-03 才可转 `DONE` 并开始 R2-04。本任务不读取 Bybit 交易密钥、不发送 Telegram，也不创建、
-  修改或取消订单。
+- 2026-07-20 使用项目所有人授权的临时 `DEEPSEEK_API_KEY` 和重新绑定当前 config/registry hash 的当期
+  DecisionContext 完成一次真实只读请求：provider 返回 `deepseek-v4-flash`、合法结构化 `HOLD` 和
+  response ID；usage 为 2,271 input、0 cached、389 output，本地账本独立复算为
+  `0.000426860 USD`，SQLite 行状态为 `COMPLETED/success` 且 token、model、response ID 一致；
+- 最终全仓 `pytest` 356 项通过，strict mypy 检查 65 个 source 文件，Ruff check/format 覆盖 99 个
+  Python 文件，repository scan 检查 341 个文件；`uv lock --check`、离线 DeepSeek provider check 和
+  `git diff --check` 通过。真实冒烟验证的是 DeepSeek Chat Completions 路径；OpenAI Responses 路径仍
+  由 typed fixture 和离线合同测试覆盖，不把两种 API 的兼容范围混为一谈；
+- 本任务不读取 Bybit 交易密钥、不发送 Telegram，也不创建、修改或取消订单。R2-03 据此转为 `DONE`，
+  下一任务为 R2-04。
 
 全仓依赖优先审计（2026-07-18）：
 
@@ -1959,13 +1969,13 @@ git diff --check
 | 34 | R0-04 模型与新闻配置 | DONE | 模型/Prompt/成本/失败策略、ModelDecision 严格输出及 Bybit/SEC/CoinDesk 三源合同；合同 47 项、全量 231 项 pytest 通过 |
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
-| 37 | R2-01 至 R2-06 新闻与 AI 决策 | IN_PROGRESS | R2-01/R2-02 已完成；R2-03 为 `READY_TO_VERIFY`，**下一执行步骤是 R2-03 真实只读 provider 冒烟与 usage 对账**；R2-04 尚未开始 |
+| 37 | R2-01 至 R2-06 新闻与 AI 决策 | IN_PROGRESS | R2-01/R2-02/R2-03 已完成；**下一任务是 R2-04 Action 业务校验、新闻引用校验和逐动作拒绝原因** |
 | 38 | R3-01 至 R3-06 Telegram 授权 | NOT_STARTED | Proposal Store、白名单、nonce、TTL、重新校验与通知 |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-18 起，旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务。R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-02 已完成，R2-03 实现与离线门禁完成但仍停在 `READY_TO_VERIFY`。当前唯一下一执行步骤是使用授权的 `OPENAI_API_KEY` 和当期合法 DecisionContext 完成一次真实只读 provider 冒烟与 usage 对账；在此之前不开始 R2-04，也不把 R2-03 标成 `DONE`。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-20 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-03 已完成。当前唯一下一任务是 R2-04 Action 业务校验、新闻引用校验和逐动作拒绝原因。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 
@@ -1987,6 +1997,10 @@ git diff --check
 - [OpenAI Python SDK](https://github.com/openai/openai-python)
 - [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)
 - [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+- [DeepSeek First API Call](https://api-docs.deepseek.com/)
+- [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion)
+- [DeepSeek Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)
+- [DeepSeek Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode)
 - [Bybit V5 Instruments Info](https://bybit-exchange.github.io/docs/v5/market/instrument)
 - [Bybit V5 Set Leverage](https://bybit-exchange.github.io/docs/v5/position/leverage)
 - [Bybit V5 Place Order](https://bybit-exchange.github.io/docs/v5/order/create-order)

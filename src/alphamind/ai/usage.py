@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_CEILING, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -43,17 +43,20 @@ def _nano_to_usd(value: int) -> str:
     return format(Decimal(value) / NANO_USD_PER_USD, ".9f")
 
 
-def _price_to_nano_per_token(value: object, *, label: str) -> int:
+def _price_to_nano_per_token(value: object, *, label: str) -> Decimal:
     try:
         price = Decimal(str(value))
     except InvalidOperation:
         raise ValueError(f"{label} is invalid") from None
     if not price.is_finite() or price < 0:
         raise ValueError(f"{label} is invalid")
-    converted = price * NANO_USD_PER_MICRO_USD
-    if converted != converted.to_integral_value():
-        raise ValueError(f"{label} has unsupported precision")
-    return int(converted)
+    return price * NANO_USD_PER_MICRO_USD
+
+
+def _ceil_nano_usd(value: Decimal) -> int:
+    """账本保持 nano-USD 整数；低于 1 nano 的汇总尾数保守向上取整。"""
+
+    return int(value.to_integral_value(rounding=ROUND_CEILING))
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,9 +81,9 @@ class Usage:
 
 @dataclass(frozen=True, slots=True)
 class CostPolicy:
-    input_nano_usd_per_token: int
-    cached_input_nano_usd_per_token: int
-    output_nano_usd_per_token: int
+    input_nano_usd_per_token: Decimal
+    cached_input_nano_usd_per_token: Decimal
+    output_nano_usd_per_token: Decimal
     maximum_cost_per_cycle_nano_usd: int
     maximum_cost_per_utc_day_nano_usd: int
     maximum_attempt_cost_nano_usd: int
@@ -100,9 +103,9 @@ class CostPolicy:
         )
         cycle_cap = _usd_to_nano(Decimal(str(cost["maximum_cost_per_cycle"])))
         daily_cap = _usd_to_nano(Decimal(str(cost["maximum_cost_per_utc_day"])))
-        maximum_attempt = (
-            int(request["max_input_tokens"]) * input_rate
-            + int(request["max_output_tokens"]) * output_rate
+        maximum_attempt = _ceil_nano_usd(
+            Decimal(int(request["max_input_tokens"])) * input_rate
+            + Decimal(int(request["max_output_tokens"])) * output_rate
         )
         if maximum_attempt > cycle_cap:
             raise ValueError("maximum attempt cost exceeds the cycle cap")
@@ -110,10 +113,10 @@ class CostPolicy:
 
     def usage_cost_nano_usd(self, usage: Usage) -> int:
         uncached = usage.input_tokens - usage.cached_input_tokens
-        return (
-            uncached * self.input_nano_usd_per_token
-            + usage.cached_input_tokens * self.cached_input_nano_usd_per_token
-            + usage.output_tokens * self.output_nano_usd_per_token
+        return _ceil_nano_usd(
+            Decimal(uncached) * self.input_nano_usd_per_token
+            + Decimal(usage.cached_input_tokens) * self.cached_input_nano_usd_per_token
+            + Decimal(usage.output_tokens) * self.output_nano_usd_per_token
         )
 
 
