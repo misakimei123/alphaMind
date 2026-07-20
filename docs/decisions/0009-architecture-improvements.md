@@ -8,7 +8,7 @@
 
 ---
 
-## 2. 改进维度一：特征数据层——多时间框架共振与深度特征（Data & Features）
+## 2. 改进维度一：特征数据层——多时间框架、深度特征与链上资金（Data & Features）
 
 ### 2.1 引入多时间框架（Multi-Timeframe）共振支持
 - **现状**：[decision-context.schema.yaml](file:///d:/workspace/alphaMind/data/schemas/decision-context.schema.yaml) 的 `features` 中每个标的仅支持映射单一的 `timeframe`（如 `30m`）。
@@ -19,6 +19,17 @@
 - **现状**：当前 AI 接收的行情仅有价格和简单的 `volume_ratio`。
 - **隐患**：在市场流动性极差或点差（Spread）极大的黑天鹅时期，AI 可能会盲目建议大额限价/市价单，导致滑点（Slippage）吃掉全部利润。
 - **方案**：在 `features` 中引入**盘口点差百分比（Spread %）**和**买卖盘不平衡度（Orderbook Imbalance）**。若点差超限，限制 AI 只能提案 `limit` 类型订单，并相应降低开仓仓位比例。
+
+### 2.3 引入“聪明钱”链上交易跟踪（Smart Money Flow Tracking）
+- **现状**：当前特征数据仅来源于中心化交易所的 OHLCV，缺乏链上 DEX 筹码分布和巨鲸资金流动特征。
+- **隐患**：
+  1. **入场滞后（Lagging）**：链上科学家或机器人的建仓往往在秒级完成，如果直接以 30 分钟的 AI 周期去盲目跟单，极易在高位“接盘”。
+  2. **链上钓鱼（Wash Trading）**：庄家常使用已知聪明钱包倒手代币进行虚假造势，或通过空投将代币打给名人钱包伪造巨鲸持仓。
+  3. **对冲套利误导**：部分钱包买入现货其实是为了在 CEX 建立等额空头进行期现套利，仅观察买入会产生误判。
+- **方案**：
+  1. **冷计算聚合与洗净**：由 Python 监控端过滤微额流水（如仅统计单笔 `> 10,000 USD` 交易），并在 30m 周期内进行统计聚合（计算累计净流入额 `net_flow_usd` 以及参与交易的独立聪明钱包数 `active_smart_wallets`），降噪后写入 Context。
+  2. **Schema 属性扩展**：新增 `on_chain_flows` 结构体，提供资金流状态标签（如 `heavy_accumulation` 强建仓，`heavy_distribution` 强派发）。
+  3. **Prompt 交叉校验指引**：在 [trade-decision-v1.md](file:///d:/workspace/alphaMind/prompts/ai/trade-decision-v1.md) 中添加防钓鱼校验（例如，若价格突破上轨但聪明钱处于重度派发状态，判定为背离诱多陷阱，限制开多；必须满足活跃聪明钱包数 $\ge 3$ 才确认群体性建仓）。
 
 ---
 
@@ -55,7 +66,7 @@
 ### 5.1 Telegram 回调防重放攻击（Nonce 验证）
 - **现状**：Telegram Bot 通过 Webhook 或轮询接收点击指令。
 - **隐患**：如果网络请求被拦截、或者用户在手机上因网络卡顿重复点击“批准”，可能导致同一笔开仓动作在 Freqtrade 中被重复执行多次，造成超额暴露。
-- **方案**：在 [contracts.py](file:///d:/workspace/alphaMind/src/alphamind/decision/contracts.py) 定义的 Action 中绑定唯一的一次性 `Nonce` 标识与 `cycle_id`。网关执行一次后立刻将 Nonce 标记为已失效，任何重复的 Telegram 点击回调均被静默丢弃。
+- **方案**：在 [contracts.py](file:///d:/workspace/alphaMind/src/alphamind/decision/contracts.py) 定义的 Action 中绑定唯一的一次性 `Nonce` 标识与 `cycle_id`。网关执行一次后立刻将 Nonce 标记为已失效，任何重复 Telegram 点击回调均被静默丢弃。
 
 ### 5.2 Telegram 一键全平仓（Emergency Panic Button）
 - **现状**：目前系统缺乏越过 AI 进行全局处置的紧急接口。
