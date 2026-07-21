@@ -7,11 +7,31 @@ from alphamind.approval.store import (
     ProposalStoreError,
     StoredProposal,
 )
+from alphamind.approval.telegram import (
+    ProposalMessageRenderer,
+    PublishedProposal,
+    TelegramApprovalAdapter,
+    TelegramApprovalError,
+    TelegramBotClient,
+    TelegramCallbackAction,
+    TelegramMessageRef,
+    VerifiedTelegramCallback,
+    callback_data,
+)
 
 __all__ = [
     "ProposalAuthorization",
+    "ProposalMessageRenderer",
     "ProposalState",
     "ProposalStore",
     "ProposalStoreError",
+    "PublishedProposal",
     "StoredProposal",
+    "TelegramApprovalAdapter",
+    "TelegramApprovalError",
+    "TelegramBotClient",
+    "TelegramCallbackAction",
+    "TelegramMessageRef",
+    "VerifiedTelegramCallback",
+    "callback_data",
 ]
