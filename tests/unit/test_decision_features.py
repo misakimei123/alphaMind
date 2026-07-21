@@ -14,6 +14,7 @@ from alphamind.decision import DecisionContractBinder, build_core_features
 PROJECT_ROOT = Path(__file__).parents[2]
 AS_OF = datetime(2026, 7, 18, 12, tzinfo=UTC)
 TIMEFRAME = "30m"
+CYCLE_ID = "cycle-20260718T120000Z-0123abcd"
 INTERVAL = timedelta(minutes=30)
 
 
@@ -38,12 +39,14 @@ def _candles(count: int = 60) -> tuple[CompletedCandle, ...]:
 
 
 def test_core_features_are_deterministic_point_in_time_and_context_compatible() -> None:
-    first = build_core_features(_candles(), timeframe=TIMEFRAME, as_of_utc=AS_OF)
-    second = build_core_features(_candles(), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    first = build_core_features(_candles(), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    second = build_core_features(
+        _candles(), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF
+    )
 
     assert first == second
     assert first.ready
-    assert first.input_sha256 == "d8ac96830fb6da5fe40c68ab216eff7e4a9efe08af1080e030d9d694747e0e68"
+    assert first.input_sha256 == "2d70750d59b7446cd3dd454d50548a3fee3ef4942cba44f58d9fa593317be082"
     assert first.to_context_features() == {
         "timeframe": "30m",
         "donchian_upper": "159",
@@ -52,6 +55,11 @@ def test_core_features_are_deterministic_point_in_time_and_context_compatible() 
         "ema_fast": "149.5",
         "ema_slow": "134.5",
         "volume_ratio": "1.07070707",
+        "rsi": "100",
+        "adx": "100",
+        "ema_alignment": "strong_bullish",
+        "candlestick_pattern": "doji",
+        "pattern_semantic": "indecision",
     }
 
     effective = load_effective_config(PROJECT_ROOT, environ={})
@@ -76,7 +84,9 @@ def test_core_features_are_deterministic_point_in_time_and_context_compatible() 
 
 
 def test_donchian_uses_previous_candles_but_other_indicators_include_latest_close() -> None:
-    baseline = build_core_features(_candles(), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    baseline = build_core_features(
+        _candles(), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF
+    )
     candles = list(_candles())
     latest = candles[-1]
     candles[-1] = CompletedCandle(
@@ -89,7 +99,9 @@ def test_donchian_uses_previous_candles_but_other_indicators_include_latest_clos
         volume=latest.volume,
     )
 
-    changed = build_core_features(tuple(candles), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    changed = build_core_features(
+        tuple(candles), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF
+    )
 
     # 当前 signal candle 不能抬高/压低自身 Donchian 阈值，但应进入 ATR/EMA。
     assert changed.donchian_upper == baseline.donchian_upper
@@ -100,7 +112,9 @@ def test_donchian_uses_previous_candles_but_other_indicators_include_latest_clos
 
 
 def test_warmup_zero_volume_and_missing_data_fail_closed_without_fabricated_values() -> None:
-    warmup = build_core_features(_candles(10), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    warmup = build_core_features(
+        _candles(10), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF
+    )
     assert not warmup.ready
     assert warmup.ema_slow is None
     assert "ema_slow_warmup" in warmup.reason_codes
@@ -116,11 +130,13 @@ def test_warmup_zero_volume_and_missing_data_fail_closed_without_fabricated_valu
         close=latest.close,
         volume=Decimal(0),
     )
-    no_volume = build_core_features(tuple(candles), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    no_volume = build_core_features(
+        tuple(candles), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF
+    )
     assert no_volume.volume_ratio is None
     assert "volume_ratio_unavailable" in no_volume.reason_codes
 
-    missing = build_core_features((), timeframe=TIMEFRAME, as_of_utc=AS_OF)
+    missing = build_core_features((), cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=AS_OF)
     assert missing.to_context_features() == {
         "timeframe": "30m",
         "donchian_upper": None,
@@ -129,6 +145,11 @@ def test_warmup_zero_volume_and_missing_data_fail_closed_without_fabricated_valu
         "ema_fast": None,
         "ema_slow": None,
         "volume_ratio": None,
+        "rsi": None,
+        "adx": None,
+        "ema_alignment": None,
+        "candlestick_pattern": None,
+        "pattern_semantic": None,
     }
     assert missing.reason_codes == ("candles_missing",)
 
@@ -156,7 +177,7 @@ def test_gap_future_stale_and_timeframe_mismatch_fail_closed_as_a_whole() -> Non
         "completed_candle_stale": (candles, AS_OF + INTERVAL + timedelta(seconds=1)),
     }
     for reason, (rows, as_of) in cases.items():
-        result = build_core_features(rows, timeframe=TIMEFRAME, as_of_utc=as_of)
+        result = build_core_features(rows, cycle_id=CYCLE_ID, timeframe=TIMEFRAME, as_of_utc=as_of)
         assert result.reason_codes == (reason,)
         assert all(
             value is None
@@ -164,5 +185,5 @@ def test_gap_future_stale_and_timeframe_mismatch_fail_closed_as_a_whole() -> Non
             if key != "timeframe"
         )
 
-    mismatch = build_core_features(candles, timeframe="1h", as_of_utc=AS_OF)
+    mismatch = build_core_features(candles, cycle_id=CYCLE_ID, timeframe="1h", as_of_utc=AS_OF)
     assert mismatch.reason_codes == ("timeframe_mismatch",)

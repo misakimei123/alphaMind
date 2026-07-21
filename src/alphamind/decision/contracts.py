@@ -18,11 +18,12 @@ import yaml
 from referencing import Registry, Resource
 
 from alphamind.config import EffectiveConfig, MarketKind
+from alphamind.decision.features import PATTERN_SEMANTICS
 
 JsonObject = dict[str, Any]
 SUPPORTED_SCHEMA_VERSIONS: Mapping[str, int] = {
     "news-item.schema.yaml": 1,
-    "decision-context.schema.yaml": 1,
+    "decision-context.schema.yaml": 2,
     "model-decision.schema.yaml": 1,
     "trade-action.schema.yaml": 2,
 }
@@ -384,6 +385,28 @@ class DecisionContractBinder:
                             ]
                         )
                     )
+            features = _object(row["features"], f"context.instruments.{index}.features")
+            for indicator_name in ("rsi", "adx"):
+                raw_indicator = features[indicator_name]
+                if raw_indicator is None:
+                    continue
+                indicator = _decimal(
+                    raw_indicator,
+                    f"context.instruments.{index}.features.{indicator_name}",
+                )
+                if indicator < 0 or indicator > 100:
+                    raise ContractValidationError(
+                        ContractErrorCode.INVALID_ARITHMETIC,
+                        f"context.instruments.{index}.features.{indicator_name}",
+                    )
+            pattern = features["candlestick_pattern"]
+            semantic = features["pattern_semantic"]
+            expected_semantic = PATTERN_SEMANTICS.get(str(pattern)) if pattern is not None else None
+            if semantic != expected_semantic:
+                raise ContractValidationError(
+                    ContractErrorCode.INVALID_REFERENCE,
+                    f"context.instruments.{index}.features.pattern_semantic",
+                )
         _ensure_unique(position_ids, "context.instruments.futures.position.position_id")
 
         order_ids: list[str] = []

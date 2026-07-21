@@ -49,7 +49,7 @@ def _assert_error(
 def test_supported_versions_are_explicit_and_valid_fixture_chain_binds() -> None:
     assert SUPPORTED_SCHEMA_VERSIONS == {
         "news-item.schema.yaml": 1,
-        "decision-context.schema.yaml": 1,
+        "decision-context.schema.yaml": 2,
         "model-decision.schema.yaml": 1,
         "trade-action.schema.yaml": 2,
     }
@@ -123,7 +123,7 @@ def test_unsupported_versions_are_rejected_without_silent_upgrade(target: str) -
     binder, context = _binder_and_context()
     decision = _yaml("model-decision.valid.yaml")
     if target == "context":
-        context["schema_version"] = 2
+        context["schema_version"] = 1
         operation = partial(binder.bind_context, context, now_utc=NOW)
     elif target == "news":
         context["news_items"][0]["schema_version"] = 2
@@ -235,6 +235,17 @@ def test_context_rejects_timestamp_news_and_arithmetic_inconsistency() -> None:
         ContractErrorCode.INVALID_ARITHMETIC,
         lambda: binder.bind_context(context, now_utc=NOW),
     )
+
+
+def test_context_rejects_mismatched_pattern_semantic_without_free_text_fallback() -> None:
+    binder, context = _binder_and_context()
+    context["instruments"][0]["features"]["pattern_semantic"] = "bearish_reversal"
+
+    error = _assert_error(
+        ContractErrorCode.INVALID_REFERENCE,
+        lambda: binder.bind_context(context, now_utc=NOW),
+    )
+    assert error.location.endswith("features.pattern_semantic")
 
 
 def test_context_deduplicates_news_across_business_keys() -> None:

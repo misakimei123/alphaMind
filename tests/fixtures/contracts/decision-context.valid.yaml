@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 cycle_id: cycle-20260718T120000Z-0123abcd
 generated_at_utc: "2026-07-18T12:00:05Z"
 as_of_utc: "2026-07-18T12:00:00Z"
@@ -38,6 +38,11 @@ instruments:
       ema_fast: "154.20"
       ema_slow: "151.80"
       volume_ratio: "1.40"
+      rsi: "62.40"
+      adx: "28.70"
+      ema_alignment: strong_bullish
+      candlestick_pattern: bullish_engulfing
+      pattern_semantic: bullish_reversal
 open_orders: []
 pending_approvals: []
 recent_fills: []

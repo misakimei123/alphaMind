@@ -246,6 +246,41 @@ def test_decision_context_applies_nested_news_contract(
 
 
 @pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("rsi", "100.00000001"),
+        ("adx", "-1"),
+        ("ema_alignment", "sideways"),
+        ("candlestick_pattern", "three_white_soldiers"),
+        ("pattern_semantic", "buy immediately"),
+    ],
+)
+def test_decision_context_v2_rejects_unbounded_or_free_form_feature_semantics(
+    field: str,
+    value: str,
+    schemas: dict[str, dict[str, object]],
+    registry: Registry,
+) -> None:
+    context = load_yaml(FIXTURE_ROOT / "decision-context.valid.yaml")
+    context["instruments"][0]["features"][field] = value
+
+    with pytest.raises(jsonschema.ValidationError):
+        validator("decision-context.schema.yaml", schemas, registry).validate(context)
+
+
+def test_decision_context_v2_accepts_explicitly_unavailable_expanded_features(
+    schemas: dict[str, dict[str, object]],
+    registry: Registry,
+) -> None:
+    context = load_yaml(FIXTURE_ROOT / "decision-context.valid.yaml")
+    features = context["instruments"][0]["features"]
+    for field in ("rsi", "adx", "ema_alignment", "candlestick_pattern", "pattern_semantic"):
+        features[field] = None
+
+    validator("decision-context.schema.yaml", schemas, registry).validate(context)
+
+
+@pytest.mark.parametrize(
     "mutate",
     [
         lambda event: event.update({"to_state": "EXECUTED"}),
@@ -286,7 +321,7 @@ def test_ai_profile_pins_the_versioned_prompt_content(
 ) -> None:
     profile = load_yaml(PROJECT_ROOT / "configs" / "alphamind" / "ai-profile.example.yaml")
     validator("ai-profile.schema.yaml", schemas, registry).validate(profile)
-    prompt = PROJECT_ROOT / "prompts" / "ai" / "trade-decision-v1.md"
+    prompt = PROJECT_ROOT / "prompts" / "ai" / "trade-decision-v2.md"
     actual_sha256 = hashlib.sha256(prompt.read_bytes()).hexdigest()
 
     assert profile["prompt"]["sha256"] == actual_sha256
@@ -322,7 +357,7 @@ def test_ai_cost_caps_cover_one_full_attempt_and_the_half_hour_schedule() -> Non
 
 
 def test_trade_decision_prompt_keeps_model_read_only_and_news_untrusted() -> None:
-    prompt = (PROJECT_ROOT / "prompts" / "ai" / "trade-decision-v1.md").read_text(encoding="utf-8")
+    prompt = (PROJECT_ROOT / "prompts" / "ai" / "trade-decision-v2.md").read_text(encoding="utf-8")
     normalized = prompt.lower()
 
     assert "no authority to place orders" in normalized
@@ -331,6 +366,12 @@ def test_trade_decision_prompt_keeps_model_read_only_and_news_untrusted() -> Non
     assert "prefer `hold`" in normalized
     assert "martingale" in normalized
     assert "do not emit executable quantity" in normalized
+    assert "rsi momentum" in normalized
+    assert "adx trend strength" in normalized
+    assert "ema alignment" in normalized
+    assert "indicators conflict" in normalized
+    assert "hidden chain-of-thought" in normalized
+    assert "[confidence: high]" in normalized
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: https://alphamind.local/schemas/decision-context.schema.yaml
-title: alphaMind DecisionContext v1
+title: alphaMind DecisionContext v2
 description: >-
   Read-only, point-in-time input supplied to the AI decision provider for one decision cycle.
 type: object
@@ -24,7 +24,7 @@ required:
   - previous_cycle
 properties:
   schema_version:
-    const: 1
+    const: 2
   cycle_id:
     $ref: "#/$defs/cycle_id"
   generated_at_utc:
@@ -119,6 +119,11 @@ $defs:
   nullable_positive_decimal:
     anyOf:
       - $ref: "#/$defs/positive_decimal"
+      - type: "null"
+  nullable_indicator_decimal:
+    anyOf:
+      - type: string
+        pattern: "^(?:0(?:\\.[0-9]{1,8})?|[1-9][0-9]?(?:\\.[0-9]{1,8})?|100(?:\\.0{1,8})?)$"
       - type: "null"
   cycle_id:
     type: string
@@ -260,7 +265,19 @@ $defs:
   features:
     type: object
     additionalProperties: false
-    required: [timeframe, donchian_upper, donchian_lower, atr, ema_fast, ema_slow, volume_ratio]
+    required:
+      - timeframe
+      - donchian_upper
+      - donchian_lower
+      - atr
+      - ema_fast
+      - ema_slow
+      - volume_ratio
+      - rsi
+      - adx
+      - ema_alignment
+      - candlestick_pattern
+      - pattern_semantic
     properties:
       timeframe:
         type: string
@@ -277,6 +294,43 @@ $defs:
         $ref: "#/$defs/nullable_positive_decimal"
       volume_ratio:
         $ref: "#/$defs/nullable_positive_decimal"
+      rsi:
+        $ref: "#/$defs/nullable_indicator_decimal"
+      adx:
+        $ref: "#/$defs/nullable_indicator_decimal"
+      ema_alignment:
+        type: [string, "null"]
+        enum: [strong_bullish, bullish, strong_bearish, bearish, mixed, null]
+      candlestick_pattern:
+        type: [string, "null"]
+        enum:
+          - big_bullish
+          - big_bearish
+          - hammer
+          - hanging_man
+          - shooting_star
+          - inverted_hammer
+          - bullish_engulfing
+          - bearish_engulfing
+          - bullish_harami
+          - bearish_harami
+          - doji
+          - null
+      pattern_semantic:
+        type: [string, "null"]
+        enum:
+          - bullish_attack
+          - bearish_attack
+          - bullish_support_rejection
+          - bearish_exhaustion
+          - bearish_resistance_rejection
+          - bullish_support_test
+          - bullish_reversal
+          - bearish_reversal
+          - bearish_momentum_exhaustion
+          - bullish_momentum_exhaustion
+          - indecision
+          - null
   open_order:
     type: object
     additionalProperties: false

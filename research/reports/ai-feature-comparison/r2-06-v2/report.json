@@ -1,0 +1,349 @@
+{
+  "decision_context_schema_version": 2,
+  "delta": {
+    "cost_usd_estimate": "0.008892",
+    "input_tokens_estimate": 3196,
+    "output_tokens_estimate": 60
+  },
+  "evidence_type": "frozen_offline_policy_fixture",
+  "limitations": [
+    "Frozen offline policy fixtures verify contracts and expected behavior only.",
+    "Neither prompt is executed through a model in this comparison.",
+    "No provider request, execution request, win-rate claim, or trading authority is included."
+  ],
+  "metrics": {
+    "baseline": {
+      "cost_usd_estimate": "0.066725",
+      "expected_hold_hit_rate": "0.5556",
+      "input_tokens_estimate": 13100,
+      "invalid_or_unauthorized_action_rate": "0.0000",
+      "key_conflict_citation_rate": "0.0000",
+      "output_tokens_estimate": 2265,
+      "schema_valid_rate": "1.0000"
+    },
+    "expanded": {
+      "cost_usd_estimate": "0.075617",
+      "expected_hold_hit_rate": "1.0000",
+      "input_tokens_estimate": 16296,
+      "invalid_or_unauthorized_action_rate": "0.0000",
+      "key_conflict_citation_rate": "1.0000",
+      "output_tokens_estimate": 2325,
+      "schema_valid_rate": "1.0000"
+    }
+  },
+  "prompt_versions": {
+    "baseline": {
+      "sha256": "9f154e3b8b888766bf95cefba69802e1404ae30cc0a683a8b09bcf0039db1f16",
+      "version": 1
+    },
+    "expanded": {
+      "sha256": "48f22b3df4e6dc6efaf013d3056d7a9d82109c8a83c7704bcb1603d416f3f390",
+      "version": 2
+    }
+  },
+  "provider_network_called": false,
+  "report_id": "r2-06-ai-feature-comparison-v1",
+  "scenario_source_sha256": "3b0d9367cfa932f90c2475cae9fdf19869cd7de0b874404cd1027e3fdf43ea05",
+  "scenarios": [
+    {
+      "baseline": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006338",
+        "decision_sha256": "32a2f78565b4904d0554c77e881ca80a08ad817149efa664f04e54aa7bc51dcd",
+        "input_tokens_estimate": 1191,
+        "output_tokens_estimate": 224,
+        "schema_valid": true
+      },
+      "category": "trend",
+      "conflict_expected": false,
+      "context_sha256": "9e6e3d2868267e9fd8ef1d77e0a2985ead60df5bf011e57cd84cda8b6059f0c2",
+      "expanded": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.007138",
+        "decision_sha256": "362409cae92bd5fa95b42d84689473b5ba0bcb36eb1a5790e655cbb6a31a0883",
+        "input_tokens_estimate": 1481,
+        "output_tokens_estimate": 229,
+        "schema_valid": true
+      },
+      "expected_hold": false,
+      "scenario_id": "trend"
+    },
+    {
+      "baseline": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006330",
+        "decision_sha256": "4d03492dcd1538b7770a66129adfac9ddf4b8a0961067cab5b370c2357eeb215",
+        "input_tokens_estimate": 1188,
+        "output_tokens_estimate": 224,
+        "schema_valid": true
+      },
+      "category": "range",
+      "conflict_expected": true,
+      "context_sha256": "e66b6679438ecff22b875dd539e817781f24a11b1cb25570554b2fbb6c44a59d",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006818",
+        "decision_sha256": "6210474099241371b5589e02af86a473150745c60f2a9304f80103412665870e",
+        "input_tokens_estimate": 1479,
+        "output_tokens_estimate": 208,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "range"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005780",
+        "decision_sha256": "ff4ad383dcc0051a969c225452a179918f9aacf420ff2bde70859bc3858d1255",
+        "input_tokens_estimate": 1196,
+        "output_tokens_estimate": 186,
+        "schema_valid": true
+      },
+      "category": "crash",
+      "conflict_expected": false,
+      "context_sha256": "fbbfc86ae2745c950a2103b28971de73135901acb83b8901439c4998f998aa13",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006580",
+        "decision_sha256": "30ce71fe6c004e1f66c2c9bd18fe81fe270fa65b57208b7356d79b0bd1461434",
+        "input_tokens_estimate": 1486,
+        "output_tokens_estimate": 191,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "crash"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005808",
+        "decision_sha256": "499d458a0f7a96d23b54de7d5d20a5ced06358a869e1fc9dafa1b35741ae6059",
+        "input_tokens_estimate": 1189,
+        "output_tokens_estimate": 189,
+        "schema_valid": true
+      },
+      "category": "grind_down",
+      "conflict_expected": false,
+      "context_sha256": "7e58f7a4632696b221666c423d855fbbf2e6527887478df82413f1f114903a44",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006610",
+        "decision_sha256": "26c10ebac441dd9fa2b40fc90168c5539936cecfd9d0e0f785e90060d74c1e2a",
+        "input_tokens_estimate": 1480,
+        "output_tokens_estimate": 194,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "grind_down"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005902",
+        "decision_sha256": "6f9f870757440988c6b3150c46fb26ceae65dc151ded3beda65050766bddc836",
+        "input_tokens_estimate": 1197,
+        "output_tokens_estimate": 194,
+        "schema_valid": true
+      },
+      "category": "key_position_reversal",
+      "conflict_expected": false,
+      "context_sha256": "600c722f8645f5f5243f93e4c79a85eaa22504ccc7ea2ae3cbf01d1dea308242",
+      "expanded": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.007258",
+        "decision_sha256": "4bf3540bc4caf22e67f4cbc454f9629efb62cd323725960f056841bcf014fb1c",
+        "input_tokens_estimate": 1487,
+        "output_tokens_estimate": 236,
+        "schema_valid": true
+      },
+      "expected_hold": false,
+      "scenario_id": "key_support_reversal"
+    },
+    {
+      "baseline": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006390",
+        "decision_sha256": "97972a2706421b5915b2d97a4a31acaed30586aec9f4fe8ed0671c7888bdcd4c",
+        "input_tokens_estimate": 1188,
+        "output_tokens_estimate": 228,
+        "schema_valid": true
+      },
+      "category": "non_key_noise",
+      "conflict_expected": true,
+      "context_sha256": "0511d188628ebb232911524436b98297312ee757e81122d9366b31c11b1cd557",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006878",
+        "decision_sha256": "0c3932b2be8fc5ce8f1ae7b47768e0daabb72deefa28b6670492a781627b4537",
+        "input_tokens_estimate": 1479,
+        "output_tokens_estimate": 212,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "non_key_noise"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005772",
+        "decision_sha256": "3efe80cc5c97d1a57582f132148d8de4d454de70b7d7f8bc34e9abaaf86409e5",
+        "input_tokens_estimate": 1187,
+        "output_tokens_estimate": 187,
+        "schema_valid": true
+      },
+      "category": "warmup",
+      "conflict_expected": true,
+      "context_sha256": "19e2a534e7637552adee44558e8ce15751d39bc71cced003e3e27ca831466acc",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006828",
+        "decision_sha256": "bbb50eaeb65d85e86e6a5f579318ad2ebacf952768c796f86e697d629a254575",
+        "input_tokens_estimate": 1477,
+        "output_tokens_estimate": 209,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "warmup"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005802",
+        "decision_sha256": "6ed1a813c13d7e087d3cfa9459dc4196c74e09b688cf51e3156f2b62beef2233",
+        "input_tokens_estimate": 1187,
+        "output_tokens_estimate": 189,
+        "schema_valid": true
+      },
+      "category": "candle_gap",
+      "conflict_expected": true,
+      "context_sha256": "19e2a534e7637552adee44558e8ce15751d39bc71cced003e3e27ca831466acc",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006858",
+        "decision_sha256": "650811c7510fa96c3b66391b1ca53855a69f35ad052705a92d33fcc0d91d3198",
+        "input_tokens_estimate": 1477,
+        "output_tokens_estimate": 211,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "candle_gap"
+    },
+    {
+      "baseline": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.005805",
+        "decision_sha256": "4b81c020f94d39c4d7d1a639ec04ab1da14815de077e76be1eb5fdc8f9ac4833",
+        "input_tokens_estimate": 1188,
+        "output_tokens_estimate": 189,
+        "schema_valid": true
+      },
+      "category": "zero_range",
+      "conflict_expected": true,
+      "context_sha256": "bf9441fff7689250489a902945bb0abc132c0ae85e837db18e42630ec841b16f",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006862",
+        "decision_sha256": "86ffdf91acc9c175c5ce8988518e260fab81370763329f0c3c26cd7e6c697ca7",
+        "input_tokens_estimate": 1479,
+        "output_tokens_estimate": 211,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "zero_range"
+    },
+    {
+      "baseline": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006368",
+        "decision_sha256": "b39904d0afe0b93090217b786e6d440786bc8049011b13b91674d46107632235",
+        "input_tokens_estimate": 1191,
+        "output_tokens_estimate": 226,
+        "schema_valid": true
+      },
+      "category": "tiny_body",
+      "conflict_expected": true,
+      "context_sha256": "f4732fc26d2f2c3f34edff6acc8626cc056cca9b3122003caf535017b3519330",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006855",
+        "decision_sha256": "31f9b7df3764fe73eca85ce7e18559d11d92b2d321f5513bb23dc738fe592963",
+        "input_tokens_estimate": 1482,
+        "output_tokens_estimate": 210,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "tiny_body"
+    },
+    {
+      "baseline": {
+        "action": "OPEN",
+        "business_rejection_count": 0,
+        "conflict_cited": false,
+        "cost_usd_estimate": "0.006430",
+        "decision_sha256": "01727078e9ace7ba4e6331169812300db143191c1970c8e8fefb7c4890e6d618",
+        "input_tokens_estimate": 1198,
+        "output_tokens_estimate": 229,
+        "schema_valid": true
+      },
+      "category": "pattern_conflict",
+      "conflict_expected": true,
+      "context_sha256": "f7233c12ad54f4186e0f0558c7230a1a02a539a1f7e8052e6a9199afebbf727f",
+      "expanded": {
+        "action": "HOLD",
+        "business_rejection_count": 0,
+        "conflict_cited": true,
+        "cost_usd_estimate": "0.006932",
+        "decision_sha256": "3253a04b6f5280d09948ebd7c22ecfb39b45d4b44f35293fd9179cc64308178a",
+        "input_tokens_estimate": 1489,
+        "output_tokens_estimate": 214,
+        "schema_valid": true
+      },
+      "expected_hold": true,
+      "scenario_id": "pattern_conflict"
+    }
+  ],
+  "schema_version": 1,
+  "token_estimator": "ceil(utf8_bytes/4); not provider usage",
+  "win_rate_claimed": false
+}

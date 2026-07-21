@@ -205,7 +205,7 @@ def test_scheduler_runtime_paths_must_stay_inside_project_root(
 
 def test_prompt_hash_mismatch_fails_closed(tmp_path: Path) -> None:
     root = _copy_configuration_project(tmp_path)
-    prompt = root / "prompts" / "ai" / "trade-decision-v1.md"
+    prompt = root / "prompts" / "ai" / "trade-decision-v2.md"
     prompt.write_text(prompt.read_text(encoding="utf-8") + "\nchanged\n", encoding="utf-8")
 
     with pytest.raises(ConfigError, match="prompt sha256 does not match"):

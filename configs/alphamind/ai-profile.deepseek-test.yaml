@@ -1,6 +1,6 @@
 # R2-03 read-only compatibility profile. This profile never grants trading authority.
 schema_version: 1
-profile_id: deepseek_v4_flash_trade_decision_test_v1
+profile_id: deepseek_v4_flash_trade_decision_test_v2
 
 provider:
   id: deepseek
@@ -18,9 +18,9 @@ model:
 
 prompt:
   id: alphamind_trade_decision
-  version: 1
-  path: prompts/ai/trade-decision-v1.md
-  sha256: 9f154e3b8b888766bf95cefba69802e1404ae30cc0a683a8b09bcf0039db1f16
+  version: 2
+  path: prompts/ai/trade-decision-v2.md
+  sha256: 48f22b3df4e6dc6efaf013d3056d7a9d82109c8a83c7704bcb1603d416f3f390
 
 structured_output:
   enabled: true

@@ -70,9 +70,9 @@ properties:
       id:
         const: alphamind_trade_decision
       version:
-        const: 1
+        const: 2
       path:
-        const: prompts/ai/trade-decision-v1.md
+        const: prompts/ai/trade-decision-v2.md
       sha256:
         $ref: "#/$defs/sha256"
   structured_output:

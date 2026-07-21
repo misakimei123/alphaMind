@@ -1,0 +1,176 @@
+schema_version: 1
+comparison_id: r2-06-ai-feature-comparison-v1
+as_of_utc: "2026-07-18T12:00:05Z"
+base_features: &base_features
+  timeframe: 30m
+  donchian_upper: "160"
+  donchian_lower: "145"
+  atr: "3"
+  ema_fast: "154"
+  ema_slow: "151"
+  volume_ratio: "1.2"
+  rsi: "55"
+  adx: "25"
+  ema_alignment: bullish
+  candlestick_pattern: null
+  pattern_semantic: null
+scenarios:
+  - scenario_id: trend
+    category: trend
+    features:
+      <<: *base_features
+      rsi: "64"
+      adx: "38"
+      ema_alignment: strong_bullish
+      volume_ratio: "1.6"
+    expected_hold: false
+    conflict_expected: false
+    baseline: {action: OPEN, conflict_cited: false}
+    expanded: {action: OPEN, conflict_cited: false}
+  - scenario_id: range
+    category: range
+    features:
+      <<: *base_features
+      rsi: "50"
+      adx: "11"
+      ema_alignment: mixed
+      volume_ratio: "0.8"
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: OPEN, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: crash
+    category: crash
+    features:
+      <<: *base_features
+      donchian_lower: "156"
+      rsi: "9"
+      adx: "57"
+      ema_fast: "150"
+      ema_slow: "155"
+      ema_alignment: strong_bearish
+      volume_ratio: "3.4"
+      candlestick_pattern: big_bearish
+      pattern_semantic: bearish_attack
+    expected_hold: true
+    conflict_expected: false
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: false}
+  - scenario_id: grind_down
+    category: grind_down
+    features:
+      <<: *base_features
+      rsi: "31"
+      adx: "29"
+      ema_fast: "150"
+      ema_slow: "154"
+      ema_alignment: bearish
+      volume_ratio: "0.9"
+    expected_hold: true
+    conflict_expected: false
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: false}
+  - scenario_id: key_support_reversal
+    category: key_position_reversal
+    features:
+      <<: *base_features
+      donchian_lower: "155.5"
+      rsi: "36"
+      adx: "24"
+      ema_alignment: bullish
+      candlestick_pattern: bullish_engulfing
+      pattern_semantic: bullish_reversal
+    expected_hold: false
+    conflict_expected: false
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: OPEN, conflict_cited: false}
+  - scenario_id: non_key_noise
+    category: non_key_noise
+    features:
+      <<: *base_features
+      rsi: "52"
+      adx: "13"
+      ema_alignment: mixed
+      candlestick_pattern: null
+      pattern_semantic: null
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: OPEN, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: warmup
+    category: warmup
+    features:
+      timeframe: 30m
+      donchian_upper: null
+      donchian_lower: null
+      atr: null
+      ema_fast: null
+      ema_slow: null
+      volume_ratio: null
+      rsi: null
+      adx: null
+      ema_alignment: null
+      candlestick_pattern: null
+      pattern_semantic: null
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: candle_gap
+    category: candle_gap
+    features:
+      timeframe: 30m
+      donchian_upper: null
+      donchian_lower: null
+      atr: null
+      ema_fast: null
+      ema_slow: null
+      volume_ratio: null
+      rsi: null
+      adx: null
+      ema_alignment: null
+      candlestick_pattern: null
+      pattern_semantic: null
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: zero_range
+    category: zero_range
+    features:
+      <<: *base_features
+      atr: null
+      rsi: null
+      adx: null
+      ema_alignment: null
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: HOLD, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: tiny_body
+    category: tiny_body
+    features:
+      <<: *base_features
+      rsi: "49"
+      adx: "17"
+      ema_alignment: mixed
+      candlestick_pattern: doji
+      pattern_semantic: indecision
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: OPEN, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
+  - scenario_id: pattern_conflict
+    category: pattern_conflict
+    features:
+      <<: *base_features
+      rsi: "74"
+      adx: "32"
+      ema_alignment: strong_bullish
+      volume_ratio: "0.7"
+      candlestick_pattern: bearish_engulfing
+      pattern_semantic: bearish_reversal
+    expected_hold: true
+    conflict_expected: true
+    baseline: {action: OPEN, conflict_cited: false}
+    expanded: {action: HOLD, conflict_cited: true}
