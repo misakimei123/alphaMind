@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-21 / R3-03 完成 Telegram 白名单、nonce、HMAC callback、TTL 与重复点击闭环；下一任务为 R3-04 执行前重新校验 |
+| 最近进度更新 | 2026-07-21 / R3-04 完成执行前价格、仓位、余额、挂单、风险和市场规则重新校验；下一任务为 R3-05 执行结果通知 |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成并关闭；R3-01 至 R3-03 已完成 Proposal Store、Telegram 展示与 callback 认证闭环，R3 阶段状态为 `IN_PROGRESS`；当前下一任务是 R3-04 执行前价格、仓位、余额、挂单、风险和市场规则重新校验。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成并关闭；R3-01 至 R3-04 已完成 Proposal Store、Telegram 展示、callback 认证与执行前重新校验闭环，R3 阶段状态为 `IN_PROGRESS`；当前下一任务是 R3-05 执行结果、部分成交、失败和风险通知。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1924,7 +1924,7 @@ R2-07 完成证据（2026-07-21）：
 - `R3-01`（`DONE`）：Proposal/Action Store 与状态机；
 - `R3-02`（`DONE`）：Telegram 展示、详情、批准、拒绝和过期；
 - `R3-03`（`DONE`）：user/chat 白名单、nonce、TTL、幂等与重复点击；
-- `R3-04`：执行前价格、仓位、余额、挂单、风险和市场规则重新校验；
+- `R3-04`（`DONE`）：执行前价格、仓位、余额、挂单、风险和市场规则重新校验；
 - `R3-05`：执行结果、部分成交、失败和风险通知；
 - `R3-06`：暂停 AI、停止新开仓和紧急处置入口。
 
@@ -1999,6 +1999,29 @@ R3-03 完成证据（2026-07-21）：
   Python 文件，repository scan 检查 371 个文件，`uv lock --check` 和 `git diff --check` 通过。本任务未连接
   真实 Telegram、未读取真实 Bot token/user/chat ID/nonce/secret、未调用 LLM、未读取交易 API key，也未
   创建、修改或取消订单。R3-03 据此转为 `DONE`，下一任务为 R3-04。
+
+R3-04 完成证据（2026-07-21）：
+
+- [ADR-0015](decisions/0015-execution-preflight-revalidation.md) 冻结 `APPROVED -> REVALIDATING ->
+  QUEUED/EXPIRED/CANCELLED` 与 R4 ExecutionGateway 的边界：批准只是人工授权，只有绑定最新可信快照并
+  通过全部重新校验的 Action 才能生成执行队列事实，`QUEUED` 仍不表示订单已提交；
+- `src/alphamind/approval/revalidation.py` 新增 `ActionRevalidator` 与 `RevalidationCoordinator`。校验只
+  接受已绑定 DecisionContext、已验证 RiskSnapshot 和有效配置中的 Instrument Registry/Market Capability；
+  Context 与 RiskSnapshot 的 id、NAV、spot 可用余额、futures 可用保证金、risk state 和 open order ID
+  集合必须一致，输入缺失、损坏或混用均 fail-closed；
+- `OPEN/ADD` 重新检查 entry 仍允许、价格仍在用户批准区间、仓位未发生冲突、余额/保证金满足当前最小
+  notional、没有同方向风险增加挂单；安全退出动作重新检查仓位、方向、目标订单/保护单和 safe-exit 权限。
+  所有动作重新检查市场可用性、tick/step/minimum quantity/minimum notional 及 futures leverage 上限；
+- Proposal Store 就地迁移旧 R3-01 SQLite CHECK，保留原审批事件和外键；重新校验通过时只写一个确定性
+  execution ID，并绑定 `context_sha256`、`risk_snapshot_id`、market capability source SHA-256、校验时间和
+  空 order ID 集合。失败/过期不创建 execution 详情，重复处理已完成 Proposal 只返回既有终态；
+- 新增 7 项 R3-04 测试，与 R3-01 至 R3-03 合计 38 项审批链聚焦测试通过，覆盖一次排队与重复消费、价格
+  漂移、仓位/余额/挂单并发变化、RiskSnapshot/Context 不一致、entry 风险阻断、杠杆/tick 规则变化、TTL、
+  风险快照缺失和旧 SQLite 原库迁移；
+- 全仓 `pytest` 450 项通过，strict mypy 检查 75 个 source/script 文件，Ruff check/format 覆盖 117 个
+  Python 文件，repository scan 检查 374 个文件，`uv lock --check` 和 `git diff --check` 通过。本任务未连接
+  真实 Telegram、Bybit 或 Freqtrade，未读取任何真实凭据，也未创建、修改或取消订单。R3-04 据此转为
+  `DONE`，下一任务为 R3-05。
 
 ### 13.11 R4：现货执行纵向闭环
 
@@ -2205,12 +2228,12 @@ git diff --check
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
 | 37 | R2-01 至 R2-07 新闻与 AI 决策 | DONE | 合同、新闻、provider、Action 校验、Feature Builder、指标/形态与 Decision Journal 均已完成 |
-| 38 | R3-01 至 R3-06 Telegram 授权 | IN_PROGRESS | R3-01 至 R3-03 已完成；**下一任务是 R3-04 执行前价格、仓位、余额、挂单、风险和市场规则重新校验** |
+| 38 | R3-01 至 R3-06 Telegram 授权 | IN_PROGRESS | R3-01 至 R3-04 已完成；**下一任务是 R3-05 执行结果、部分成交、失败和风险通知** |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01 至 R3-03 已完成。当前唯一下一任务是 R3-04（执行前价格、仓位、余额、挂单、风险和市场规则重新校验）。Proposal Store 只保存逐 Action 授权事实，不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01 至 R3-04 已完成。当前唯一下一任务是 R3-05（执行结果、部分成交、失败和风险通知）。Proposal Store 保存逐 Action 授权、重新校验与执行队列绑定，但不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 

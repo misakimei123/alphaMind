@@ -84,11 +84,29 @@ properties:
   execution:
     type: [object, "null"]
     additionalProperties: false
-    required: [execution_id, submitted_at_utc, finished_at_utc, order_ids, reason_codes]
+    required:
+      - execution_id
+      - revalidated_at_utc
+      - context_sha256
+      - risk_snapshot_id
+      - market_capability_snapshot_sha256
+      - submitted_at_utc
+      - finished_at_utc
+      - order_ids
+      - reason_codes
     properties:
       execution_id:
         type: string
         pattern: "^exec-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      revalidated_at_utc:
+        $ref: "#/$defs/utc_timestamp"
+      context_sha256:
+        $ref: "#/$defs/sha256"
+      risk_snapshot_id:
+        type: string
+        pattern: "^risk-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$"
+      market_capability_snapshot_sha256:
+        $ref: "#/$defs/sha256"
       submitted_at_utc:
         $ref: "#/$defs/utc_timestamp"
       finished_at_utc:

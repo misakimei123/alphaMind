@@ -1,5 +1,12 @@
 """Proposal Store 与人工审批状态合同。"""
 
+from alphamind.approval.revalidation import (
+    ActionRevalidator,
+    RevalidationCoordinator,
+    RevalidationOutcome,
+    RevalidationReasonCode,
+    RevalidationReport,
+)
 from alphamind.approval.security import (
     TelegramCallbackAuthenticator,
     TelegramCallbackProcessor,
@@ -31,12 +38,17 @@ from alphamind.approval.telegram import (
 )
 
 __all__ = [
+    "ActionRevalidator",
     "ProposalAuthorization",
     "ProposalMessageRenderer",
     "ProposalState",
     "ProposalStore",
     "ProposalStoreError",
     "PublishedProposal",
+    "RevalidationCoordinator",
+    "RevalidationOutcome",
+    "RevalidationReasonCode",
+    "RevalidationReport",
     "StoredProposal",
     "TelegramApprovalAdapter",
     "TelegramApprovalError",

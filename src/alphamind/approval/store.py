@@ -1,4 +1,4 @@
-"""R3-01 Proposal Store：候选 Action 投影与审批前状态机。"""
+"""R3 Proposal Store：候选 Action、人工授权与执行前重新校验状态机。"""
 
 from __future__ import annotations
 
@@ -39,6 +39,9 @@ class ProposalState(StrEnum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
+    REVALIDATING = "REVALIDATING"
+    QUEUED = "QUEUED"
+    CANCELLED = "CANCELLED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,8 +189,16 @@ class ProposalStore:
         self._connection.execute("PRAGMA synchronous=FULL")
         self._connection.execute("PRAGMA foreign_keys=ON")
         self._connection.execute("PRAGMA busy_timeout=5000")
-        self._connection.executescript(
-            """
+        existing = self._connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'proposal'"
+        ).fetchone()
+        if existing is not None and "REVALIDATING" not in str(existing["sql"]):
+            self._migrate_r3_01_store()
+        self._connection.executescript(self._schema_sql())
+
+    @staticmethod
+    def _schema_sql() -> str:
+        return """
             CREATE TABLE IF NOT EXISTS proposal (
                 proposal_id TEXT PRIMARY KEY,
                 cycle_id TEXT NOT NULL,
@@ -198,7 +209,8 @@ class ProposalStore:
                 state TEXT NOT NULL CHECK (
                     state IN (
                         'DRAFT', 'VALIDATED', 'PENDING_APPROVAL',
-                        'APPROVED', 'REJECTED', 'EXPIRED'
+                        'APPROVED', 'REJECTED', 'EXPIRED',
+                        'REVALIDATING', 'QUEUED', 'CANCELLED'
                     )
                 ),
                 created_at_utc TEXT NOT NULL,
@@ -223,7 +235,32 @@ class ProposalStore:
                 FOREIGN KEY (proposal_id) REFERENCES proposal(proposal_id)
             );
             """
-        )
+
+    def _migrate_r3_01_store(self) -> None:
+        """保留既有审批事实，并扩展 SQLite CHECK 到 R3-04 状态。"""
+
+        self._connection.execute("PRAGMA foreign_keys=OFF")
+        try:
+            # executescript 会在脚本开始前提交；因此 BEGIN/COMMIT 必须和迁移语句位于同一脚本。
+            self._connection.executescript(
+                f"""
+                BEGIN IMMEDIATE;
+                ALTER TABLE proposal_event RENAME TO proposal_event_r3_01;
+                ALTER TABLE proposal RENAME TO proposal_r3_01;
+                {self._schema_sql()}
+                INSERT INTO proposal SELECT * FROM proposal_r3_01;
+                INSERT INTO proposal_event SELECT * FROM proposal_event_r3_01;
+                DROP TABLE proposal_event_r3_01;
+                DROP TABLE proposal_r3_01;
+                COMMIT;
+                """
+            )
+        except sqlite3.Error:
+            if self._connection.in_transaction:
+                self._connection.execute("ROLLBACK")
+            raise
+        finally:
+            self._connection.execute("PRAGMA foreign_keys=ON")
 
     def close(self) -> None:
         self._connection.close()
@@ -475,6 +512,77 @@ class ProposalStore:
             reason_codes=("APPROVAL_TTL_EXPIRED",),
         )
 
+    def start_revalidation(
+        self,
+        proposal_id: str,
+        *,
+        occurred_at_utc: datetime,
+        idempotency_key: str,
+    ) -> StoredProposal:
+        """把已授权 Action 交给 R3-04 重新校验，但尚不产生执行权。"""
+
+        return self._transition(
+            proposal_id,
+            event_type="REVALIDATION_STARTED",
+            expected_state=ProposalState.APPROVED,
+            to_state=ProposalState.REVALIDATING,
+            occurred_at_utc=occurred_at_utc,
+            actor_type="system",
+            user_id_sha256=None,
+            chat_id_sha256=None,
+            nonce_sha256=None,
+            idempotency_key=idempotency_key,
+            reason_codes=("EXECUTION_REVALIDATION_REQUIRED",),
+        )
+
+    def finish_revalidation(
+        self,
+        proposal_id: str,
+        *,
+        passed: bool,
+        expired: bool,
+        occurred_at_utc: datetime,
+        idempotency_key: str,
+        reason_codes: tuple[str, ...],
+        execution: Mapping[str, Any] | None = None,
+    ) -> StoredProposal:
+        """持久化重新校验终态；只有通过时才绑定一次执行队列详情。"""
+
+        if passed and expired:
+            raise ValueError("passed revalidation cannot be expired")
+        if (
+            not reason_codes
+            or len(reason_codes) > 16
+            or len(reason_codes) != len(set(reason_codes))
+        ):
+            raise ValueError("revalidation reason codes are invalid")
+        if passed:
+            event_type = "EXECUTION_QUEUED"
+            to_state = ProposalState.QUEUED
+            execution_document = dict(execution) if execution is not None else None
+            if execution_document is None:
+                raise ValueError("passed revalidation requires execution evidence")
+        else:
+            event_type = "APPROVAL_EXPIRED" if expired else "EXECUTION_CANCELLED"
+            to_state = ProposalState.EXPIRED if expired else ProposalState.CANCELLED
+            execution_document = None
+            if execution is not None:
+                raise ValueError("rejected revalidation cannot bind execution evidence")
+        return self._transition(
+            proposal_id,
+            event_type=event_type,
+            expected_state=ProposalState.REVALIDATING,
+            to_state=to_state,
+            occurred_at_utc=occurred_at_utc,
+            actor_type="system",
+            user_id_sha256=None,
+            chat_id_sha256=None,
+            nonce_sha256=None,
+            idempotency_key=idempotency_key,
+            reason_codes=reason_codes,
+            execution=execution_document,
+        )
+
     def _transition(
         self,
         proposal_id: str,
@@ -489,6 +597,7 @@ class ProposalStore:
         nonce_sha256: str | None,
         idempotency_key: str,
         reason_codes: tuple[str, ...],
+        execution: JsonObject | None = None,
     ) -> StoredProposal:
         occurred_at = _utc_text(occurred_at_utc)
         with self._lock:
@@ -515,6 +624,8 @@ class ProposalStore:
                     stored = self.get(proposal_id)
                     if stored is None:
                         raise ProposalStoreError("idempotent proposal event is orphaned")
+                    if execution is not None and stored.document["execution"] != execution:
+                        raise ProposalStoreError("proposal execution idempotency conflict")
                     return stored
                 row = self._connection.execute(
                     "SELECT * FROM proposal WHERE proposal_id = ?", (proposal_id,)
@@ -537,6 +648,10 @@ class ProposalStore:
                     )
                 if event_type == "APPROVAL_EXPIRED" and occurred_at_utc < expires_at:
                     raise ProposalStoreError("proposal cannot expire before its TTL")
+                if execution is not None and (
+                    event_type != "EXECUTION_QUEUED" or row["execution_json"] is not None
+                ):
+                    raise ProposalStoreError("proposal execution binding is not allowed")
                 sequence_row = self._connection.execute(
                     "SELECT COUNT(*) AS count FROM proposal_event WHERE proposal_id = ?",
                     (proposal_id,),
@@ -586,13 +701,14 @@ class ProposalStore:
                 self._connection.execute(
                     """
                     UPDATE proposal
-                    SET state = ?, updated_at_utc = ?, authorization_json = ?
+                    SET state = ?, updated_at_utc = ?, authorization_json = ?, execution_json = ?
                     WHERE proposal_id = ? AND state = ?
                     """,
                     (
                         to_state.value,
                         occurred_at,
                         _canonical_json(authorization),
+                        None if execution is None else _canonical_json(execution),
                         proposal_id,
                         current_state.value,
                     ),

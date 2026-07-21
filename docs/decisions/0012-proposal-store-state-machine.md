@@ -33,15 +33,16 @@ ApprovalEvent v1 和 ApprovalRecord v1 已冻结状态名称与合法迁移。R3
    Bybit key。允许集合和 nonce 的安全生成、callback 一次性消费仍由 R3-03 完成；
 7. 每次读取重新校验 ApprovalRecord Schema、Action/event hash、事件顺序与时间单调性、proposal/action
    绑定、当前 state 和 updated timestamp。任一正文、索引或投影被篡改即拒绝读取；
-8. 本轮不启用 `REVALIDATING` 之后的执行态写入。R3-04/R4 必须在绑定执行详情和重新校验合同后显式扩展，
-   不能用当前 Store 声称订单已提交或成交。
+8. R3-01 不启用 `REVALIDATING` 之后的执行态写入；R3-04 已按
+   [ADR-0015](0015-execution-preflight-revalidation.md) 显式扩展到 `QUEUED/EXPIRED/CANCELLED` 并绑定
+   重新校验证据。订单提交、部分成交和最终结果仍必须由 R4 扩展，不能用当前 Store 声称已成交。
 
 ## 后果
 
 - R3-02 可以安全读取 `VALIDATED` Proposal，消息发送成功后调用 `request_approval`；R3-03 可以在回调
   边界完成原始凭据验证后调用单次 `decide`。
 - 一个 ModelDecision 可以产生多个独立 Proposal，各自具有 nonce、TTL、事件历史和最终用户决定。
-- Proposal Store 是授权事实源，但不是订单/持仓权威；批准仍必须经过 R3-04 重新校验和后续
+- Proposal Store 是授权与重新校验事实源，但不是订单/持仓权威；`QUEUED` 仍必须经过后续
   ExecutionGateway。
 - schema 或状态范围扩展必须显式迁移，不得静默把旧 Proposal 解释成已执行。
 

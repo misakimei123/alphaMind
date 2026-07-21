@@ -37,8 +37,9 @@ nonce、TTL 与消息 chat 的绑定。
 8. TTL 由 Proposal Store 的 Action 有效期与审批 TTL 较早值控制。到期 callback 只能迁移为 `EXPIRED`；
    首次批准/拒绝依赖 expected `PENDING_APPROVAL` 追加一个决定事件，重复点击返回既有终态，不追加第二个
    用户决定，也不产生执行事实；
-9. `APPROVED` 仍只表示人工授权。价格、仓位、余额、挂单、RiskSnapshot、市场能力和执行幂等必须由
-   R3-04 重新校验；R3-03 不调用 Freqtrade、Bybit 或任何交易写接口。
+9. `APPROVED` 仍只表示人工授权。R3-04 已按 [ADR-0015](0015-execution-preflight-revalidation.md) 重新校验
+   价格、仓位、余额、挂单、RiskSnapshot、市场能力和执行幂等；R3-03 不调用 Freqtrade、Bybit 或任何
+   交易写接口。
 
 ## 后果
 

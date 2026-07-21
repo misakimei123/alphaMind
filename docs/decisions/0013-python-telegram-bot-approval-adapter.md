@@ -27,10 +27,10 @@ Telegram Bot API 是异步网络边界，按钮 `callback_data` 只有 1–64 UT
 5. 消息发送成功后才调用 `ProposalStore.request_approval`。Store 迁移失败时尽力编辑消息、移除按钮，不能
    伪造 `PENDING_APPROVAL`；HTTP 与 SQLite 之间无法实现原子事务，R3-03 继续以幂等 callback 和恢复策略
    收口崩溃窗口；
-6. 本层只接受 `VerifiedTelegramCallback`。它是 R3-03 验证边界未来产出的内部事实，不代表 R3-02 已实现
+6. 本层只接受 `VerifiedTelegramCallback`。它是 R3-03 验证边界产出的内部事实，不代表 R3-02 已实现
    白名单或 nonce 校验。回调先 ACK，再展示详情或调用 Store 的单次决定；到期回调转为 `EXPIRED`；
-7. `APPROVED` 只表示人工授权，消息必须显示“尚未执行”。执行前重新校验属于 R3-04，订单、成交和仓位
-   事实仍属于后续 ExecutionGateway、Freqtrade Runtime DB 与交易所。
+7. `APPROVED` 只表示人工授权，消息必须显示“尚未执行”。R3-04 已按 ADR-0015 增加执行前重新校验；订单、
+   成交和仓位事实仍属于后续 ExecutionGateway、Freqtrade Runtime DB 与交易所。
 
 ## 后果
 

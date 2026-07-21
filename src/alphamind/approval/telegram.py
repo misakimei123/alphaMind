@@ -364,6 +364,9 @@ class ProposalMessageRenderer:
             ProposalState.APPROVED: "已批准（尚未执行）",
             ProposalState.REJECTED: "已拒绝",
             ProposalState.EXPIRED: "已过期",
+            ProposalState.REVALIDATING: "执行前校验中",
+            ProposalState.QUEUED: "重新校验通过（等待执行）",
+            ProposalState.CANCELLED: "重新校验未通过（已取消）",
         }
         label = labels.get(proposal.state, proposal.state.value)
         return _bounded_message(
@@ -484,6 +487,9 @@ class TelegramApprovalAdapter:
             ProposalState.APPROVED,
             ProposalState.REJECTED,
             ProposalState.EXPIRED,
+            ProposalState.REVALIDATING,
+            ProposalState.QUEUED,
+            ProposalState.CANCELLED,
         }:
             await self._bot.edit_message_text(
                 callback.message,
