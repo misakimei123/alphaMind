@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-21 / R3-02 完成 python-telegram-bot 展示、详情、批准、拒绝和过期适配；下一任务为 R3-03 白名单、nonce 与 callback 验证 |
+| 最近进度更新 | 2026-07-21 / R3-03 完成 Telegram 白名单、nonce、HMAC callback、TTL 与重复点击闭环；下一任务为 R3-04 执行前重新校验 |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成并关闭；R3-01/R3-02 已完成 Proposal Store 与 Telegram 展示/操作适配，R3 阶段状态为 `IN_PROGRESS`；当前下一任务是 R3-03 user/chat 白名单、nonce、TTL、幂等与重复点击闭环。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成并关闭；R3-01 至 R3-03 已完成 Proposal Store、Telegram 展示与 callback 认证闭环，R3 阶段状态为 `IN_PROGRESS`；当前下一任务是 R3-04 执行前价格、仓位、余额、挂单、风险和市场规则重新校验。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1923,7 +1923,7 @@ R2-07 完成证据（2026-07-21）：
 
 - `R3-01`（`DONE`）：Proposal/Action Store 与状态机；
 - `R3-02`（`DONE`）：Telegram 展示、详情、批准、拒绝和过期；
-- `R3-03`：user/chat 白名单、nonce、TTL、幂等与重复点击；
+- `R3-03`（`DONE`）：user/chat 白名单、nonce、TTL、幂等与重复点击；
 - `R3-04`：执行前价格、仓位、余额、挂单、风险和市场规则重新校验；
 - `R3-05`：执行结果、部分成交、失败和风险通知；
 - `R3-06`：暂停 AI、停止新开仓和紧急处置入口。
@@ -1974,6 +1974,31 @@ R3-02 完成证据（2026-07-21）：
   Python 文件，repository scan 检查 369 个文件，`uv lock --check` 和 `git diff --check` 通过。本任务未连接
   真实 Telegram、未读取 Bot token/真实 user/chat ID/nonce、未调用 LLM、未读取交易 API key，也未创建、
   修改或取消订单。R3-02 据此转为 `DONE`，下一任务为 R3-03。
+
+R3-03 完成证据（2026-07-21）：
+
+- [ADR-0014](decisions/0014-telegram-callback-authentication.md) 冻结 raw Update 认证边界：环境 allowlist、
+  Proposal 白名单快照、独立 nonce、HMAC callback、目标 chat、TTL 和 expected-state 必须同时满足；批准仍不
+  表示订单、成交或执行前风险通过；
+- `src/alphamind/approval/security.py` 新增 `TelegramSecurityPolicy`，按配置声明的 env 名读取 user/chat
+  allowlist 和至少 32 bytes callback secret。原始 ID 在业务层前转换为 SHA-256；每个 Action 使用
+  `secrets.token_bytes(32)` 生成独立 nonce，只把 nonce hash 和身份 hash 交给 Proposal Store；
+- callback data 改为 `v1:<action-code>:<proposal-suffix>:<128-bit HMAC tag>`，总长不超过 64 UTF-8 bytes。
+  签名绑定 action、proposal ID、nonce hash、expires_at 与目标 chat hash，并用 `hmac.compare_digest` 比较；
+  callback 不包含原始 nonce、user/chat ID、secret 或完整 Action；
+- `TelegramCallbackAuthenticator` 只接受 `python-telegram-bot` 22.8 的可访问 message callback；当前环境
+  allowlist 与 Proposal 创建时快照取交集。配置新增身份不能批准旧 Proposal，配置移除立即生效；inline、
+  inaccessible、未知 Proposal、错误签名、篡改 action/tag 和跨 chat callback 均 fail-closed；
+- `TelegramCallbackProcessor` 对所有 callback 先 ACK，再认证和迁移；ACK 失败不记录决定。query ID 先
+  SHA-256 再生成 Store idempotency key；首次批准/拒绝只追加一个用户决定，重复点击返回既有终态；到期
+  callback 只能进入 `EXPIRED`；
+- 新增 16 项 R3-03 测试，与 R3-01/R3-02 合计 31 项聚焦测试通过，覆盖环境错误脱敏、allowlist hash、
+  nonce 唯一性、64-byte HMAC payload、原始材料不落库、批准一次、重复点击、未授权 user/chat、目标 chat
+  绑定、payload 篡改、非 string data、inaccessible message、配置扩权和 TTL；
+- 全仓 `pytest` 443 项通过，strict mypy 检查 74 个 source/script 文件，Ruff check/format 覆盖 115 个
+  Python 文件，repository scan 检查 371 个文件，`uv lock --check` 和 `git diff --check` 通过。本任务未连接
+  真实 Telegram、未读取真实 Bot token/user/chat ID/nonce/secret、未调用 LLM、未读取交易 API key，也未
+  创建、修改或取消订单。R3-03 据此转为 `DONE`，下一任务为 R3-04。
 
 ### 13.11 R4：现货执行纵向闭环
 
@@ -2180,12 +2205,12 @@ git diff --check
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
 | 37 | R2-01 至 R2-07 新闻与 AI 决策 | DONE | 合同、新闻、provider、Action 校验、Feature Builder、指标/形态与 Decision Journal 均已完成 |
-| 38 | R3-01 至 R3-06 Telegram 授权 | IN_PROGRESS | R3-01/R3-02 已完成；**下一任务是 R3-03 user/chat 白名单、nonce、TTL、幂等与重复点击** |
+| 38 | R3-01 至 R3-06 Telegram 授权 | IN_PROGRESS | R3-01 至 R3-03 已完成；**下一任务是 R3-04 执行前价格、仓位、余额、挂单、风险和市场规则重新校验** |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01/R3-02 已完成。当前唯一下一任务是 R3-03（user/chat 白名单、nonce、TTL、幂等与重复点击）。Proposal Store 只保存逐 Action 授权事实，不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01 至 R3-03 已完成。当前唯一下一任务是 R3-04（执行前价格、仓位、余额、挂单、风险和市场规则重新校验）。Proposal Store 只保存逐 Action 授权事实，不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 
@@ -2212,6 +2237,7 @@ git diff --check
 - [DeepSeek Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)
 - [DeepSeek Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode)
 - [python-telegram-bot 22.8 Bot API](https://docs.python-telegram-bot.org/en/v22.8/telegram.bot.html)
+- [python-telegram-bot 22.8 CallbackQuery](https://docs.python-telegram-bot.org/en/v22.8/telegram.callbackquery.html)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Bybit V5 Instruments Info](https://bybit-exchange.github.io/docs/v5/market/instrument)
 - [Bybit V5 Set Leverage](https://bybit-exchange.github.io/docs/v5/position/leverage)

@@ -39,6 +39,8 @@ Telegram Bot API 是异步网络边界，按钮 `callback_data` 只有 1–64 UT
 - Telegram token 仍只在运行环境创建客户端时出现，不写入 Proposal Store、callback data、日志或 fixture；
 - R3-03 必须实现原始 Update/callback 解析、user/chat 白名单、nonce 一次性消费和重复点击闭环，不能直接
   把未验证的 Telegram 数据构造成 `VerifiedTelegramCallback`；
+- 上述 R3-03 安全闭环已由 [ADR-0014](0014-telegram-callback-authentication.md) 落地；原始 Update 必须从
+  `TelegramCallbackProcessor` 进入，R3-02 的适配器不构成独立认证入口；
 - 消息已发送但进程在 Store 迁移前崩溃的极小窗口不能靠普通 HTTP 调用消除，后续恢复逻辑必须把 Store
   状态作为授权事实源，绝不能仅凭消息存在或按钮点击执行。
 

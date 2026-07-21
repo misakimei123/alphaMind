@@ -338,6 +338,13 @@ R3-02 使用 `python-telegram-bot` 22.x 的 async `Bot` API 与原生 `InlineKey
 R3-03 未来产出的 `VerifiedTelegramCallback`，自身不声称已经验证原始 Telegram Update。具体边界见
 [ADR-0013](decisions/0013-python-telegram-bot-approval-adapter.md)。
 
+R3-03 将原始 `Update.callback_query` 收口到 `TelegramCallbackProcessor`。每个 Action 生成独立随机 nonce
+hash；按钮使用不超过 64 bytes 的紧凑 HMAC payload，签名绑定 action、proposal、有效期和目标 chat hash。
+认证要求当前环境 allowlist 与 Proposal 创建时快照同时命中，并在认证前 ACK callback；篡改、跨 chat、
+inline/inaccessible message、过期和重复点击均不能产生第二个用户决定。原始 ID、nonce、callback secret
+和 query ID 不进入 Proposal Store。详细认证合同见
+[ADR-0014](decisions/0014-telegram-callback-authentication.md)。
+
 批准不等于无条件下单。ExecutionGateway 前必须重新校验价格漂移、最新仓位/挂单、余额/保证金、RiskSnapshot、市场状态、精度、敞口和相同 Action 是否已执行。
 
 ### 5.5 模型与 Prompt 治理

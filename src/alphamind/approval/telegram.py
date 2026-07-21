@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import re
+from base64 import urlsafe_b64encode
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -27,16 +29,33 @@ SHA256_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 PROPOSAL_ID_PATTERN = re.compile(r"^proposal-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$")
 MAX_MESSAGE_CHARS = 4096
 MAX_CALLBACK_BYTES = 64
+MAX_TELEGRAM_ID = 2**63 - 1
+CALLBACK_DATA_PATTERN = re.compile(
+    r"^v1:(?P<action>[dar]):(?P<suffix>[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}):"
+    r"(?P<tag>[A-Za-z0-9_-]{22})$"
+)
 
 
 class TelegramApprovalError(RuntimeError):
     """Telegram 展示或审批适配无法安全完成。"""
 
 
+class TelegramCallbackDataError(ValueError):
+    """Telegram callback data 格式错误、签名错误或与 Proposal 不绑定。"""
+
+
 class TelegramCallbackAction(StrEnum):
     DETAIL = "detail"
     APPROVE = "approve"
     REJECT = "reject"
+
+
+CALLBACK_ACTION_CODES = {
+    TelegramCallbackAction.DETAIL: "d",
+    TelegramCallbackAction.APPROVE: "a",
+    TelegramCallbackAction.REJECT: "r",
+}
+CALLBACK_CODE_ACTIONS = {code: action for action, code in CALLBACK_ACTION_CODES.items()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,15 +110,99 @@ class PublishedProposal:
     message: TelegramMessageRef
 
 
-def callback_data(action: TelegramCallbackAction, proposal_id: str) -> str:
-    """构造只含路由事实的短 payload；原始 nonce 与交易参数不得进入按钮。"""
+@dataclass(frozen=True, slots=True)
+class TelegramCallbackRoute:
+    action: TelegramCallbackAction
+    proposal_id: str
+    tag: str
 
-    if PROPOSAL_ID_PATTERN.fullmatch(proposal_id) is None:
-        raise ValueError("Telegram callback proposal id is invalid")
-    value = f"{action.value}:{proposal_id}"
-    if len(value.encode("utf-8")) > MAX_CALLBACK_BYTES:
-        raise ValueError("Telegram callback data exceeds 64 bytes")
-    return value
+
+class TelegramCallbackCodec:
+    """生成并验证绑定 Proposal nonce/TTL 的紧凑 HMAC callback data。"""
+
+    def __init__(self, callback_secret: bytes) -> None:
+        if not 32 <= len(callback_secret) <= 256:
+            raise ValueError("Telegram callback secret must contain 32 to 256 bytes")
+        self._secret = bytes(callback_secret)
+
+    def encode(
+        self,
+        action: TelegramCallbackAction,
+        proposal: StoredProposal,
+        chat_id_sha256: str,
+    ) -> str:
+        if PROPOSAL_ID_PATTERN.fullmatch(proposal.proposal_id) is None:
+            raise TelegramCallbackDataError("Telegram callback proposal id is invalid")
+        suffix = proposal.proposal_id.removeprefix("proposal-")
+        tag = self._tag(action, proposal, chat_id_sha256)
+        value = f"v1:{CALLBACK_ACTION_CODES[action]}:{suffix}:{tag}"
+        if len(value.encode()) > MAX_CALLBACK_BYTES:
+            raise TelegramCallbackDataError("Telegram callback data exceeds 64 bytes")
+        return value
+
+    def route(self, value: object) -> TelegramCallbackRoute:
+        if not isinstance(value, str) or not 1 <= len(value.encode()) <= MAX_CALLBACK_BYTES:
+            raise TelegramCallbackDataError("Telegram callback data is invalid")
+        matched = CALLBACK_DATA_PATTERN.fullmatch(value)
+        if matched is None:
+            raise TelegramCallbackDataError("Telegram callback data is invalid")
+        action = CALLBACK_CODE_ACTIONS[matched.group("action")]
+        return TelegramCallbackRoute(
+            action=action,
+            proposal_id=f"proposal-{matched.group('suffix')}",
+            tag=matched.group("tag"),
+        )
+
+    def verify(
+        self,
+        route: TelegramCallbackRoute,
+        proposal: StoredProposal,
+        chat_id_sha256: str,
+    ) -> None:
+        if route.proposal_id != proposal.proposal_id:
+            raise TelegramCallbackDataError("Telegram callback proposal binding failed")
+        expected = self._tag(route.action, proposal, chat_id_sha256)
+        if not hmac.compare_digest(route.tag, expected):
+            raise TelegramCallbackDataError("Telegram callback signature is invalid")
+
+    def _tag(
+        self,
+        action: TelegramCallbackAction,
+        proposal: StoredProposal,
+        chat_id_sha256: str,
+    ) -> str:
+        document = proposal.document
+        nonce_sha256 = document.get("nonce_sha256")
+        expires_at_utc = document.get("expires_at_utc")
+        if (
+            SHA256_PATTERN.fullmatch(str(nonce_sha256)) is None
+            or SHA256_PATTERN.fullmatch(chat_id_sha256) is None
+            or not isinstance(expires_at_utc, str)
+        ):
+            raise TelegramCallbackDataError("Telegram callback proposal binding is invalid")
+        payload = "\x1f".join(
+            (
+                "v1",
+                action.value,
+                proposal.proposal_id,
+                str(nonce_sha256),
+                expires_at_utc,
+                chat_id_sha256,
+            )
+        ).encode()
+        digest = hmac.digest(self._secret, payload, "sha256")[:16]
+        return urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def callback_data(
+    codec: TelegramCallbackCodec,
+    action: TelegramCallbackAction,
+    proposal: StoredProposal,
+    chat_id_sha256: str,
+) -> str:
+    """兼容调用入口；callback 只携带路由和签名，不携带原始 nonce 或交易参数。"""
+
+    return codec.encode(action, proposal, chat_id_sha256)
 
 
 class TelegramBotClient:
@@ -210,6 +313,9 @@ class TelegramBotClient:
 class ProposalMessageRenderer:
     """把受 Schema 约束的 Proposal 渲染为无 parse mode 的 Telegram 纯文本。"""
 
+    def __init__(self, callback_codec: TelegramCallbackCodec) -> None:
+        self._callback_codec = callback_codec
+
     def overview(self, proposal: StoredProposal) -> str:
         document = proposal.document
         action = _action(document)
@@ -264,23 +370,42 @@ class ProposalMessageRenderer:
             f"{self.overview(proposal)}\n\n审批结果: {label}\n此消息已不可再次操作。"
         )
 
-    def keyboard(self, proposal_id: str) -> InlineKeyboardMarkup:
+    def keyboard(
+        self,
+        proposal: StoredProposal,
+        chat_id_sha256: str,
+    ) -> InlineKeyboardMarkup:
         return InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
                         "查看详情",
-                        callback_data=callback_data(TelegramCallbackAction.DETAIL, proposal_id),
+                        callback_data=callback_data(
+                            self._callback_codec,
+                            TelegramCallbackAction.DETAIL,
+                            proposal,
+                            chat_id_sha256,
+                        ),
                     )
                 ],
                 [
                     InlineKeyboardButton(
                         "批准",
-                        callback_data=callback_data(TelegramCallbackAction.APPROVE, proposal_id),
+                        callback_data=callback_data(
+                            self._callback_codec,
+                            TelegramCallbackAction.APPROVE,
+                            proposal,
+                            chat_id_sha256,
+                        ),
                     ),
                     InlineKeyboardButton(
                         "拒绝",
-                        callback_data=callback_data(TelegramCallbackAction.REJECT, proposal_id),
+                        callback_data=callback_data(
+                            self._callback_codec,
+                            TelegramCallbackAction.REJECT,
+                            proposal,
+                            chat_id_sha256,
+                        ),
                     ),
                 ],
             ]
@@ -294,11 +419,11 @@ class TelegramApprovalAdapter:
         self,
         store: ProposalStore,
         bot: TelegramBotClient,
-        renderer: ProposalMessageRenderer | None = None,
+        callback_codec: TelegramCallbackCodec,
     ) -> None:
         self._store = store
         self._bot = bot
-        self._renderer = renderer or ProposalMessageRenderer()
+        self._renderer = ProposalMessageRenderer(callback_codec)
 
     async def publish(
         self,
@@ -317,7 +442,7 @@ class TelegramApprovalAdapter:
         message = await self._bot.send_message(
             chat_id,
             self._renderer.overview(proposal),
-            reply_markup=self._renderer.keyboard(proposal.proposal_id),
+            reply_markup=self._renderer.keyboard(proposal, telegram_id_sha256(chat_id)),
         )
         digest = hashlib.sha256(f"{proposal.proposal_id}:{message.message_id}".encode()).hexdigest()
         try:
@@ -341,6 +466,11 @@ class TelegramApprovalAdapter:
         """消费 R3-03 已验证回调；先 ACK，再展示详情或记录单次决定。"""
 
         await self._bot.answer_callback_query(callback.query_id)
+        return await self.apply_verified_callback(callback)
+
+    async def apply_verified_callback(self, callback: VerifiedTelegramCallback) -> StoredProposal:
+        """应用已经 ACK 且通过 R3-03 认证的 callback，不重复回答 query。"""
+
         proposal = self._required_proposal(callback.proposal_id)
         if proposal.state is ProposalState.PENDING_APPROVAL and (
             _utc(callback.occurred_at_utc) >= _expires_at(proposal)
@@ -367,7 +497,7 @@ class TelegramApprovalAdapter:
             await self._bot.edit_message_text(
                 callback.message,
                 self._renderer.detail(proposal),
-                reply_markup=self._renderer.keyboard(proposal.proposal_id),
+                reply_markup=self._renderer.keyboard(proposal, callback.chat_id_sha256),
             )
             return proposal
         try:
@@ -448,6 +578,15 @@ class TelegramApprovalAdapter:
 def _validate_chat_id(chat_id: int) -> None:
     if isinstance(chat_id, bool) or not isinstance(chat_id, int):
         raise ValueError("Telegram chat id must be an integer")
+
+
+def telegram_id_sha256(value: int) -> str:
+    """将 Telegram 数字 ID 转为 Store 合同要求的不可逆 SHA-256。"""
+
+    _validate_chat_id(value)
+    if value == 0 or abs(value) > MAX_TELEGRAM_ID:
+        raise ValueError("Telegram id is outside signed 64-bit range")
+    return hashlib.sha256(str(value).encode()).hexdigest()
 
 
 def _validate_message_text(text: str) -> None:

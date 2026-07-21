@@ -1,5 +1,12 @@
 """Proposal Store 与人工审批状态合同。"""
 
+from alphamind.approval.security import (
+    TelegramCallbackAuthenticator,
+    TelegramCallbackProcessor,
+    TelegramSecurityError,
+    TelegramSecurityErrorCode,
+    TelegramSecurityPolicy,
+)
 from alphamind.approval.store import (
     ProposalAuthorization,
     ProposalState,
@@ -14,9 +21,13 @@ from alphamind.approval.telegram import (
     TelegramApprovalError,
     TelegramBotClient,
     TelegramCallbackAction,
+    TelegramCallbackCodec,
+    TelegramCallbackDataError,
+    TelegramCallbackRoute,
     TelegramMessageRef,
     VerifiedTelegramCallback,
     callback_data,
+    telegram_id_sha256,
 )
 
 __all__ = [
@@ -31,7 +42,16 @@ __all__ = [
     "TelegramApprovalError",
     "TelegramBotClient",
     "TelegramCallbackAction",
+    "TelegramCallbackAuthenticator",
+    "TelegramCallbackCodec",
+    "TelegramCallbackDataError",
+    "TelegramCallbackProcessor",
+    "TelegramCallbackRoute",
     "TelegramMessageRef",
+    "TelegramSecurityError",
+    "TelegramSecurityErrorCode",
+    "TelegramSecurityPolicy",
     "VerifiedTelegramCallback",
     "callback_data",
+    "telegram_id_sha256",
 ]
