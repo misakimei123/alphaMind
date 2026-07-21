@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-21 / R2-06 完成 RSI、ADX、EMA 排列、关键位置 K 线形态、DecisionContext v2、Prompt v2 和离线对照；下一任务为 R2-07 决策持久化 |
+| 最近进度更新 | 2026-07-21 / R2-07 完成 append-only Decision Journal、provider 持久化门禁及版本/hash 绑定；下一任务为 R3-01 Proposal Store |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-06 已完成决策合同、新闻采集、模型 provider、逐动作确定性业务校验、核心 Feature Builder 及指标/形态语义扩展，R2-06 状态为 `DONE`；当前下一任务是 R2-07 决策持久化。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成决策合同、新闻采集、模型 provider、逐动作确定性业务校验、核心 Feature Builder、指标/形态语义扩展和不可变决策持久化，R2 阶段状态为 `DONE`；当前下一任务是 R3-01 Proposal Store。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1628,7 +1628,7 @@ R1-06 完成证据（2026-07-18）：
 - `R2-06`（`DONE`，新增）：落实 ADR-0008，在 R2-05 的同源 point-in-time 特征快照上增加 RSI、
   ADX、EMA 排列和经过关键位置过滤的 K 线形态/语义标签，并同步版本化 Schema、Prompt、fixture 与
   决策质量对照；
-- `R2-07`（`NOT_STARTED`，原 R2-06）：保存 HOLD、候选动作、模型错误、model/prompt/config/schema
+- `R2-07`（`DONE`，原 R2-06）：保存 HOLD、候选动作、模型错误、model/prompt/config/schema
   版本和输入 hash。
 
 完成标准：冻结 fixture 和实时只读快照均能稳定产生合法 HOLD 或候选 Action；非法输出不会进入审批队列。
@@ -1853,6 +1853,29 @@ R2-06 完成证据（2026-07-21）：
   effective-config-first 运行顺序可正常完成冒烟，该导入易用性风险不属于 R2-06 指标语义改造；
 - 本任务未调用 LLM provider、未读取 API key、未发送 Telegram，也未创建、修改或取消订单。R2-06
   据此转为 `DONE`，下一任务为 R2-07 决策与错误持久化。
+
+R2-07 完成证据（2026-07-21）：
+
+- [ADR-0011](decisions/0011-ai-decision-journal.md) 冻结 Decision Journal 与 UsageLedger、Audit
+  Outbox/Audit DB、Freqtrade Runtime DB 的所有权边界：Journal 是已验证 AI 周期终态事实源，不声明
+  Telegram 批准、风险定仓、订单或成交；Audit Writer 是否在线不影响 R3 后续读取候选动作；
+- `src/alphamind/ai/journal.py` 新增独立 SQLite FULL/WAL append-only Journal。每个 `cycle_id` 只允许一个
+  `HOLD`、`CANDIDATE_ACTIONS` 或 `MODEL_ERROR` 终态；相同内容幂等，异文拒绝覆盖；记录正文使用
+  canonical JSON 与整体 SHA-256，读取时复核正文、索引列、outcome/动作一致性和版本/hash 绑定，篡改
+  fail-closed；
+- 每条终态绑定 environment、profile/model ID、prompt ID/version/SHA-256、effective config SHA-256、
+  DecisionContext 输入 SHA-256、NewsItem/DecisionContext/ModelDecision/TradeAction Schema 版本以及候选
+  决策正文 SHA-256。模型错误只保存安全 error code、provider ID、usage 和逐动作拒绝摘要，不保存异常消息、API
+  key、原始 Prompt 或未经 binder 的原始响应；
+- `OpenAICompatibleProvider` 在返回 HOLD/候选动作/模型错误前统一追加 Journal；Journal 不可写或 cycle
+  内容冲突时丢弃内存候选动作并返回 `decision_persistence_error` / `HOLD_ONLY`。`run-ai-decision` 新增
+  仓库内 `--decision-db` 路径，默认 `user_data/state/ai-decisions.sqlite`，路径越界继续拒绝；
+- 新增 5 项 Journal 单元测试并扩展 provider 集成测试，聚焦共 29 项通过，覆盖 HOLD、合法候选、全部
+  拒绝/模型错误、版本与 hash、幂等、冲突、防篡改、写入失败降级和 secret/error detail 不外泄；
+- 全仓 `pytest` 411 项通过，strict mypy 检查 70 个 source/script 文件，Ruff check/format 覆盖 109 个
+  Python 文件，repository scan 检查 359 个文件，`uv lock --check` 和 `git diff --check` 通过；本任务
+  未调用真实 LLM、未读取 API key、未发送 Telegram，也未创建、修改或取消订单。R2-07 与 R2 阶段据此
+  转为 `DONE`，下一任务为 R3-01 Proposal Store。
 
 全仓依赖优先审计（2026-07-18）：
 
@@ -2111,13 +2134,13 @@ git diff --check
 | 34 | R0-04 模型与新闻配置 | DONE | 模型/Prompt/成本/失败策略、ModelDecision 严格输出及 Bybit/SEC/CoinDesk 三源合同；合同 47 项、全量 231 项 pytest 通过 |
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
-| 37 | R2-01 至 R2-07 新闻与 AI 决策 | IN_PROGRESS | R2-01 至 R2-06 已完成；**下一任务是 R2-07 决策持久化** |
-| 38 | R3-01 至 R3-06 Telegram 授权 | NOT_STARTED | Proposal Store、白名单、nonce、TTL、重新校验与通知 |
+| 37 | R2-01 至 R2-07 新闻与 AI 决策 | DONE | 合同、新闻、provider、Action 校验、Feature Builder、指标/形态与 Decision Journal 均已完成 |
+| 38 | R3-01 至 R3-06 Telegram 授权 | NOT_STARTED | **下一任务是 R3-01 Proposal Store**；之后接白名单、nonce、TTL、重新校验与通知 |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-06 已完成。当前唯一下一任务是 R2-07（决策持久化）。这些特征只为 AI 提供只读观察，不直接拥有交易权威。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07 已完成。当前唯一下一任务是 R3-01（Proposal Store）。Decision Journal 只保存 AI 输出事实，不授予交易权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 

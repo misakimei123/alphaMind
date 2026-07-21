@@ -19,6 +19,9 @@ import alphamind.ai.provider as provider_module
 from alphamind.ai import (
     BudgetExceededError,
     CostPolicy,
+    DecisionJournal,
+    DecisionJournalError,
+    DecisionOutcome,
     OpenAICompatibleProvider,
     OpenAIResponsesProvider,
     ProviderClient,
@@ -174,6 +177,7 @@ def _provider(
     return OpenAIResponsesProvider(
         selected,
         usage_ledger=ledger,
+        decision_journal=DecisionJournal(tmp_path / "ai-decisions.sqlite"),
         client=client,
         environ=({"OPENAI_API_KEY": "test-key-never-logged"} if environ is None else environ),
         sleep=sleep_values.append,
@@ -206,6 +210,11 @@ def test_request_uses_strict_responses_contract_without_tools_or_storage(tmp_pat
     assert result.decision.document["actions"][0]["action"] == "HOLD"
     assert result.usage_summary.accounted_cost_usd == "0.003550000"
     assert result.usage_summary.usage == Usage(1000, 200, 100)
+    persisted = provider.decision_journal.get(context.cycle_id)
+    assert persisted is not None
+    assert persisted.outcome is DecisionOutcome.HOLD
+    assert persisted.document["decision_sha256"] == result.decision.sha256
+    assert persisted.document["input_sha256"] == context.sha256
     assert payload["model"] == "gpt-5.6-terra"
     assert payload["tools"] == []
     assert payload["tool_choice"] == "none"
@@ -236,7 +245,8 @@ def test_provider_returns_only_actions_accepted_by_business_validation(tmp_path:
     decision["actions"].append(rejected)
     client = FakeClient([_response_for_decision(decision)])
 
-    result = _provider(tmp_path, client).decide(context, now_utc=NOW)
+    provider = _provider(tmp_path, client)
+    result = provider.decide(context, now_utc=NOW)
 
     assert result.status == "SUCCESS"
     assert result.decision is not None
@@ -246,7 +256,49 @@ def test_provider_returns_only_actions_accepted_by_business_validation(tmp_path:
     assert result.validation_report.action_results[1].rejection_codes == (
         ActionRejectionCode.LEVERAGE_OUT_OF_RANGE,
     )
+    persisted = provider.decision_journal.get(context.cycle_id)
+    assert persisted is not None
+    assert persisted.outcome is DecisionOutcome.HOLD
+    assert persisted.document["validation"]["rejected_action_ids"] == [
+        "act-20260718T120000Z-0123456789ab"
+    ]
     assert len(client.requests) == 1
+
+
+def test_decision_journal_failure_suppresses_in_memory_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, context = _effective_context()
+    provider = _provider(tmp_path, FakeClient([_response()]))
+
+    def fail_append(entry: object) -> bool:
+        raise DecisionJournalError("fixture detail must not escape")
+
+    monkeypatch.setattr(provider.decision_journal, "append", fail_append)
+    result = provider.decide(context, now_utc=NOW)
+
+    assert result.status == "HOLD_ONLY"
+    assert result.error_code is ProviderErrorCode.DECISION_PERSISTENCE_ERROR
+    assert result.decision is None
+    assert "fixture detail" not in json.dumps(result.to_safe_dict())
+
+
+def test_provider_persists_actionable_candidate_for_future_approval(tmp_path: Path) -> None:
+    _, context = _effective_context()
+    provider = _provider(
+        tmp_path,
+        FakeClient([_response_for_decision(_yaml("model-decision.valid.yaml"))]),
+    )
+
+    result = provider.decide(context, now_utc=NOW)
+
+    assert result.status == "SUCCESS"
+    assert result.decision is not None
+    persisted = provider.decision_journal.get(context.cycle_id)
+    assert persisted is not None
+    assert persisted.outcome is DecisionOutcome.CANDIDATE_ACTIONS
+    assert persisted.document["decision"]["actions"][0]["action"] == "OPEN"
+    assert persisted.document["runtime_authority"] is False
 
 
 def test_provider_fails_closed_when_every_action_is_rejected(tmp_path: Path) -> None:
@@ -255,7 +307,8 @@ def test_provider_fails_closed_when_every_action_is_rejected(tmp_path: Path) -> 
     decision["actions"][0]["requested_leverage"] = "3"
     client = FakeClient([_response_for_decision(decision)])
 
-    result = _provider(tmp_path, client).decide(context, now_utc=NOW)
+    provider = _provider(tmp_path, client)
+    result = provider.decide(context, now_utc=NOW)
 
     assert result.status == "HOLD_ONLY"
     assert result.error_code is ProviderErrorCode.BUSINESS_VALIDATION_ERROR
@@ -266,6 +319,10 @@ def test_provider_fails_closed_when_every_action_is_rejected(tmp_path: Path) -> 
     assert result.to_safe_dict()["action_validation"] is not None
     assert result.usage_summary.attempts == 1
     assert len(client.requests) == 1
+    persisted = provider.decision_journal.get(context.cycle_id)
+    assert persisted is not None
+    assert persisted.outcome is DecisionOutcome.MODEL_ERROR
+    assert persisted.document["decision"] is None
 
 
 def test_deepseek_chat_uses_json_output_and_runtime_schema_binding(tmp_path: Path) -> None:
@@ -284,6 +341,7 @@ def test_deepseek_chat_uses_json_output_and_runtime_schema_binding(tmp_path: Pat
             tmp_path / "deepseek-usage.sqlite",
             CostPolicy.from_profile(effective.ai_profile),
         ),
+        decision_journal=DecisionJournal(tmp_path / "deepseek-decisions.sqlite"),
         client=cast(ProviderClient, client),
         environ={"DEEPSEEK_API_KEY": "test-key-never-logged"},
         sleep=lambda _: None,
@@ -327,6 +385,7 @@ def test_deepseek_non_stop_output_retries_then_fails_closed(tmp_path: Path) -> N
             tmp_path / "deepseek-malformed-usage.sqlite",
             CostPolicy.from_profile(effective.ai_profile),
         ),
+        decision_journal=DecisionJournal(tmp_path / "deepseek-malformed-decisions.sqlite"),
         client=cast(ProviderClient, client),
         environ={"DEEPSEEK_API_KEY": "test-key-never-logged"},
         sleep=sleeps.append,
@@ -384,6 +443,7 @@ def test_default_sdk_client_disables_nested_retries(
             tmp_path / "ai-usage.sqlite",
             CostPolicy.from_profile(effective.ai_profile),
         ),
+        decision_journal=DecisionJournal(tmp_path / "ai-decisions.sqlite"),
         environ={"OPENAI_API_KEY": "test-key-never-logged"},
         sleep=lambda _: None,
     )

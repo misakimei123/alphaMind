@@ -18,6 +18,7 @@ import yaml
 
 from alphamind.ai import (
     CostPolicy,
+    DecisionJournal,
     OpenAICompatibleProvider,
     ProviderClient,
     UsageLedger,
@@ -47,6 +48,11 @@ def _parser() -> argparse.ArgumentParser:
         "--usage-db",
         type=Path,
         default=Path("user_data/state/ai-usage.sqlite"),
+    )
+    parser.add_argument(
+        "--decision-db",
+        type=Path,
+        default=Path("user_data/state/ai-decisions.sqlite"),
     )
     parser.add_argument(
         "--check",
@@ -161,18 +167,25 @@ def main(
                     Path(temporary) / "usage.sqlite",
                     CostPolicy.from_profile(effective.ai_profile),
                 )
+                journal = DecisionJournal(Path(temporary) / "decisions.sqlite")
                 provider = OpenAICompatibleProvider(
                     effective,
                     usage_ledger=ledger,
+                    decision_journal=journal,
                     environ=selected_environ,
                 )
-                output = _check_output(provider, key_configured=key_configured)
+                try:
+                    output = _check_output(provider, key_configured=key_configured)
+                finally:
+                    # Windows 不允许删除仍被 SQLite 连接占用的临时数据库。
+                    journal.close()
             _print(output, pretty=args.pretty)
             return 0
 
         if args.context is None:
             raise ValueError("--context is required unless --check is used")
         usage_path = _under_root(project_root, args.usage_db, label="AI usage DB path")
+        decision_path = _under_root(project_root, args.decision_db, label="AI decision DB path")
         current = now_utc or datetime.now(UTC)
         context = DecisionContractBinder(effective).bind_context(
             _document(args.context.resolve()),
@@ -181,6 +194,7 @@ def main(
         provider = build_provider(
             effective,
             usage_db_path=usage_path,
+            decision_db_path=decision_path,
             client=client,
             environ=selected_environ,
             sleep=sleep or time.sleep,

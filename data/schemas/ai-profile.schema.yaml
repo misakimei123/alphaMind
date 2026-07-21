@@ -188,11 +188,18 @@ properties:
   failure_policy:
     type: object
     additionalProperties: false
-    required: [timeout, provider_error, invalid_output, budget_exceeded]
+    required:
+      - timeout
+      - provider_error
+      - decision_persistence_error
+      - invalid_output
+      - budget_exceeded
     properties:
       timeout:
         const: HOLD_ONLY
       provider_error:
+        const: HOLD_ONLY
+      decision_persistence_error:
         const: HOLD_ONLY
       invalid_output:
         const: HOLD_ONLY

@@ -20,6 +20,12 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.responses import Response
 
+from alphamind.ai.journal import (
+    DecisionJournal,
+    DecisionJournalEntry,
+    DecisionJournalError,
+    DecisionOutcome,
+)
 from alphamind.ai.usage import (
     BudgetExceededError,
     CostPolicy,
@@ -30,6 +36,7 @@ from alphamind.ai.usage import (
 )
 from alphamind.config import EffectiveConfig
 from alphamind.decision import (
+    SUPPORTED_SCHEMA_VERSIONS,
     ActionBusinessValidator,
     BoundDecisionContext,
     BoundModelDecision,
@@ -47,6 +54,7 @@ class ProviderErrorCode(StrEnum):
     AUTHENTICATION_ERROR = "authentication_error"
     BUDGET_EXCEEDED = "budget_exceeded"
     BUSINESS_VALIDATION_ERROR = "business_validation_error"
+    DECISION_PERSISTENCE_ERROR = "decision_persistence_error"
     INPUT_TOO_LARGE = "input_too_large"
     MALFORMED_STRUCTURED_OUTPUT = "malformed_structured_output"
     POLICY_REFUSAL = "policy_refusal"
@@ -251,6 +259,7 @@ class OpenAICompatibleProvider:
         effective: EffectiveConfig,
         *,
         usage_ledger: UsageLedger,
+        decision_journal: DecisionJournal,
         client: ProviderClient | None = None,
         environ: Mapping[str, str] | None = None,
         sleep: Callable[[float], None] = time.sleep,
@@ -258,6 +267,7 @@ class OpenAICompatibleProvider:
         self.effective = effective
         self.profile = effective.ai_profile
         self.usage_ledger = usage_ledger
+        self.decision_journal = decision_journal
         self.client = client
         self.environ = dict(os.environ if environ is None else environ)
         self.sleep = sleep
@@ -345,10 +355,12 @@ class OpenAICompatibleProvider:
             seconds=int(self.effective.runtime["scheduler"]["cycle_timeout_seconds"])
         )
         if now < context.as_of_utc or now - context.as_of_utc > context_timeout:
-            return self._result(context, ProviderErrorCode.BUSINESS_VALIDATION_ERROR)
+            return self._result(
+                context, ProviderErrorCode.BUSINESS_VALIDATION_ERROR, recorded_at_utc=now
+            )
         api_key = self.environ.get(str(self.profile["provider"]["api_key_env"]), "").strip()
         if not api_key:
-            return self._result(context, ProviderErrorCode.API_KEY_MISSING)
+            return self._result(context, ProviderErrorCode.API_KEY_MISSING, recorded_at_utc=now)
         payload = self.request_payload(context)
         input_payload = (
             self.prompt
@@ -358,7 +370,7 @@ class OpenAICompatibleProvider:
             + _canonical_json(self.schema)
         )
         if len(input_payload.encode("utf-8")) > int(self.profile["request"]["max_input_tokens"]):
-            return self._result(context, ProviderErrorCode.INPUT_TOO_LARGE)
+            return self._result(context, ProviderErrorCode.INPUT_TOO_LARGE, recorded_at_utc=now)
         client = self.client or cast(
             ProviderClient,
             OpenAI(
@@ -390,9 +402,9 @@ class OpenAICompatibleProvider:
                     input_sha256=context.sha256,
                 )
             except BudgetExceededError:
-                return self._result(context, ProviderErrorCode.BUDGET_EXCEEDED)
+                return self._result(context, ProviderErrorCode.BUDGET_EXCEEDED, recorded_at_utc=now)
             except UsageLedgerError:
-                return self._result(context, ProviderErrorCode.PROVIDER_ERROR)
+                return self._result(context, ProviderErrorCode.PROVIDER_ERROR, recorded_at_utc=now)
 
             response: Response | ChatCompletion | None = None
             try:
@@ -425,6 +437,7 @@ class OpenAICompatibleProvider:
                     request_id=request_id,
                     model_id=model_id,
                     validation_report=validation_report,
+                    recorded_at_utc=now,
                 )
             except openai.APIError as error:
                 last_error, last_request_id = _provider_error(error)
@@ -439,7 +452,9 @@ class OpenAICompatibleProvider:
                         provider_request_id=last_request_id,
                     )
                 except UsageLedgerError:
-                    return self._result(context, ProviderErrorCode.PROVIDER_ERROR)
+                    return self._result(
+                        context, ProviderErrorCode.PROVIDER_ERROR, recorded_at_utc=now
+                    )
             except _ResponseFailure as error:
                 last_error = error.code
                 last_response_id = error.response_id
@@ -461,10 +476,12 @@ class OpenAICompatibleProvider:
                         model_id=error.model_id,
                     )
                 except UsageLedgerError:
-                    return self._result(context, ProviderErrorCode.PROVIDER_ERROR)
+                    return self._result(
+                        context, ProviderErrorCode.PROVIDER_ERROR, recorded_at_utc=now
+                    )
                 last_request_id = request_id
             except UsageLedgerError:
-                return self._result(context, ProviderErrorCode.PROVIDER_ERROR)
+                return self._result(context, ProviderErrorCode.PROVIDER_ERROR, recorded_at_utc=now)
 
             if last_error.value not in retry_on or attempt_number == maximum_attempts:
                 break
@@ -476,6 +493,7 @@ class OpenAICompatibleProvider:
             request_id=last_request_id,
             model_id=last_model_id,
             validation_report=last_validation_report,
+            recorded_at_utc=now,
         )
 
     def _parse_response(
@@ -657,6 +675,7 @@ class OpenAICompatibleProvider:
         request_id: str | None = None,
         model_id: str | None = None,
         validation_report: DecisionValidationReport | None = None,
+        recorded_at_utc: datetime,
     ) -> ProviderResult:
         try:
             summary = self.usage_ledger.cycle_summary(context.cycle_id)
@@ -665,7 +684,7 @@ class OpenAICompatibleProvider:
             error_code = ProviderErrorCode.PROVIDER_ERROR
             decision = None
             validation_report = None
-        return ProviderResult(
+        result = ProviderResult(
             status="SUCCESS" if error_code is None else "HOLD_ONLY",
             decision=decision,
             error_code=error_code,
@@ -677,6 +696,72 @@ class OpenAICompatibleProvider:
             input_sha256=context.sha256,
             usage_summary=summary,
             validation_report=validation_report,
+        )
+        try:
+            self.decision_journal.append(
+                self._journal_entry(context, result, recorded_at_utc=recorded_at_utc)
+            )
+        except DecisionJournalError:
+            # 未落盘的候选动作不可交给下游；错误本身只返回安全枚举，不回显 SQLite 细节。
+            return ProviderResult(
+                status="HOLD_ONLY",
+                decision=None,
+                error_code=ProviderErrorCode.DECISION_PERSISTENCE_ERROR,
+                model_id=result.model_id,
+                response_id=result.response_id,
+                request_id=result.request_id,
+                prompt_sha256=result.prompt_sha256,
+                config_sha256=result.config_sha256,
+                input_sha256=result.input_sha256,
+                usage_summary=result.usage_summary,
+                validation_report=None,
+            )
+        return result
+
+    def _journal_entry(
+        self,
+        context: BoundDecisionContext,
+        result: ProviderResult,
+        *,
+        recorded_at_utc: datetime,
+    ) -> DecisionJournalEntry:
+        decision_document = result.decision.document if result.decision is not None else None
+        actionable = bool(
+            decision_document
+            and any(action["action"] != "HOLD" for action in decision_document["actions"])
+        )
+        outcome = (
+            DecisionOutcome.MODEL_ERROR
+            if result.error_code is not None
+            else DecisionOutcome.CANDIDATE_ACTIONS
+            if actionable
+            else DecisionOutcome.HOLD
+        )
+        prompt = self.profile["prompt"]
+        return DecisionJournalEntry(
+            cycle_id=context.cycle_id,
+            recorded_at_utc=recorded_at_utc,
+            outcome=outcome,
+            environment=str(self.effective.runtime["environment"]),
+            profile_id=str(self.profile["profile_id"]),
+            model_id=result.model_id,
+            prompt_id=str(prompt["id"]),
+            prompt_version=int(prompt["version"]),
+            prompt_sha256=result.prompt_sha256,
+            config_sha256=result.config_sha256,
+            input_sha256=result.input_sha256,
+            schema_versions=dict(SUPPORTED_SCHEMA_VERSIONS),
+            decision_sha256=result.decision.sha256 if result.decision is not None else None,
+            decision=decision_document,
+            error_code=result.error_code.value if result.error_code is not None else None,
+            response_id=result.response_id,
+            request_id=result.request_id,
+            validation=(
+                result.validation_report.to_safe_dict()
+                if result.validation_report is not None
+                else None
+            ),
+            usage=result.usage_summary.to_dict(),
         )
 
 
@@ -693,15 +778,18 @@ def build_provider(
     effective: EffectiveConfig,
     *,
     usage_db_path: str | Path,
+    decision_db_path: str | Path,
     client: ProviderClient | None = None,
     environ: Mapping[str, str] | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> OpenAICompatibleProvider:
     policy = CostPolicy.from_profile(effective.ai_profile)
     ledger = UsageLedger(usage_db_path, policy)
+    journal = DecisionJournal(decision_db_path)
     return OpenAICompatibleProvider(
         effective,
         usage_ledger=ledger,
+        decision_journal=journal,
         client=client,
         environ=environ,
         sleep=sleep,

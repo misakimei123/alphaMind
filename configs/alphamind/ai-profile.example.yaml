@@ -61,6 +61,7 @@ cost:
 failure_policy:
   timeout: HOLD_ONLY
   provider_error: HOLD_ONLY
+  decision_persistence_error: HOLD_ONLY
   invalid_output: HOLD_ONLY
   budget_exceeded: HOLD_ONLY
 
