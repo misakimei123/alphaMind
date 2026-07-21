@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-20 / R2-04 完成 Action 业务校验、新闻引用校验、逐动作拒绝报告与审批候选过滤；下一任务为 R2-05 特征接入 Context |
+| 最近进度更新 | 2026-07-21 / R2-05 完成 Bybit 已完成 K 线读取、核心 Feature Builder、Context 合同绑定和真实只读四标的冒烟；下一任务为 R2-06 指标与形态语义扩展 |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-04 已完成决策合同、新闻采集、模型 provider 与逐动作确定性业务校验，R2-04 状态为 `DONE`；当前下一任务是 R2-05 将 Donchian/ATR/EMA 等特征接入 Context。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-05 已完成决策合同、新闻采集、模型 provider、逐动作确定性业务校验和核心 Feature Builder，R2-05 状态为 `DONE`；当前下一任务是 R2-06 按 ADR-0008 扩展 RSI、ADX、EMA 排列和关键位置 K 线形态语义，原决策持久化任务顺延为 R2-07。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -56,7 +56,7 @@
 | 决策周期 | 默认 30 分钟，可配置 | AI 周期不替代实时止损、Kill Switch 和事件告警 |
 | 决策权威 | AI 生成结构化候选，Telegram 人工授权 | 批准后系统自动执行；LLM 与 Bot 均不直接持有 Bybit key |
 | 新闻输入 | MVP 正式输入 | 来源配置化、去重、资产关联、引用和 Prompt Injection 隔离 |
-| 策略特征 | Donchian、ATR 等保留 | 作为 AI 特征和传统基线，不再是唯一交易权威 |
+| 策略特征 | Donchian、ATR、EMA、成交量为核心；R2-06 增加 RSI、ADX、EMA 排列和位置过滤后的 K 线形态 | 全部作为 AI 只读观察特征和传统基线，不直接生成可执行数量或绕过审批、确定性风控；Bollinger Bands 暂不进入必做范围 |
 | 杠杆 | 全局、标的、交易所三层上限 | 最终有效杠杆与数量由确定性风险模块裁剪 |
 | 运行状态 | Freqtrade Runtime DB | Audit DB 不恢复或覆盖 Trade/Order |
 | 风险审批 | 外部 watchdog + Freqtrade callback | callback 只读缓存快照，禁止阻塞式远程调用 |
@@ -167,7 +167,7 @@ Freqtrade 官方文档明确区分 dry-run 与真实交易；其 FAQ 也不把 s
 - AI 生成 `HOLD/OPEN/ADD/REDUCE/CLOSE/CANCEL_ORDER` 等结构化动作；
 - Telegram 展示、批准、拒绝、过期、暂停和结果通知；
 - 用户批准后的自动复核、下单、成交对账和通知；
-- Donchian、ATR、EMA 等确定性特征与传统基线；
+- Donchian、ATR、EMA、成交量、RSI、ADX、EMA 排列及关键位置过滤后的 K 线形态等确定性 AI 观察特征；
 - 现金、单标的 Buy-and-Hold、可选初始 50/50 不再平衡组合和简单均线基准；
 - Freqtrade 数据下载、回测、lookahead analysis、recursive analysis、dry-run 与 Live Canary；
 - point-in-time 数据质量、实验登记、成本与成交模型；
@@ -1622,10 +1622,65 @@ R1-06 完成证据（2026-07-18）：
 - `R2-02`（`DONE`）：至少两个可配置新闻/公告适配器、增量抓取、去重和资产关联；
 - `R2-03`（`DONE`）：LLM provider interface、结构化输出、超时、有限重试、成本记录，以及真实只读 API 冒烟和 usage 对账；
 - `R2-04`（`DONE`）：Action 业务校验、新闻引用校验和逐动作拒绝原因；
-- `R2-05`：将 Donchian/ATR/EMA 等接入 Context，不再直接拥有交易权威；
-- `R2-06`：保存 HOLD、候选动作、模型错误、model/prompt/config 版本和输入 hash。
+- `R2-05`（`DONE`）：建立只消费已完成 K 线的 DecisionContext Feature Builder，将
+  Donchian/ATR/EMA/成交量比率等核心数值特征按配置化 timeframe 接入 Context；明确 warmup、缺失、
+  陈旧与数据间隙的 `null`/fail-closed 语义，特征不直接拥有交易权威；
+- `R2-06`（`NOT_STARTED`，新增）：落实 ADR-0008，在 R2-05 的同源 point-in-time 特征快照上增加 RSI、
+  ADX、EMA 排列和经过关键位置过滤的 K 线形态/语义标签，并同步版本化 Schema、Prompt、fixture 与
+  决策质量对照；
+- `R2-07`（`NOT_STARTED`，原 R2-06）：保存 HOLD、候选动作、模型错误、model/prompt/config/schema
+  版本和输入 hash。
 
 完成标准：冻结 fixture 和实时只读快照均能稳定产生合法 HOLD 或候选 Action；非法输出不会进入审批队列。
+
+#### R2-06 新增任务：AI 指标与 K 线形态语义扩展
+
+任务依据：[ADR-0008](decisions/0008-ai-indicator-and-pattern-expansion.md)。该任务只扩展 AI 的只读观察输入，
+不修改 ADR-0004 冻结的 Donchian 传统策略规则，不让指标或 Prompt 绕过 R2-04 业务校验、R3 Telegram
+审批和后续确定性风险定仓。
+
+入口依赖：
+
+- R2-05 已能从同一批已完成 K 线确定性生成带来源时间、timeframe 和 freshness 证据的核心特征；
+- 在修改 Schema 或计算代码前，先在 ADR-0008 补齐 RSI/ADX 周期与平滑口径、EMA 排列阈值、关键位置
+  容差、形态冲突优先级，以及 ATR/实体/振幅为零、warmup、缺 candle 和指标不可用时的行为；
+- 明确 DecisionContext 的版本迁移策略；禁止在不变更 schema/version 证据的情况下静默改变冻结合同语义。
+
+实现范围与优先级：
+
+1. **P0 必做**：RSI 原始值、EMA alignment、Schema/fixture/Prompt 同步、point-in-time 与
+   lookahead 边界；RSI 必须限制在 `[0, 100]`，不可用时使用合同明确允许的 `null`，不得伪造中性值；
+2. **P1 必做**：ADX 原始值；ADX 同样限制在 `[0, 100]`，计算周期、平滑方法和 warmup
+   必须固定并可由独立实现复算；
+3. **形态必做**：ADR-0008 列出的单根/双根形态由 Python 硬规则识别；只有接近 Donchian 上下轨或
+   `ema_slow` 的形态才可上报。位置阈值必须使用预先冻结、可复算的 ATR 或比例容差，不能用模型主观判断；
+4. **语义合同**：`ema_alignment`、`candlestick_pattern` 和 `pattern_semantic` 使用受控枚举或稳定代码映射；
+   nullable enum 必须真实接受 `null`，不接受自由文本替代内部标签；多个形态同时命中时按冻结优先级只输出
+   一个稳定结果，未命中或被位置过滤时输出 `null`；
+5. **明确延期**：Bollinger Bands 仅是 ADR-0008 的 P1 可选项，本任务不实现；若以后引入，必须单独说明
+   相对 Donchian/ATR 的增量信息、共线性风险和消融证据，不得顺手扩展。
+
+产物：
+
+- 指标/形态纯计算模块与 Feature Builder 集成，所有输出绑定 candle close time、timeframe、计算参数和
+  当前 cycle，重复输入产生相同规范化 Context/hash；
+- 版本化 DecisionContext Schema 与合法/非法 fixture；修正数值范围、nullable enum、受控语义映射和
+  `additionalProperties: false` 边界，并同步 binder 的支持版本与跨对象测试；
+- 版本化 Prompt 及 AI profile 中的新 SHA-256，要求模型交叉检查突破、动量、趋势强度、成交量和位置形态；
+  指标冲突时优先 `HOLD` 并显式记录冲突，但不得要求模型披露隐藏思维链，也不得把形态标签写成必然买卖指令；
+- 至少覆盖趋势、震荡、暴跌、阴跌、关键位置反转、非关键位置噪音、warmup/缺口/零振幅/极小实体和
+  多形态冲突的冻结离线 Context 集合，以及扩展前后的版本化 AI dry-run 对照报告。
+
+验证与完成标准：
+
+- unit/property/boundary tests 独立复算 RSI、ADX、EMA alignment、影线/实体与双 candle 包含关系；所有
+  指标只读取当前及更早已完成 candle，未完成 candle、未来数据或错位 timeframe 必须 fail-closed；
+- contract tests 证明新旧版本迁移策略、字段范围、`null`、未知 enum、Prompt hash 和 fixture 均符合合同；
+- 对目标指标运行锁定环境下的 recursive/lookahead 或等价前缀一致性检查，证明增加未来 candle 不改变历史输出；
+- AI dry-run 对照至少报告 Schema 合法率、应 HOLD 场景命中率、关键冲突引用率、非法/越权动作率和
+  token/成本变化。离线 rationale 或少量样例不能证明“胜率提升”，不得以主观观感代替可复核指标；
+- 聚焦测试、相关全仓门禁和 `git diff --check` 通过后状态进入 `READY_TO_VERIFY`；只有 Schema、Prompt、
+  fixture、计算链和对照证据全部闭环后才能标记 `DONE`。
 
 R2-01 完成证据（2026-07-18）：
 
@@ -1735,6 +1790,36 @@ R2-04 完成证据（2026-07-20）：
 - 本任务只消费冻结配置、Context、capability 和 provider fixture，不发起真实模型或交易所请求，不读取
   交易密钥、不发送 Telegram，也不创建、修改或取消订单。R2-04 据此转为 `DONE`，下一任务为 R2-05。
 
+R2-05 完成证据（2026-07-21）：
+
+- `src/alphamind/candles.py` 新增交易所无关的 `CompletedCandle` 与固定 timeframe 合同；
+  `src/alphamind/market/bybit.py` 新增无认证 `BybitKlineClient`，固定官方 HTTPS 端点 allowlist、
+  timeout、Content-Type/响应大小、category/symbol/行结构与 OHLCV 校验，并按官方语义剔除仍未闭合的
+  最后一根 candle。响应失败、身份错配、重复时间或非法价格均 fail-closed，不读取 API key；
+- `src/alphamind/decision/features.py` 实现版本化 `r2-05-v1` 纯计算：Donchian 20/10 明确排除当前
+  candle，ATR(20) 使用 Wilder/RMA，EMA 使用 20/50 简单均值播种后递推，volume ratio 使用当前成交量
+  除以前 20 根均量；全部使用 Decimal 并以 half-even 收口至 8 位小数，同输入、参数和版本形成稳定
+  SHA-256。warmup、零成交量、缺口、future/stale candle、timeframe 错位和输入上限均输出稳定 reason
+  code 与 `null`，不得伪造中性或部分可信特征；
+- `CoreFeatureSnapshot.to_context_features()` 只输出 DecisionContext v1 已冻结的七个 features 字段，
+  并由真实 `DecisionContractBinder` 测试证明可绑定；内部 feature version、输入 hash 和 reason code 不以
+  无版本字段泄漏到 Context。新增 ADR-0010 冻结 OHLCV 来源、参数、市场选择和 point-in-time 边界；
+  R2-06 的 RSI/ADX/EMA alignment/K 线形态未提前实现；
+- 新增 6 项测试，R2-05 聚焦测试连同 market/context 既有回归共 37 项通过；覆盖确定性数值、Context
+  绑定、Donchian 当前 candle 排除、ATR/EMA 当前 close 纳入、warmup、零量、缺口、future、stale、
+  timeframe mismatch、未闭合 candle 过滤、倒序归一化、市场身份、重复时间和非法 OHLCV；
+- 全仓 `pytest` 372 项通过，strict mypy 检查 68 个 source/script 文件，Ruff check/format 覆盖 104 个
+  Python 文件，repository scan 检查 349 个文件；双市场 pairlist、capability 完整性、有效配置
+  `execution_ready=true`、`uv lock --check` 和 `git diff --check` 均通过；
+- 2026-07-21T02:51:48Z 使用 Bybit 主网公共 Kline 端点完成一次真实无认证只读冒烟：BTC/ETH/SOL/HYPE
+  各取得 199 根已完成 30m candle，最后闭合时间均为 02:30:00Z，四个 `r2-05-v1` 快照均
+  `ready=true`、reason code 为空；对应输入 hash 分别为
+  `03c080157ee3c321010fc499a1215d371909a36b633fc6f44859e5acfd50112c`、
+  `3eb478d370bfea60a67f52e365800088765208137049657a9a1e65820b2bec40`、
+  `e6f065daf46d412e3ac65acaf47a7104fd2163d02f3ee408d1b737e9f9fee7ac` 和
+  `e1d11ce1c1854dce87cb831c5fd25ae08e9e38c1fdbed01a8676d4056150c275`；本任务不调用 LLM、
+  不发送 Telegram，也不创建、修改或取消订单。R2-05 据此转为 `DONE`，下一任务为 R2-06。
+
 全仓依赖优先审计（2026-07-18）：
 
 - 已删除市场能力和新闻生产路径中的 `urllib.request` 手写 HTTP，统一由 `httpx` 处理请求、timeout、
@@ -1841,6 +1926,7 @@ R2-04 完成证据（2026-07-20）：
 | Live Canary | 每日对账 + 风险演练 | 所有资金变化可解释 |
 | Runtime config | schema + effective config + instrument fixtures | 币种、市场、周期和杠杆不靠代码常量 |
 | News pipeline | adapter fixtures + 去重 + 时间/注入边界 | 不重复、不引用未知新闻、不接受外部指令 |
+| AI feature/context | 独立复算 + boundary/property + contract fixture + prefix/lookahead + AI dry-run 对照 | 只用已完成 K 线、同输入同 hash、范围/空值/语义受控、非关键位置形态被过滤、行为与成本变化可复核 |
 | AI Action | schema + malformed/hallucination/boundary fixtures | 非法动作逐项拒绝，不进入审批 |
 | Scheduler | overlap/timeout/restart tests | 同一时刻只有一个决策周期，失败不增加风险 |
 | Telegram | whitelist + nonce + TTL + duplicate callback | 未授权、过期和重复点击不执行 |
@@ -1991,13 +2077,13 @@ git diff --check
 | 34 | R0-04 模型与新闻配置 | DONE | 模型/Prompt/成本/失败策略、ModelDecision 严格输出及 Bybit/SEC/CoinDesk 三源合同；合同 47 项、全量 231 项 pytest 通过 |
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
-| 37 | R2-01 至 R2-06 新闻与 AI 决策 | IN_PROGRESS | R2-01 至 R2-04 已完成；**下一任务是 R2-05 将 Donchian/ATR/EMA 等接入 Context** |
+| 37 | R2-01 至 R2-07 新闻与 AI 决策 | IN_PROGRESS | R2-01 至 R2-05 已完成；**下一任务是 R2-06 指标/形态语义扩展**，随后执行 R2-07 决策持久化 |
 | 38 | R3-01 至 R3-06 Telegram 授权 | NOT_STARTED | Proposal Store、白名单、nonce、TTL、重新校验与通知 |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-20 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-04 已完成。当前唯一下一任务是 R2-05 将 Donchian/ATR/EMA 等特征接入 Context，不再直接拥有交易权威。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-21 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-05 已完成。当前唯一下一任务是 R2-06（ADR-0008 指标与关键位置形态语义扩展），随后执行 R2-07（决策持久化）。这些特征只为 AI 提供只读观察，不直接拥有交易权威。真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 

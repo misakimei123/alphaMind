@@ -15,6 +15,7 @@ import yaml
 from alphamind.config import MarketKind, load_effective_config, load_instrument_registry
 from alphamind.market import (
     BybitInstrumentClient,
+    BybitKlineClient,
     CapabilityError,
     build_market_capability_snapshot,
     load_market_capability_snapshot,
@@ -130,6 +131,94 @@ def test_default_market_transport_uses_httpx_mock_transport() -> None:
         "linear",
         "linear",
     ]
+
+
+def test_kline_client_returns_only_completed_candles_in_chronological_order() -> None:
+    as_of = datetime(2026, 7, 18, 12, 5, tzinfo=UTC)
+    starts = [
+        datetime(2026, 7, 18, 12, 0, tzinfo=UTC),
+        datetime(2026, 7, 18, 11, 30, tzinfo=UTC),
+        datetime(2026, 7, 18, 11, 0, tzinfo=UTC),
+    ]
+    payload = {
+        "retCode": 0,
+        "retMsg": "OK",
+        "result": {
+            "category": "spot",
+            "symbol": "BTCUSDT",
+            "list": [
+                [str(int(start.timestamp() * 1000)), "100", "102", "99", "101", "10", "0"]
+                for start in starts
+            ],
+        },
+        "time": 1784376300000,
+    }
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(
+            200,
+            content=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+
+    result = BybitKlineClient(http_transport=httpx.MockTransport(handler)).fetch(
+        pair="BTC/USDT",
+        category="spot",
+        timeframe="30m",
+        as_of_utc=as_of,
+        limit=60,
+    )
+
+    assert [candle.started_at_utc for candle in result.candles] == list(reversed(starts[1:]))
+    assert all(candle.completed_at_utc <= as_of for candle in result.candles)
+    assert result.category == "spot"
+    assert len(result.response_sha256) == 64
+    assert dict(calls[0].url.params) == {
+        "category": "spot",
+        "symbol": "BTCUSDT",
+        "interval": "30",
+        "end": str(int(as_of.timestamp() * 1000)),
+        "limit": "60",
+    }
+
+
+def test_kline_client_rejects_identity_duplicates_and_invalid_ohlcv() -> None:
+    as_of = datetime(2026, 7, 18, 12, 5, tzinfo=UTC)
+    start = str(int(datetime(2026, 7, 18, 11, 30, tzinfo=UTC).timestamp() * 1000))
+
+    def client_with_rows(rows: list[list[str]], *, symbol: str = "BTCUSDT") -> BybitKlineClient:
+        payload = {
+            "retCode": 0,
+            "retMsg": "OK",
+            "result": {"category": "spot", "symbol": symbol, "list": rows},
+            "time": 1784376300000,
+        }
+        return BybitKlineClient(
+            http_transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    content=json.dumps(payload).encode(),
+                    headers={"Content-Type": "application/json"},
+                )
+            )
+        )
+
+    valid = [start, "100", "102", "99", "101", "10", "0"]
+    with pytest.raises(BybitMarketDataError, match="identity"):
+        client_with_rows([valid], symbol="ETHUSDT").fetch(
+            pair="BTC/USDT", category="spot", timeframe="30m", as_of_utc=as_of
+        )
+    with pytest.raises(BybitMarketDataError, match="duplicated"):
+        client_with_rows([valid, valid]).fetch(
+            pair="BTC/USDT", category="spot", timeframe="30m", as_of_utc=as_of
+        )
+    invalid = [start, "100", "98", "99", "101", "10", "0"]
+    with pytest.raises(BybitMarketDataError, match="OHLCV"):
+        client_with_rows([invalid]).fetch(
+            pair="BTC/USDT", category="spot", timeframe="30m", as_of_utc=as_of
+        )
 
 
 def test_malformed_single_market_disables_only_that_market() -> None:

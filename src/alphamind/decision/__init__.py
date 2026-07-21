@@ -10,6 +10,13 @@ from alphamind.decision.contracts import (
     ContractValidationError,
     DecisionContractBinder,
 )
+from alphamind.decision.features import (
+    CORE_FEATURE_VERSION,
+    DEFAULT_CORE_FEATURE_PARAMETERS,
+    CoreFeatureParameters,
+    CoreFeatureSnapshot,
+    build_core_features,
+)
 from alphamind.decision.validation import (
     ActionBusinessValidator,
     ActionRejectionCode,
@@ -19,6 +26,8 @@ from alphamind.decision.validation import (
 )
 
 __all__ = [
+    "CORE_FEATURE_VERSION",
+    "DEFAULT_CORE_FEATURE_PARAMETERS",
     "SUPPORTED_SCHEMA_VERSIONS",
     "ActionBusinessValidator",
     "ActionRejectionCode",
@@ -30,6 +39,9 @@ __all__ = [
     "BoundNewsItem",
     "ContractErrorCode",
     "ContractValidationError",
+    "CoreFeatureParameters",
+    "CoreFeatureSnapshot",
     "DecisionContractBinder",
     "DecisionValidationReport",
+    "build_core_features",
 ]
