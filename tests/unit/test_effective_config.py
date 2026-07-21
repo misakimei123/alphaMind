@@ -55,6 +55,7 @@ def test_repository_configuration_loads_as_deterministic_safe_snapshot() -> None
         "coindesk_rss",
     ]
     assert first.ai_profile["model"]["id"] == "gpt-5.6-terra"
+    assert first.runtime["approval"]["store_path"] == "user_data/state/proposals.sqlite"
     assert first.execution_ready is True
     assert [item.required for item in first.runtime_dependencies] == [True, True]
     assert [item.exists for item in first.runtime_dependencies] == [True, True]
@@ -182,9 +183,10 @@ def test_runtime_config_must_stay_inside_project_root(tmp_path: Path) -> None:
         ("scheduler", "state_db_path", "../outside.sqlite", "scheduler state DB"),
         ("scheduler", "snapshot_directory", "../outside", "scheduler snapshot directory"),
         ("risk", "snapshot_path", "../outside.json", "risk snapshot"),
+        ("approval", "store_path", "../outside.sqlite", "proposal store"),
     ],
 )
-def test_scheduler_runtime_paths_must_stay_inside_project_root(
+def test_runtime_state_paths_must_stay_inside_project_root(
     tmp_path: Path,
     section: str,
     field: str,

@@ -479,6 +479,7 @@ def _validate_cross_file_contracts(
             _nested_string(runtime, ("scheduler", "snapshot_directory")),
         ),
         ("risk snapshot", _nested_string(runtime, ("risk", "snapshot_path"))),
+        ("proposal store", _nested_string(runtime, ("approval", "store_path"))),
     ):
         _resolve_repo_path(project_root, raw_path, label=label, must_exist=False)
 

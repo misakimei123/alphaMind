@@ -58,7 +58,7 @@
       },
       "category": "trend",
       "conflict_expected": false,
-      "context_sha256": "8ef622408bf2b85e97cac59d0764bc81e63581e25d9ef992822d140dccec0514",
+      "context_sha256": "a4c265636978a848f309567ec8248dd9ad14dc4f42239e1329962e2381d77f5f",
       "expanded": {
         "action": "OPEN",
         "business_rejection_count": 0,
@@ -85,7 +85,7 @@
       },
       "category": "range",
       "conflict_expected": true,
-      "context_sha256": "24363005636ef8d0a1eb3996530a91331d29e5d5a425bef2683a4cab3fa48ce3",
+      "context_sha256": "f010783e07492cb5c16efb295902f63451dfcdbec1d27363411aa286dcb0a249",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -112,7 +112,7 @@
       },
       "category": "crash",
       "conflict_expected": false,
-      "context_sha256": "aeff9e830adf50439c7c35c6170de4d0dc45270d339e869be027d00f70af0822",
+      "context_sha256": "6b0ee91217bb1b48841efeb4289d04bbf47646fefa1afd327b9cf60f38f0c421",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -139,7 +139,7 @@
       },
       "category": "grind_down",
       "conflict_expected": false,
-      "context_sha256": "ecaf348f36111e82b413d82b0839323ba650884c38688469132359db8cb839c4",
+      "context_sha256": "cc8f7c44f958c4dd0dae82ff85907b708b4ab45111a2fddb65a0e959088ff032",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -166,7 +166,7 @@
       },
       "category": "key_position_reversal",
       "conflict_expected": false,
-      "context_sha256": "6534f046bc2a6e7b6a2803711ccad7d74a1e439bc171943531fa037694dd7c75",
+      "context_sha256": "f1bb57084f015ba8b486f44caa87f4d9fb3db61d164fc99897b7a87fc4cd8a12",
       "expanded": {
         "action": "OPEN",
         "business_rejection_count": 0,
@@ -193,7 +193,7 @@
       },
       "category": "non_key_noise",
       "conflict_expected": true,
-      "context_sha256": "7de7d930fdbe4a1a6455cdceb056ee44a91e4fe7a875c2d5f3e9e4e2c0bee631",
+      "context_sha256": "a44e2d3a6346180f1dc9088044e373188d4df64fcc8275c5b58af0a4f116a8ca",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -220,7 +220,7 @@
       },
       "category": "warmup",
       "conflict_expected": true,
-      "context_sha256": "b3aaa890e0b7206c60d6bfb0d3277255f5079737abfcf81baffe3834fe3a5b7f",
+      "context_sha256": "9729097422a268feb1ca9f33c2639136f16cdbec34a609109f6ef9b1a34eef15",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -247,7 +247,7 @@
       },
       "category": "candle_gap",
       "conflict_expected": true,
-      "context_sha256": "b3aaa890e0b7206c60d6bfb0d3277255f5079737abfcf81baffe3834fe3a5b7f",
+      "context_sha256": "9729097422a268feb1ca9f33c2639136f16cdbec34a609109f6ef9b1a34eef15",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -274,7 +274,7 @@
       },
       "category": "zero_range",
       "conflict_expected": true,
-      "context_sha256": "4ef340769f99ee631a17f898cfa1473f22f8eed632e62976ec9cc2858a917c1a",
+      "context_sha256": "5d1396120ea9b50786ba8e8461ab1bb38ac6bd622adc49d82dbff361f1a4eef6",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -301,7 +301,7 @@
       },
       "category": "tiny_body",
       "conflict_expected": true,
-      "context_sha256": "622d13f2784b681698c36dd415d55438dca5e2b59d687c4db5e82ded72a51a85",
+      "context_sha256": "45eeab50f4da4a0faafa247d5f22d533a239981d1190e0f4ca7c15a81b7700dc",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,
@@ -328,7 +328,7 @@
       },
       "category": "pattern_conflict",
       "conflict_expected": true,
-      "context_sha256": "06791ba610dfd36636bae9d535ce9bb3c545b75ac12a6ecd973c36db66c17283",
+      "context_sha256": "686259c2a47b9fcc99c83d6ec0cf5607ef5d9b09979c83bb16ba1a6c59d2a9e5",
       "expanded": {
         "action": "HOLD",
         "business_rejection_count": 0,

@@ -327,6 +327,11 @@ AI 不能决定：
 
 Telegram 是普通 AI 动作的人工授权面，只保存审批事件，不持有 Bybit key。必须验证 user/chat 白名单、nonce、TTL 和幂等；多个动作分别批准。拒绝、过期或重复点击不能产生执行。
 
+每个通过 R2 业务校验的非 HOLD Action 独立进入 Proposal Store。Store 以不可变 ApprovalEvent 历史维护
+当前投影，使用 expected state 和 idempotency key 阻止并发覆盖与第二次用户决定；有效期不能超过 Action
+自身有效期或配置审批 TTL。R3-01 只启用审批前状态，执行态必须等待 R3-04/R4 的重新校验与执行详情合同。
+详细存储与状态边界见 [ADR-0012](decisions/0012-proposal-store-state-machine.md)。
+
 批准不等于无条件下单。ExecutionGateway 前必须重新校验价格漂移、最新仓位/挂单、余额/保证金、RiskSnapshot、市场状态、精度、敞口和相同 Action 是否已执行。
 
 ### 5.5 模型与 Prompt 治理
@@ -349,6 +354,7 @@ Research、Code、Audit 和 Review Agent 可以继续用于研究与开发，但
 - Parquet：不可变历史行情和特征快照；
 - Freqtrade Runtime DB：Freqtrade `Trade`、`Order`、open position 和重启恢复状态；
 - alphaMind Decision Journal：不可变 AI 周期终态和已验证候选动作，供 Proposal Store 消费；
+- alphaMind Proposal Store：逐 Action 授权状态、不可变审批事件与当前投影，不保存订单/成交权威；
 - alphaMind Research/Audit DB：策略版本、实验、数据清单、风险快照、人工干预、告警和复盘；
 - Redis：只有出现真实的跨进程任务、锁或短期协调需求后才引入，不作为 MVP 默认依赖；
 - 对象存储：回测报告、模型文件和日志归档。
