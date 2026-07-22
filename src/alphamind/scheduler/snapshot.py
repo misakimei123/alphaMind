@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from alphamind.config import EffectiveConfig, MarketKind
+from alphamind.operations import OperationalControlStore
 from alphamind.risk import SnapshotReadResult, load_risk_snapshot
 from alphamind.scheduler.core import CycleInvocation, JsonObject
 
@@ -29,6 +30,9 @@ def build_read_only_snapshot_handler(
             maximum_futures_leverage[pair] = item.effective_max_leverage
 
     def observe(invocation: CycleInvocation) -> JsonObject:
+        control_path = project_root / runtime["operations"]["control_store_path"]
+        with OperationalControlStore(control_path) as control_store:
+            operational_control = control_store.current()
         risk_path = project_root / runtime["risk"]["snapshot_path"]
         risk = load_risk_snapshot(
             risk_path,
@@ -62,10 +66,19 @@ def build_read_only_snapshot_handler(
                 "freqtrade_config_path": section["freqtrade_config_path"],
                 "runtime_db_path": section["runtime_db_path"],
             }
+        effective_entry_allowed = risk.entry_allowed and not operational_control.entry_stopped
+        effective_kill_switch = risk.kill_switch or operational_control.emergency
+        effective_close_only = risk.close_only or operational_control.entry_stopped
+        risk_reason_codes = list(risk.reason_codes)
+        if operational_control.emergency:
+            risk_reason_codes.append("operational_emergency")
+        elif operational_control.entry_stopped:
+            risk_reason_codes.append("operational_entry_stopped")
         return {
             "read_only": True,
             "environment": runtime["environment"],
             "execution_ready": effective.execution_ready,
+            "operational_control": operational_control.to_safe_dict(),
             "market_capability": {
                 "snapshot_id": capability.snapshot_id,
                 "source_sha256": capability.source_sha256,
@@ -78,11 +91,11 @@ def build_read_only_snapshot_handler(
             "risk_snapshot": {
                 "path": str(Path(runtime["risk"]["snapshot_path"])),
                 "available": risk.snapshot is not None,
-                "entry_allowed": risk.entry_allowed,
-                "close_only": risk.close_only,
-                "kill_switch": risk.kill_switch,
+                "entry_allowed": effective_entry_allowed,
+                "close_only": effective_close_only,
+                "kill_switch": effective_kill_switch,
                 "safe_exit_allowed": risk.safe_exit_allowed,
-                "reason_codes": list(risk.reason_codes),
+                "reason_codes": risk_reason_codes,
                 "snapshot": risk.snapshot,
             },
             "deferred_to_later_stages": [

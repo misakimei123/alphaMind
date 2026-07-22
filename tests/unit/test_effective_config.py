@@ -60,6 +60,10 @@ def test_repository_configuration_loads_as_deterministic_safe_snapshot() -> None
         first.runtime["approval"]["notification_outbox_path"]
         == "user_data/state/telegram-notifications.sqlite"
     )
+    assert (
+        first.runtime["operations"]["control_store_path"]
+        == "user_data/state/operational-controls.sqlite"
+    )
     assert first.execution_ready is True
     assert [item.required for item in first.runtime_dependencies] == [True, True]
     assert [item.exists for item in first.runtime_dependencies] == [True, True]
@@ -194,6 +198,12 @@ def test_runtime_config_must_stay_inside_project_root(tmp_path: Path) -> None:
             "../outside.sqlite",
             "Telegram notification outbox",
         ),
+        (
+            "operations",
+            "control_store_path",
+            "../outside.sqlite",
+            "operational control store",
+        ),
     ],
 )
 def test_runtime_state_paths_must_stay_inside_project_root(
@@ -224,7 +234,7 @@ def test_prompt_hash_mismatch_fails_closed(tmp_path: Path) -> None:
         load_effective_config(root, environ={})
 
 
-def test_proposal_store_and_notification_outbox_must_be_distinct(tmp_path: Path) -> None:
+def test_runtime_state_databases_must_be_distinct(tmp_path: Path) -> None:
     root = _copy_configuration_project(tmp_path)
     runtime_path = root / "configs" / "alphamind" / "runtime.example.yaml"
     runtime = _load_yaml(runtime_path)
@@ -233,7 +243,7 @@ def test_proposal_store_and_notification_outbox_must_be_distinct(tmp_path: Path)
     approval["notification_outbox_path"] = approval["store_path"]
     _write_yaml(runtime_path, runtime)
 
-    with pytest.raises(ConfigError, match="notification outbox must be distinct"):
+    with pytest.raises(ConfigError, match="runtime state databases must be distinct"):
         load_effective_config(root, environ={})
 
 

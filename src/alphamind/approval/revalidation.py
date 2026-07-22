@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 from alphamind.approval.store import ProposalState, ProposalStore, StoredProposal
 from alphamind.config import EffectiveConfig, MarketKind
@@ -23,6 +24,8 @@ class RevalidationReasonCode(StrEnum):
     SNAPSHOT_CONTEXT_MISMATCH = "SNAPSHOT_CONTEXT_MISMATCH"
     ACTION_NOT_ALLOWED = "ACTION_NOT_ALLOWED"
     RISK_ENTRY_BLOCKED = "RISK_ENTRY_BLOCKED"
+    OPERATIONAL_ENTRY_STOPPED = "OPERATIONAL_ENTRY_STOPPED"
+    OPERATIONAL_CONTROL_UNAVAILABLE = "OPERATIONAL_CONTROL_UNAVAILABLE"
     SAFE_EXIT_BLOCKED = "SAFE_EXIT_BLOCKED"
     MARKET_RULES_UNAVAILABLE = "MARKET_RULES_UNAVAILABLE"
     LEVERAGE_OUT_OF_RANGE = "LEVERAGE_OUT_OF_RANGE"
@@ -96,13 +99,24 @@ def _order_market(value: object) -> str:
     return "linear_perpetual" if value == "futures" else str(value)
 
 
+class OperationalControlView(Protocol):
+    entry_stopped: bool
+    emergency: bool
+
+
 class ActionRevalidator:
     """重新读取的可信快照必须全部一致；任何缺失或漂移均 fail-closed。"""
 
-    def __init__(self, effective: EffectiveConfig) -> None:
+    def __init__(
+        self,
+        effective: EffectiveConfig,
+        *,
+        control_reader: Callable[[], OperationalControlView] | None = None,
+    ) -> None:
         self.effective = effective
         self.registry = effective.instrument_registry
         self.capabilities = effective.market_capability_snapshot
+        self.control_reader = control_reader
 
     def revalidate(
         self,
@@ -196,6 +210,14 @@ class ActionRevalidator:
         risk_increasing = action_name in {"OPEN", "ADD"}
         if risk_increasing and not risk.entry_allowed:
             reasons.add(RevalidationReasonCode.RISK_ENTRY_BLOCKED)
+        if risk_increasing and self.control_reader is not None:
+            try:
+                control = self.control_reader()
+                if control.entry_stopped or control.emergency:
+                    reasons.add(RevalidationReasonCode.OPERATIONAL_ENTRY_STOPPED)
+            except Exception:
+                # 控制状态不可读时禁止扩大风险；安全退出不依赖该读取结果。
+                reasons.add(RevalidationReasonCode.OPERATIONAL_CONTROL_UNAVAILABLE)
         if not risk_increasing and not risk.safe_exit_allowed:
             reasons.add(RevalidationReasonCode.SAFE_EXIT_BLOCKED)
 

@@ -10,6 +10,9 @@ scheduler:
   state_db_path: user_data/state/cycle-scheduler.sqlite
   snapshot_directory: user_data/cycles
 
+operations:
+  control_store_path: user_data/state/operational-controls.sqlite
+
 execution:
   approval_required: true
   exchange: bybit

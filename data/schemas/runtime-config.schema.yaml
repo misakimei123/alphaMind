@@ -10,6 +10,7 @@ required:
   - schema_version
   - environment
   - scheduler
+  - operations
   - execution
   - risk
   - decision
@@ -50,6 +51,14 @@ properties:
         $ref: "#/$defs/repository_sqlite_path"
       snapshot_directory:
         $ref: "#/$defs/repository_directory"
+  operations:
+    type: object
+    additionalProperties: false
+    required:
+      - control_store_path
+    properties:
+      control_store_path:
+        $ref: "#/$defs/repository_sqlite_path"
   execution:
     type: object
     additionalProperties: false

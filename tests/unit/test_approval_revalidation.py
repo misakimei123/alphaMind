@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -26,6 +27,7 @@ from alphamind.approval import (
 )
 from alphamind.config import EffectiveConfig, load_effective_config
 from alphamind.decision import BoundDecisionContext, DecisionContractBinder
+from alphamind.operations import OperationalControlSnapshot
 from alphamind.risk import SnapshotReadResult
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -176,13 +178,63 @@ def _process(
     risk: SnapshotReadResult,
     *,
     now_utc: datetime = NOW + timedelta(seconds=3),
+    control_reader: Callable[[], OperationalControlSnapshot] | None = None,
 ):
-    return RevalidationCoordinator(store, ActionRevalidator(effective)).process(
+    return RevalidationCoordinator(
+        store,
+        ActionRevalidator(effective, control_reader=control_reader),
+    ).process(
         proposal_id,
         context,
         risk,
         now_utc=now_utc,
     )
+
+
+def test_operational_entry_stop_cancels_risk_increase_before_execution(tmp_path: Path) -> None:
+    effective = load_effective_config(PROJECT_ROOT, environ={})
+    store, proposal_id = _approved(tmp_path, effective)
+    context = _bound_context(effective)
+    stopped = OperationalControlSnapshot(entry_stopped=True)
+
+    outcome = _process(
+        store,
+        proposal_id,
+        effective,
+        context,
+        _risk(context),
+        control_reader=lambda: stopped,
+    )
+
+    assert outcome.proposal.state is ProposalState.CANCELLED
+    assert outcome.proposal.document["execution"] is None
+    assert outcome.report is not None
+    assert RevalidationReasonCode.OPERATIONAL_ENTRY_STOPPED in outcome.report.reason_codes
+    store.close()
+
+
+def test_unreadable_operational_control_cancels_risk_increase(tmp_path: Path) -> None:
+    effective = load_effective_config(PROJECT_ROOT, environ={})
+    store, proposal_id = _approved(tmp_path, effective)
+    context = _bound_context(effective)
+
+    def unavailable() -> OperationalControlSnapshot:
+        raise RuntimeError("sensitive control storage detail")
+
+    outcome = _process(
+        store,
+        proposal_id,
+        effective,
+        context,
+        _risk(context),
+        control_reader=unavailable,
+    )
+
+    assert outcome.proposal.state is ProposalState.CANCELLED
+    assert outcome.report is not None
+    assert RevalidationReasonCode.OPERATIONAL_CONTROL_UNAVAILABLE in outcome.report.reason_codes
+    assert "sensitive control storage detail" not in json.dumps(outcome.report.to_safe_dict())
+    store.close()
 
 
 def test_approved_action_revalidates_and_queues_exactly_once(tmp_path: Path) -> None:

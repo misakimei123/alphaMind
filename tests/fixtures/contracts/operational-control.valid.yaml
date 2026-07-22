@@ -1,0 +1,13 @@
+schema_version: 1
+revision: 3
+ai_paused: true
+entry_stopped: true
+emergency: true
+manual_review_required: true
+cancel_pending_entries: true
+safe_exit_allowed: true
+reason_codes:
+  - EMERGENCY_MODE
+  - AI_PAUSED
+  - ENTRY_STOPPED
+updated_at_utc: '2026-07-22T06:00:00.000000Z'

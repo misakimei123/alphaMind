@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from alphamind.config import load_effective_config
+from alphamind.operations import OperationalControlAction, OperationalControlStore
 from alphamind.scheduler import (
     CycleInvocation,
     CycleRunner,
@@ -199,7 +200,8 @@ def test_restart_marks_unlocked_running_cycle_abandoned_before_next_cycle(
 def test_default_observer_lists_capability_markets_and_fails_closed_without_risk(
     tmp_path: Path,
 ) -> None:
-    effective = load_effective_config(PROJECT_ROOT, environ={})
+    root = _copy_configuration_project(tmp_path)
+    effective = load_effective_config(root, environ={})
     runner, _ = _runner(tmp_path, build_read_only_snapshot_handler(effective))
 
     result = runner.run(CycleTrigger.MANUAL)
@@ -207,6 +209,18 @@ def test_default_observer_lists_capability_markets_and_fails_closed_without_risk
     observation = json.loads(result.snapshot_path.read_text(encoding="utf-8"))["observation"]
 
     assert observation["read_only"] is True
+    assert observation["operational_control"] == {
+        "schema_version": 1,
+        "revision": 0,
+        "ai_paused": False,
+        "entry_stopped": False,
+        "emergency": False,
+        "manual_review_required": False,
+        "cancel_pending_entries": False,
+        "safe_exit_allowed": True,
+        "reason_codes": ["NORMAL_OPERATION"],
+        "updated_at_utc": None,
+    }
     assert observation["market_capability"]["available_spot_pairs"] == [
         "BTC/USDT",
         "ETH/USDT",
@@ -235,6 +249,30 @@ def test_default_observer_lists_capability_markets_and_fails_closed_without_risk
         "telegram_approval",
         "trade_execution",
     ]
+
+
+def test_observer_projects_entry_stop_into_effective_risk_state(tmp_path: Path) -> None:
+    root = _copy_configuration_project(tmp_path)
+    effective = load_effective_config(root, environ={})
+    path = root / str(effective.runtime["operations"]["control_store_path"])
+    with OperationalControlStore(path) as controls:
+        controls.apply(
+            OperationalControlAction.STOP_ENTRIES,
+            occurred_at_utc=NOW,
+            actor_user_id_sha256="a" * 64,
+            actor_chat_id_sha256="b" * 64,
+            idempotency_key="test:scheduler:stop-entries",
+        )
+    runner, _ = _runner(tmp_path / "runner", build_read_only_snapshot_handler(effective))
+
+    result = runner.run(CycleTrigger.MANUAL)
+
+    assert result.snapshot_path is not None
+    observation = json.loads(result.snapshot_path.read_text(encoding="utf-8"))["observation"]
+    assert observation["operational_control"]["entry_stopped"] is True
+    assert observation["risk_snapshot"]["entry_allowed"] is False
+    assert observation["risk_snapshot"]["close_only"] is True
+    assert "operational_entry_stopped" in observation["risk_snapshot"]["reason_codes"]
 
 
 def test_daemon_uses_scheduled_trigger_and_preserves_boundary(tmp_path: Path) -> None:

@@ -474,8 +474,15 @@ def _validate_cross_file_contracts(
 
     proposal_store_path = _nested_string(runtime, ("approval", "store_path"))
     notification_outbox_path = _nested_string(runtime, ("approval", "notification_outbox_path"))
-    if proposal_store_path == notification_outbox_path:
-        raise ConfigError("proposal store and Telegram notification outbox must be distinct")
+    operational_control_path = _nested_string(runtime, ("operations", "control_store_path"))
+    state_databases = {
+        proposal_store_path,
+        notification_outbox_path,
+        operational_control_path,
+        _nested_string(runtime, ("scheduler", "state_db_path")),
+    }
+    if len(state_databases) != 4:
+        raise ConfigError("runtime state databases must be distinct")
 
     for label, raw_path in (
         ("scheduler state DB", _nested_string(runtime, ("scheduler", "state_db_path"))),
@@ -486,6 +493,7 @@ def _validate_cross_file_contracts(
         ("risk snapshot", _nested_string(runtime, ("risk", "snapshot_path"))),
         ("proposal store", proposal_store_path),
         ("Telegram notification outbox", notification_outbox_path),
+        ("operational control store", operational_control_path),
     ):
         _resolve_repo_path(project_root, raw_path, label=label, must_exist=False)
 

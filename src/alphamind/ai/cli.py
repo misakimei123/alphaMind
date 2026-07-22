@@ -27,6 +27,7 @@ from alphamind.ai import (
 )
 from alphamind.config import ConfigError, load_effective_config
 from alphamind.decision import ContractValidationError, DecisionContractBinder
+from alphamind.operations import OperationalControlError, OperationalControlStore
 
 JsonObject = dict[str, Any]
 
@@ -184,6 +185,23 @@ def main(
 
         if args.context is None:
             raise ValueError("--context is required unless --check is used")
+        control_path = _under_root(
+            project_root,
+            Path(str(effective.runtime["operations"]["control_store_path"])),
+            label="operational control store path",
+        )
+        with OperationalControlStore(control_path) as control_store:
+            control = control_store.current()
+        if control.ai_paused:
+            _print(
+                {
+                    "status": "paused",
+                    "network_request_sent": False,
+                    "operational_control": control.to_safe_dict(),
+                },
+                pretty=args.pretty,
+            )
+            return 4
         usage_path = _under_root(project_root, args.usage_db, label="AI usage DB path")
         decision_path = _under_root(project_root, args.decision_db, label="AI decision DB path")
         current = now_utc or datetime.now(UTC)
@@ -205,7 +223,7 @@ def main(
             {"status": "invalid", "error": error.to_dict()}, pretty=args.pretty, stream=sys.stderr
         )
         return 2
-    except (ConfigError, UsageLedgerError, ValueError) as error:
+    except (ConfigError, OperationalControlError, UsageLedgerError, ValueError) as error:
         _print(
             {"status": "invalid", "error": str(error)},
             pretty=args.pretty,

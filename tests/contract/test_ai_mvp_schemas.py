@@ -27,6 +27,7 @@ AI_MVP_SCHEMAS = (
     "news-source-registry.schema.yaml",
     "market-capability-snapshot.schema.yaml",
     "telegram-notification.schema.yaml",
+    "operational-control.schema.yaml",
 )
 
 
@@ -102,6 +103,10 @@ def test_all_ai_mvp_schemas_are_valid_json_schema(
         (
             "telegram-notification.schema.yaml",
             FIXTURE_ROOT / "telegram-notification.valid.yaml",
+        ),
+        (
+            "operational-control.schema.yaml",
+            FIXTURE_ROOT / "operational-control.valid.yaml",
         ),
     ],
 )

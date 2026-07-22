@@ -18,6 +18,12 @@ Freqtrade/交易所恢复流程完成并留痕。
 任何风险状态都允许止损、减仓、撤销未成交入场和经批准的安全退出。不得为了阻止开仓而同时
 关闭退出路径。
 
+R3-06 提供双重白名单保护的 Telegram 控制命令：`/pause_ai` 只停止模型请求，`/stop_entries` 阻止
+OPEN/ADD，`/emergency` 同时执行前两项并持久化“撤销待处理入场、人工复核”意图。回执中的
+“交易指令：未发送”是必要边界：R4 ExecutionGateway 完成前，该入口不代表已经撤单、减仓或平仓。
+`/resume_entries` 只在最新可信 RiskSnapshot 允许入场时可用；紧急模式不能通过普通 Telegram resume
+命令解除。
+
 ## 2. 触发分级
 
 | 级别 | 典型 reason code | 初始动作 | 自动恢复 |

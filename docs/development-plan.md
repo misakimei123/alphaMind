@@ -5,9 +5,9 @@
 | 状态 | Normative / 唯一开发计划与进度账本 |
 | 设计基线 | `main@6238335` 后的 2026-07-18 产品重定基线 |
 | 制定日期 | 2026-07-15 |
-| 最近进度更新 | 2026-07-22 / R3-05 完成执行结果、部分成交、失败和风险通知合同与持久化 outbox；下一任务为 R3-06 紧急处置入口 |
+| 最近进度更新 | 2026-07-22 / R3-06 完成暂停 AI、停止新开仓与紧急处置控制面；R3 阶段关闭，下一任务为 R4-01 ExecutionGateway POC |
 | 适用范围 | 个人 AI 交易系统；默认每 30 分钟观察；Telegram 人工授权；Bybit 现货与 USDT 永续；配置化 BTC/ETH/SOL/HYPE；Freqtrade 执行 |
-> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07 已完成并关闭；R3-01 至 R3-05 已完成 Proposal Store、Telegram 展示、callback 认证、执行前重新校验及执行/风险通知闭环，R3 阶段状态为 `IN_PROGRESS`；当前下一任务是 R3-06 暂停 AI、停止新开仓和紧急处置入口。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
+> 当前阶段：已完成的 P0-01 至 P2-06、P3-01 至 P3-04 作为可复用研究、风险、审计和数据库底座保留。项目于 2026-07-18 重新定基线：AI 决策、新闻输入、Telegram 审批和批准后自动执行成为 MVP 主链；币种、市场、周期和杠杆改为配置化；现货与 Bybit USDT 永续均纳入 MVP。R0-01 至 R0-04 已完成配置、Schema、模型、Prompt 和首批新闻源合同；R1-01 至 R1-06 已完成配置化账户观察底座；R2-01 至 R2-07、R3-01 至 R3-06 已完成并关闭；当前下一任务是 R4-01 Freqtrade ExecutionGateway POC。R0-05 的真实资金参数不阻塞 R1-R3 dry-run。`development-plan.md` 是唯一规范与进度收口，其他文档不能维护独立任务状态
 
 ## 1. 计划目的与使用规则
 
@@ -1926,9 +1926,9 @@ R2-07 完成证据（2026-07-21）：
 - `R3-03`（`DONE`）：user/chat 白名单、nonce、TTL、幂等与重复点击；
 - `R3-04`（`DONE`）：执行前价格、仓位、余额、挂单、风险和市场规则重新校验；
 - `R3-05`（`DONE`）：执行结果、部分成交、失败和风险通知；
-- `R3-06`：暂停 AI、停止新开仓和紧急处置入口。
+- `R3-06`（`DONE`）：暂停 AI、停止新开仓和紧急处置入口。
 
-完成标准：fake executor 中一次批准只产生一次执行；拒绝、过期和非白名单操作不会执行。
+完成标准：一次批准只产生一个 `QUEUED` execution fact；拒绝、过期、非白名单和控制面阻断不会进入执行队列。fake executor 的一次性执行门禁由 R4-01 验证。
 
 R3-01 完成证据（2026-07-21）：
 
@@ -2044,6 +2044,26 @@ R3-05 完成证据（2026-07-22）：
 - 本任务使用 fake 受限事实和 fake Telegram client，未连接真实 Telegram、Bybit 或 Freqtrade，未读取真实
   凭据，也未创建、修改或取消订单。真实执行结果事实源仍由 R4 ExecutionGateway 与交易所对账实现；
   R3-05 据此转为 `DONE`，下一任务为 R3-06。
+
+R3-06 完成证据（2026-07-22）：
+
+- [ADR-0017](decisions/0017-operational-control-surface.md) 冻结三类控制语义：暂停 AI 只停止模型网络请求，
+  停止新开仓阻断 OPEN/ADD，紧急模式同时执行前两项并标记取消待处理入场与人工复核；任何状态都保留
+  安全退出，R3-06 不声称已经撤单、减仓或平仓；
+- 新增 `OperationalControlSnapshot v1`、仓库内独立 `operations.control_store_path` 和 SQLite FULL/WAL
+  控制库。状态从不可变事件顺序重放，事件与投影 hash 每次读取均复核；同文重放幂等、异文冲突、历史
+  篡改和不可读状态均 fail-closed；
+- Telegram 控制入口只接受普通文本消息中的精确命令，并复用当前环境 user/chat 双重 allowlist；原始身份
+  不落库。`/resume_entries` 需要最新可信 RiskSnapshot 仍允许入场；紧急模式不能由普通 resume 命令解除；
+- AI CLI 在 provider 创建和网络请求前读取控制状态；调度器继续只读观察，并把停止新开仓/紧急模式叠加
+  到有效 RiskSnapshot 视图。执行前复验对 OPEN/ADD 读取控制状态，停止或不可读均取消候选，不影响
+  REDUCE/CLOSE 等安全退出；
+- 新增 12 项运行控制/配置/Schema/调度/复验回归；全仓 `pytest` 471 项通过，strict mypy 检查 79 个
+  source/script 文件，Ruff check/format 覆盖 123 个 Python 文件，repository scan 检查 383 个文件，
+  R2-06 冻结报告一致性、`uv lock --check` 和 `git diff --check` 通过；
+- 测试使用本地 SQLite、fake Telegram client 和离线 RiskSnapshot，未连接真实 Telegram、Bybit、
+  Freqtrade 或 LLM provider，未读取真实凭据，也未创建、修改或取消订单。R3-06 与 R3 阶段据此转为
+  `DONE`，下一任务为 R4-01 Freqtrade ExecutionGateway POC。
 
 ### 13.11 R4：现货执行纵向闭环
 
@@ -2250,12 +2270,12 @@ git diff --check
 | 35 | R0-05 真实资金参数 | BLOCKED | 等待项目所有人确认；不阻塞 R1-R3 dry-run |
 | 36 | R1-01 至 R1-06 配置化与账户观察 | DONE | Registry、市场能力、RiskSnapshot v2、spot/futures 双实例及不可重叠只读周期调度均已完成 |
 | 37 | R2-01 至 R2-07 新闻与 AI 决策 | DONE | 合同、新闻、provider、Action 校验、Feature Builder、指标/形态与 Decision Journal 均已完成 |
-| 38 | R3-01 至 R3-06 Telegram 授权 | IN_PROGRESS | R3-01 至 R3-05 已完成；**下一任务是 R3-06 暂停 AI、停止新开仓和紧急处置入口** |
+| 38 | R3-01 至 R3-06 Telegram 授权 | DONE | Proposal、Telegram 授权、重新校验、通知和运行控制面均已完成 |
 | 39 | R4-01 至 R4-05 现货纵向闭环 | NOT_STARTED | ExecutionGateway POC、现货动作、对账和至少 7 天 dry-run |
 | 40 | R5-01 至 R5-06 合约纵向闭环 | NOT_STARTED | long/short、leverage、强平/funding、保护单与 Demo/Testnet |
 | 41 | R6-01 至 R6-06 Paper 与小额 Live | NOT_STARTED | 14–30 天联合运行、极小现货、合约 1x 后按确认扩展 |
 
-2026-07-22 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01 至 R3-05 已完成。当前唯一下一任务是 R3-06（暂停 AI、停止新开仓和紧急处置入口）。Proposal Store 保存逐 Action 授权、重新校验与执行队列绑定，notification outbox 只保存待投递的受限事实，二者均不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
+2026-07-22 当前顺序：旧 P2-07/P2-08 和 P3-05 之后的原顺序不再决定下一任务；R0-05 的真实资金参数保持 `BLOCKED` 但不阻止 dry-run 开发；R1-01 至 R1-06、R2-01 至 R2-07、R3-01 至 R3-06 已完成。当前唯一下一任务是 R4-01（Freqtrade ExecutionGateway POC）。Proposal Store 保存逐 Action 授权、重新校验与执行队列绑定，notification outbox 只保存待投递的受限事实，Operational Control Store 只保存运行控制事实，三者均不拥有订单或成交权威；真实账户、API 写权限和资金动作仍必须等待 R4-R6 的对应条件。
 
 ## 19. 官方文档核对基线
 
