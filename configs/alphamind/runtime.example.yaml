@@ -48,6 +48,7 @@ decision:
 approval:
   channel: telegram
   store_path: user_data/state/proposals.sqlite
+  notification_outbox_path: user_data/state/telegram-notifications.sqlite
   ttl_minutes: 10
   bot_token_env: ALPHAMIND_TELEGRAM_BOT_TOKEN
   allowed_user_ids_env: ALPHAMIND_TELEGRAM_ALLOWED_USER_IDS

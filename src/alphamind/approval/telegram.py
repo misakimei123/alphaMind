@@ -245,7 +245,7 @@ class TelegramBotClient:
         chat_id: int,
         text: str,
         *,
-        reply_markup: InlineKeyboardMarkup,
+        reply_markup: InlineKeyboardMarkup | None = None,
     ) -> TelegramMessageRef:
         _validate_chat_id(chat_id)
         _validate_message_text(text)

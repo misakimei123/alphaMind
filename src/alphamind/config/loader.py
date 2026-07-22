@@ -472,6 +472,11 @@ def _validate_cross_file_contracts(
     if required_hashes["prompt"] != ai_profile["prompt"]["sha256"]:
         raise ConfigError("configured prompt sha256 does not match the prompt file")
 
+    proposal_store_path = _nested_string(runtime, ("approval", "store_path"))
+    notification_outbox_path = _nested_string(runtime, ("approval", "notification_outbox_path"))
+    if proposal_store_path == notification_outbox_path:
+        raise ConfigError("proposal store and Telegram notification outbox must be distinct")
+
     for label, raw_path in (
         ("scheduler state DB", _nested_string(runtime, ("scheduler", "state_db_path"))),
         (
@@ -479,7 +484,8 @@ def _validate_cross_file_contracts(
             _nested_string(runtime, ("scheduler", "snapshot_directory")),
         ),
         ("risk snapshot", _nested_string(runtime, ("risk", "snapshot_path"))),
-        ("proposal store", _nested_string(runtime, ("approval", "store_path"))),
+        ("proposal store", proposal_store_path),
+        ("Telegram notification outbox", notification_outbox_path),
     ):
         _resolve_repo_path(project_root, raw_path, label=label, must_exist=False)
 

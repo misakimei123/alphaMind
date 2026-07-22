@@ -1,0 +1,17 @@
+schema_version: 1
+notification_id: notification-eba44b2127ec5e589345b3868ae14727
+source_event_id: exec-20260718T120000Z-123456789abc:partial:1
+kind: EXECUTION_PARTIALLY_FILLED
+severity: WARNING
+occurred_at_utc: "2026-07-18T12:00:10.000000Z"
+proposal_id: proposal-20260718T120000Z-123456789abc
+execution_id: exec-20260718T120000Z-123456789abc
+instrument_id: SOL
+market: linear_perpetual
+action: OPEN
+requested_quantity: "2"
+filled_quantity: "0.75"
+average_fill_price: "156.20"
+order_ids: [order-fixture-001]
+risk_state: null
+reason_codes: [PARTIAL_FILL_CONFIRMED]

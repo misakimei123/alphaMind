@@ -1,5 +1,16 @@
 """Proposal Store 与人工审批状态合同。"""
 
+from alphamind.approval.notifications import (
+    ClaimedNotification,
+    NotificationFact,
+    NotificationKind,
+    NotificationMessageRenderer,
+    NotificationOutboxError,
+    NotificationSeverity,
+    NotificationWorkerResult,
+    TelegramNotificationOutbox,
+    TelegramNotificationWorker,
+)
 from alphamind.approval.revalidation import (
     ActionRevalidator,
     RevalidationCoordinator,
@@ -39,6 +50,13 @@ from alphamind.approval.telegram import (
 
 __all__ = [
     "ActionRevalidator",
+    "ClaimedNotification",
+    "NotificationFact",
+    "NotificationKind",
+    "NotificationMessageRenderer",
+    "NotificationOutboxError",
+    "NotificationSeverity",
+    "NotificationWorkerResult",
     "ProposalAuthorization",
     "ProposalMessageRenderer",
     "ProposalState",
@@ -60,6 +78,8 @@ __all__ = [
     "TelegramCallbackProcessor",
     "TelegramCallbackRoute",
     "TelegramMessageRef",
+    "TelegramNotificationOutbox",
+    "TelegramNotificationWorker",
     "TelegramSecurityError",
     "TelegramSecurityErrorCode",
     "TelegramSecurityPolicy",

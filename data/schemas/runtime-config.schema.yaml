@@ -118,6 +118,7 @@ properties:
     required:
       - channel
       - store_path
+      - notification_outbox_path
       - ttl_minutes
       - bot_token_env
       - allowed_user_ids_env
@@ -127,6 +128,8 @@ properties:
       channel:
         const: telegram
       store_path:
+        $ref: "#/$defs/repository_sqlite_path"
+      notification_outbox_path:
         $ref: "#/$defs/repository_sqlite_path"
       ttl_minutes:
         type: integer
